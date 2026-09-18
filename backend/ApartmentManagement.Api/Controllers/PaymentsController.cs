@@ -41,6 +41,21 @@ namespace ApartmentManagement.Api.Controllers
                 });
             }
 
+            // Prevent duplicate successful or verified payments
+                var existingPayment = await _context.Payments
+                    .AnyAsync(p =>
+                     p.InvoiceId == request.InvoiceId &&
+                        (p.Status == "Successful" || p.Status == "Verified"));
+
+                if (existingPayment)
+            {
+                    return BadRequest(new
+                {
+                       message = "A successful payment already exists for this invoice."
+                 });
+            }
+
+
             if (request.Amount != invoice.TotalAmount)
             {
                 return BadRequest(new

@@ -139,7 +139,7 @@ public async Task<IActionResult> GetInvoices(
             );
         }
 
-        // PUT: api/invoices/5
+// PUT: api/invoices/5
 [HttpPut("{id}")]
 public async Task<IActionResult> UpdateInvoice(int id, Invoice updatedInvoice)
 {
@@ -150,6 +150,15 @@ public async Task<IActionResult> UpdateInvoice(int id, Invoice updatedInvoice)
     if (invoice == null)
     {
         return NotFound();
+    }
+
+    // Prevent modification of paid invoices
+    if (invoice.Status == "Paid")
+    {
+        return BadRequest(new
+        {
+            message = "Paid invoices cannot be modified."
+        });
     }
 
     invoice.ResidentId = updatedInvoice.ResidentId;
@@ -171,7 +180,6 @@ public async Task<IActionResult> UpdateInvoice(int id, Invoice updatedInvoice)
     return Ok(invoice);
 }
 
-
 // DELETE: api/invoices/5
 [HttpDelete("{id}")]
 public async Task<IActionResult> DeleteInvoice(int id)
@@ -184,6 +192,14 @@ public async Task<IActionResult> DeleteInvoice(int id)
     {
         return NotFound();
     }
+
+    if (invoice.Status == "Paid")
+{
+    return BadRequest(new
+    {
+        message = "Paid invoices cannot be deleted."
+    });
+}
 
     _context.Invoices.Remove(invoice);
     await _context.SaveChangesAsync();
