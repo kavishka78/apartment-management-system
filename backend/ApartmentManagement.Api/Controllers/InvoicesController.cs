@@ -162,9 +162,9 @@ public async Task<IActionResult> UpdateInvoice(int id, Invoice updatedInvoice)
     }
 
     invoice.ResidentId = updatedInvoice.ResidentId;
-    invoice.ApartmentId = updatedInvoice.ApartmentId;
-    invoice.BillingMonth = updatedInvoice.BillingMonth;
-    invoice.DueDate = updatedInvoice.DueDate;
+invoice.ApartmentId = updatedInvoice.ApartmentId;
+invoice.BillingMonth = updatedInvoice.BillingMonth;
+invoice.DueDate = updatedInvoice.DueDate;
 
     // Remove old invoice items
     _context.InvoiceItems.RemoveRange(invoice.InvoiceItems);
@@ -306,8 +306,15 @@ public async Task<IActionResult> GenerateMonthlyInvoice(
         InvoiceNumber =
             $"INV-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
 
-        BillingMonth = request.BillingMonth,
-        DueDate = request.DueDate,
+        BillingMonth = DateTime.SpecifyKind(
+    request.BillingMonth,
+    DateTimeKind.Utc
+),
+
+DueDate = DateTime.SpecifyKind(
+    request.DueDate,
+    DateTimeKind.Utc
+),
         Status = "Pending",
         CreatedAt = DateTime.UtcNow,
         InvoiceItems = items,

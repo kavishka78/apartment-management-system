@@ -1,0 +1,249 @@
+/* =========================
+   Overdue Accounts Page
+========================= */
+
+.overdue-panel {
+  background: #ffffff;
+  border: 1px solid #e5e7e3;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.overdue-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 26px;
+  border-bottom: 1px solid #e8e9e6;
+}
+
+.overdue-panel-header h2 {
+  margin: 0 0 5px;
+  font-size: 19px;
+  color: #17212b;
+}
+
+.overdue-panel-header p {
+  margin: 0;
+  color: #7a817b;
+  font-size: 13px;
+}
+
+
+/* =========================
+   Filters
+========================= */
+
+.overdue-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 190px 210px;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.overdue-search input,
+.overdue-filters select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid #dfe2dd;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17212b;
+  font-size: 13px;
+  outline: none;
+  transition: 0.2s;
+}
+
+.overdue-search input:focus,
+.overdue-filters select:focus {
+  border-color: #788477;
+  box-shadow: 0 0 0 3px rgba(120, 132, 119, 0.1);
+}
+
+.overdue-search input::placeholder {
+  color: #9ca39c;
+}
+
+.overdue-filters select {
+  cursor: pointer;
+}
+
+
+/* =========================
+   Table
+========================= */
+
+.overdue-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.overdue-table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+}
+
+.overdue-table th {
+  padding: 13px 18px;
+  background: #f7f8f6;
+  border-bottom: 1px solid #e5e7e3;
+  text-align: left;
+  color: #69716b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.overdue-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #eef0ed;
+  color: #333b42;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.overdue-table tbody tr {
+  transition: background 0.2s;
+}
+
+.overdue-table tbody tr:hover {
+  background: #fafbf9;
+}
+
+.overdue-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.invoice-number {
+  font-weight: 600;
+  color: #17212b !important;
+}
+
+
+/* =========================
+   Invoice Status
+========================= */
+
+.overdue-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: #fff5df;
+  color: #846321;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+/* =========================
+   Days Overdue Badges
+========================= */
+
+.days-overdue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.days-overdue.recent {
+  background: #fff6df;
+  color: #856620;
+}
+
+.days-overdue.warning {
+  background: #fff0e5;
+  color: #a85b24;
+}
+
+.days-overdue.critical {
+  background: #fff0f0;
+  color: #a33d3d;
+}
+
+
+/* =========================
+   Loading / Empty State
+========================= */
+
+.overdue-loading {
+  margin: 0;
+  padding: 45px 25px;
+  text-align: center;
+  color: #7b827c;
+  font-size: 14px;
+}
+
+.overdue-empty {
+  padding: 50px 25px;
+  text-align: center;
+}
+
+.overdue-empty h3 {
+  margin: 0 0 8px;
+  color: #17212b;
+  font-size: 17px;
+}
+
+.overdue-empty p {
+  margin: 0;
+  color: #858c86;
+  font-size: 13px;
+}
+
+
+/* =========================
+   Error Message
+========================= */
+
+.overdue-message {
+  padding: 13px 16px;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.overdue-message.error-message {
+  background: #fff1f1;
+  border: 1px solid #e7bcbc;
+  color: #9b3838;
+}
+
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 1000px) {
+  .overdue-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .overdue-search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 650px) {
+  .overdue-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .overdue-search {
+    grid-column: auto;
+  }
+
+  .overdue-panel-header {
+    padding: 18px;
+  }
+}

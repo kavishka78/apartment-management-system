@@ -1,5 +1,14 @@
 import "./App.css";
 import apartmentHero from "./assets/apartment-hero.jpg";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import PaymentDashboard from "./pages/PaymentDashboard";
+import Invoices from "./pages/Invoices";
+import GenerateInvoice from "./pages/GenerateInvoice";
+import Payments from "./pages/Payments";
+import OverdueAccounts from "./pages/OverdueAccounts";
+import CollectionReports from "./pages/CollectionReports";
+
 
 function App() {
   return (
@@ -59,7 +68,6 @@ function App() {
 
         </section>
 
-
         {/* Services Section */}
         <section className="services" id="services">
 
@@ -89,7 +97,6 @@ function App() {
               <a href="#apartments">Learn more →</a>
             </div>
 
-
             <div className="service-card">
               <div className="service-icon">02</div>
 
@@ -103,7 +110,6 @@ function App() {
               <a href="#maintenance">Learn more →</a>
             </div>
 
-
             <div className="service-card">
               <div className="service-icon">03</div>
 
@@ -116,7 +122,6 @@ function App() {
 
               <a href="#payments">Learn more →</a>
             </div>
-
 
             <div className="service-card">
               <div className="service-icon">04</div>
@@ -139,4 +144,45 @@ function App() {
   );
 }
 
-export default App;
+function RootApp() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<App />} />
+
+        <Route
+          path="/payments"
+          element={<PaymentDashboard />}
+        />
+
+        <Route
+          path="/payments/invoices"
+          element={<Invoices />}
+        />
+
+        <Route
+          path="/payments/generate"
+          element={<GenerateInvoice />}
+        />
+
+        <Route
+          path="/payments/list"
+          element={<Payments />}
+        />
+
+        <Route
+          path="/payments/overdue"
+          element={<OverdueAccounts />}
+        />
+
+        <Route
+        path="/payments/reports"
+        element={<CollectionReports />}
+        />
+        
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default RootApp;

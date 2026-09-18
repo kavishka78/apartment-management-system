@@ -1,0 +1,125 @@
+.generate-invoice-panel {
+  background: white;
+  border: 1px solid #e5e7e3;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.generate-form-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid #e8e9e6;
+}
+
+.generate-form-header h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  color: #17212b;
+}
+
+.generate-form-header p {
+  margin: 0;
+  color: #7a817b;
+  font-size: 14px;
+}
+
+.generate-invoice-form {
+  padding: 28px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333b42;
+}
+
+.form-group input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #dfe2dd;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17212b;
+  font-size: 14px;
+  outline: none;
+  transition: 0.2s;
+}
+
+.form-group input:focus {
+  border-color: #788477;
+  box-shadow: 0 0 0 3px rgba(120, 132, 119, 0.1);
+}
+
+.form-group input::placeholder {
+  color: #a2a8a2;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid #eceeeb;
+}
+
+.cancel-btn {
+  padding: 11px 20px;
+  border: 1px solid #d9ddd7;
+  border-radius: 8px;
+  background: white;
+  color: #4c554e;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background: #f5f6f4;
+}
+
+@media (max-width: 750px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .generate-invoice-form {
+    padding: 20px;
+  }
+
+  .generate-form-header {
+    padding: 20px;
+  }
+}
+
+.invoice-message {
+  margin: 20px 28px 0;
+  padding: 13px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.success-message {
+  background: #eef6ef;
+  border: 1px solid #b9d8bd;
+  color: #35633b;
+}
+
+.error-message {
+  background: #fff1f1;
+  border: 1px solid #e7bcbc;
+  color: #9b3838;
+}

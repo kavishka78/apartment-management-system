@@ -221,12 +221,16 @@ public async Task<IActionResult> GetPayments(
         .Include(p => p.Receipt)
         .AsQueryable();
 
-    // Search by payment reference
-    if (!string.IsNullOrWhiteSpace(search))
-    {
-        query = query.Where(p =>
-            p.PaymentReference.ToLower().Contains(search.ToLower()));
-    }
+    // Search by payment reference or invoice number
+if (!string.IsNullOrWhiteSpace(search))
+{
+    var searchTerm = search.ToLower();
+
+    query = query.Where(p =>
+        p.PaymentReference.ToLower().Contains(searchTerm) ||
+        (p.Invoice != null &&
+         p.Invoice.InvoiceNumber.ToLower().Contains(searchTerm)));
+}
 
     // Filter by payment status
     if (!string.IsNullOrWhiteSpace(status))
