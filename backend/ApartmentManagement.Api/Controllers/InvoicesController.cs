@@ -19,14 +19,86 @@ namespace ApartmentManagement.Api.Controllers
 
         // GET: api/invoices
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Invoice>>> GetInvoices()
-        {
-            return await _context.Invoices
-                .Include(i => i.InvoiceItems)
-                .Include(i => i.Payments)
-                .OrderByDescending(i => i.CreatedAt)
-                .ToListAsync();
-        }
+public async Task<IActionResult> GetInvoices(
+    string? search = null,
+    string? status = null,
+    int? residentId = null,
+    string sortBy = "createdAt",
+    string sortOrder = "desc",
+    int page = 1,
+    int pageSize = 10)
+{
+    if (page < 1)
+        page = 1;
+
+    if (pageSize < 1 || pageSize > 100)
+        pageSize = 10;
+
+    var query = _context.Invoices
+        .Include(i => i.InvoiceItems)
+        .Include(i => i.Payments)
+        .AsQueryable();
+
+    // Search by invoice number
+    if (!string.IsNullOrWhiteSpace(search))
+    {
+        query = query.Where(i =>
+            i.InvoiceNumber.ToLower().Contains(search.ToLower()));
+    }
+
+    // Filter by status
+    if (!string.IsNullOrWhiteSpace(status))
+    {
+        query = query.Where(i =>
+            i.Status.ToLower() == status.ToLower());
+    }
+
+    // Filter by resident
+    if (residentId.HasValue)
+    {
+        query = query.Where(i =>
+            i.ResidentId == residentId.Value);
+    }
+
+    // Sorting
+    bool ascending = sortOrder.ToLower() == "asc";
+
+    query = sortBy.ToLower() switch
+    {
+        "duedate" => ascending
+            ? query.OrderBy(i => i.DueDate)
+            : query.OrderByDescending(i => i.DueDate),
+
+        "totalamount" => ascending
+            ? query.OrderBy(i => i.TotalAmount)
+            : query.OrderByDescending(i => i.TotalAmount),
+
+        "billingmonth" => ascending
+            ? query.OrderBy(i => i.BillingMonth)
+            : query.OrderByDescending(i => i.BillingMonth),
+
+        _ => ascending
+            ? query.OrderBy(i => i.CreatedAt)
+            : query.OrderByDescending(i => i.CreatedAt)
+    };
+
+    var totalCount = await query.CountAsync();
+
+    var invoices = await query
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync();
+
+    return Ok(new
+    {
+        items = invoices,
+        totalCount,
+        page,
+        pageSize,
+        totalPages = (int)Math.Ceiling(
+            totalCount / (double)pageSize)
+    });
+}
 
         // GET: api/invoices/5
         [HttpGet("{id}")]
