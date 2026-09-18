@@ -2,6 +2,7 @@ using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ApartmentManagement.Api.DTOs;
 
 namespace ApartmentManagement.Api.Controllers
 {
@@ -116,6 +117,131 @@ public async Task<IActionResult> DeleteInvoice(int id)
     await _context.SaveChangesAsync();
 
     return NoContent();
+}
+
+
+// POST: api/invoices/generate-monthly
+[HttpPost("generate-monthly")]
+public async Task<IActionResult> GenerateMonthlyInvoice(
+    GenerateMonthlyInvoiceRequest request)
+{
+    if (request.DueDate <= request.BillingMonth)
+    {
+        return BadRequest(new
+        {
+            message = "Due date must be after the billing month."
+        });
+    }
+
+    if (request.MaintenanceFee < 0 ||
+        request.UtilityCharge < 0 ||
+        request.ParkingCharge < 0 ||
+        request.FacilityCharge < 0)
+    {
+        return BadRequest(new
+        {
+            message = "Charges cannot be negative."
+        });
+    }
+
+    // Prevent duplicate monthly invoices
+    var existingInvoice = await _context.Invoices
+        .AnyAsync(i =>
+            i.ResidentId == request.ResidentId &&
+            i.ApartmentId == request.ApartmentId &&
+            i.BillingMonth.Year == request.BillingMonth.Year &&
+            i.BillingMonth.Month == request.BillingMonth.Month);
+
+    if (existingInvoice)
+    {
+        return BadRequest(new
+        {
+            message = "An invoice already exists for this resident and billing month."
+        });
+    }
+
+    var items = new List<InvoiceItem>();
+
+    if (request.MaintenanceFee > 0)
+    {
+        items.Add(new InvoiceItem
+        {
+            Description = "Monthly Maintenance Fee",
+            ChargeType = "Maintenance",
+            Amount = request.MaintenanceFee
+        });
+    }
+
+    if (request.UtilityCharge > 0)
+    {
+        items.Add(new InvoiceItem
+        {
+            Description = "Utility Charge",
+            ChargeType = "Utility",
+            Amount = request.UtilityCharge
+        });
+    }
+
+    if (request.ParkingCharge > 0)
+    {
+        items.Add(new InvoiceItem
+        {
+            Description = "Parking Charge",
+            ChargeType = "Parking",
+            Amount = request.ParkingCharge
+        });
+    }
+
+    if (request.FacilityCharge > 0)
+    {
+        items.Add(new InvoiceItem
+        {
+            Description = "Facility Charge",
+            ChargeType = "Facility",
+            Amount = request.FacilityCharge
+        });
+    }
+
+    if (items.Count == 0)
+    {
+        return BadRequest(new
+        {
+            message = "At least one charge must be greater than zero."
+        });
+    }
+
+    var invoice = new Invoice
+    {
+        ResidentId = request.ResidentId,
+        ApartmentId = request.ApartmentId,
+
+        InvoiceNumber =
+            $"INV-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
+
+        BillingMonth = request.BillingMonth,
+        DueDate = request.DueDate,
+        Status = "Pending",
+        CreatedAt = DateTime.UtcNow,
+        InvoiceItems = items,
+        TotalAmount = items.Sum(i => i.Amount)
+    };
+
+    _context.Invoices.Add(invoice);
+    await _context.SaveChangesAsync();
+
+    return Ok(new
+    {
+        message = "Monthly invoice generated successfully.",
+        invoice.Id,
+        invoice.InvoiceNumber,
+        invoice.ResidentId,
+        invoice.ApartmentId,
+        invoice.BillingMonth,
+        invoice.DueDate,
+        invoice.TotalAmount,
+        invoice.Status,
+        invoice.InvoiceItems
+    });
 }
 
     }
