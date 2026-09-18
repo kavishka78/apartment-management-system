@@ -200,12 +200,78 @@ public async Task<IActionResult> VerifyPayment(int id)
 
 // GET: api/payments
 [HttpGet]
-public async Task<IActionResult> GetPayments()
+public async Task<IActionResult> GetPayments(
+    string? search = null,
+    string? status = null,
+    string? paymentMethod = null,
+    int? invoiceId = null,
+    string sortBy = "paidAt",
+    string sortOrder = "desc",
+    int page = 1,
+    int pageSize = 10)
 {
-    var payments = await _context.Payments
+    if (page < 1)
+        page = 1;
+
+    if (pageSize < 1 || pageSize > 100)
+        pageSize = 10;
+
+    var query = _context.Payments
         .Include(p => p.Invoice)
         .Include(p => p.Receipt)
-        .OrderByDescending(p => p.PaidAt)
+        .AsQueryable();
+
+    // Search by payment reference
+    if (!string.IsNullOrWhiteSpace(search))
+    {
+        query = query.Where(p =>
+            p.PaymentReference.ToLower().Contains(search.ToLower()));
+    }
+
+    // Filter by payment status
+    if (!string.IsNullOrWhiteSpace(status))
+    {
+        query = query.Where(p =>
+            p.Status.ToLower() == status.ToLower());
+    }
+
+    // Filter by payment method
+    if (!string.IsNullOrWhiteSpace(paymentMethod))
+    {
+        query = query.Where(p =>
+            p.PaymentMethod.ToLower() == paymentMethod.ToLower());
+    }
+
+    // Filter by invoice
+    if (invoiceId.HasValue)
+    {
+        query = query.Where(p =>
+            p.InvoiceId == invoiceId.Value);
+    }
+
+    // Sorting
+    bool ascending = sortOrder.ToLower() == "asc";
+
+    query = sortBy.ToLower() switch
+    {
+        "amount" => ascending
+            ? query.OrderBy(p => p.Amount)
+            : query.OrderByDescending(p => p.Amount),
+
+        "status" => ascending
+            ? query.OrderBy(p => p.Status)
+            : query.OrderByDescending(p => p.Status),
+
+        _ => ascending
+            ? query.OrderBy(p => p.PaidAt)
+            : query.OrderByDescending(p => p.PaidAt)
+    };
+
+    var totalCount = await query.CountAsync();
+
+    var payments = await query
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
         .Select(p => new
         {
             p.Id,
@@ -227,8 +293,62 @@ public async Task<IActionResult> GetPayments()
         })
         .ToListAsync();
 
-    return Ok(payments);
+    return Ok(new
+    {
+        items = payments,
+        totalCount,
+        page,
+        pageSize,
+        totalPages = (int)Math.Ceiling(
+            totalCount / (double)pageSize)
+    });
 }
+
+// GET: api/payments/2/receipt
+[HttpGet("{id}/receipt")]
+public async Task<IActionResult> GetReceipt(int id)
+{
+    var payment = await _context.Payments
+        .Include(p => p.Invoice)
+        .Include(p => p.Receipt)
+        .FirstOrDefaultAsync(p => p.Id == id);
+
+    if (payment == null)
+    {
+        return NotFound(new
+        {
+            message = "Payment not found."
+        });
+    }
+
+    if (payment.Status != "Verified" || payment.Receipt == null)
+    {
+        return BadRequest(new
+        {
+            message = "Receipt is only available for verified payments."
+        });
+    }
+
+    return Ok(new
+    {
+        receiptId = payment.Receipt.Id,
+        payment.Receipt.ReceiptNumber,
+        payment.Receipt.IssuedAt,
+
+        paymentId = payment.Id,
+        payment.PaymentReference,
+        payment.Amount,
+        payment.PaymentMethod,
+        payment.PaidAt,
+        payment.CardLastFourDigits,
+
+        invoiceId = payment.InvoiceId,
+        invoiceNumber = payment.Invoice?.InvoiceNumber,
+        residentId = payment.Invoice?.ResidentId,
+        apartmentId = payment.Invoice?.ApartmentId
+    });
+}
+
 
 
 // GET: api/payments/overdue
