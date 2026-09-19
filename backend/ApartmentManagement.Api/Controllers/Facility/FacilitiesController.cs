@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ApartmentManagement.Api.Models;
 using ApartmentManagement.Api.DTOs;
-using ApartmentManagement.APi.Data;
+using ApartmentManagement.Api.Data;
 
 
 namespace ApartmentManagement.Api.Controllers
@@ -12,9 +12,9 @@ namespace ApartmentManagement.Api.Controllers
     [Route("api/[controller]")]
     public class FacilitiesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly AppDbContext _context;
 
-        public FacilitiesController(ApplicationDbContext context)
+        public FacilitiesController(AppDbContext context)
         {
             _context = context;
         }
@@ -26,9 +26,9 @@ namespace ApartmentManagement.Api.Controllers
                 .Where(f => f.IsActive)
                 .Select(f => new FacilityResponseDto
                 {
-                    Id = f.Id,
-                    Name = f.Name,
-                    Description = f.Description,
+                    Id = f.FacilityId,
+                    Name = f.FacilityName,
+                    Description = f.FacilityDescription,
                     Capacity = f.Capacity,
                     OpenTime = f.OpenTime,
                     CloseTime = f.CloseTime,
@@ -38,14 +38,36 @@ namespace ApartmentManagement.Api.Controllers
                 return Ok(facilities);
         }
 
+        [HttpGet("{id}")]
+        public async Task<ActionResult<FacilityResponseDto>> GetFacility(int id)
+        {
+            var facility = await _context.Facilities
+                .Where(f => f.IsActive && f.FacilityId == id)
+                .Select(f => new FacilityResponseDto
+                {
+                    Id = f.FacilityId,
+                    Name = f.FacilityName,
+                    Description = f.FacilityDescription,
+                    Capacity = f.Capacity,
+                    OpenTime = f.OpenTime,
+                    CloseTime = f.CloseTime,
+                    IsActive = f.IsActive
+                }).FirstOrDefaultAsync();
+
+            if (facility == null)
+                return NotFound("Facility not found.");
+
+            return Ok(facility);
+        }
+
 
         [HttpPost]
         public async Task<ActionResult<FacilityResponseDto>> CreateFacility (CreateFacilityDto dto)
         {
             var facility = new Facility
             {
-                Name = dto.Name,
-                Description = dto.Description,
+                FacilityName = dto.Name,
+                FacilityDescription = dto.Description,
                 Capacity = dto.Capacity,
                 OpenTime = dto.OpenTime,
                 CloseTime = dto.CloseTime,
@@ -55,7 +77,7 @@ namespace ApartmentManagement.Api.Controllers
             _context.Facilities.Add(facility);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetFacilities), new {id = facility.id }, facility);
+            return CreatedAtAction(nameof(GetFacility), new {id = facility.FacilityId }, facility);
         }
     }
 
