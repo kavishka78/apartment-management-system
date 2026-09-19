@@ -25,7 +25,7 @@ namespace ApartmentManagement.Api.Models
         public TimeSpan StartTime {get;set;}
 
         [Required]
-        public DTimeSpan EndTime {get;set;}
+        public TimeSpan EndTime {get;set;}
 
         [Required]
         [Column(TypeName = "varchar(20)")]
