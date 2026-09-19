@@ -35,6 +35,8 @@ namespace ApartmentManagement.Api.Models
 
         public DateTime CreatedAt {get;set;}= DateTime.UtcNow;
         public DateTime? UpdatedAt {get;set;} 
+        public DateTime? CheckInTime {get;set;}
+        public DateTime? CheckOutTime {get;set;}
 
         public ParkingSlot? AssignedParkingSlot { get; set; }
     }
