@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "./PaymentDashboard.css";
-import PaymentSidebar from "../components/PaymentSidebar";
+import PaymentSidebar from "../../components/payment/PaymentSidebar";
 
 function PaymentDashboard() {
   const [report, setReport] = useState(null);
@@ -67,10 +67,6 @@ function PaymentDashboard() {
               Monitor invoices, payments and outstanding balances.
             </p>
           </div>
-
-          <button className="generate-btn">
-            + Generate Invoice
-          </button>
         </header>
 
         {/* Summary Cards */}

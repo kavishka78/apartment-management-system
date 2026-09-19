@@ -2,12 +2,12 @@ import "./App.css";
 import apartmentHero from "./assets/apartment-hero.jpg";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import PaymentDashboard from "./pages/PaymentDashboard";
-import Invoices from "./pages/Invoices";
-import GenerateInvoice from "./pages/GenerateInvoice";
-import Payments from "./pages/Payments";
-import OverdueAccounts from "./pages/OverdueAccounts";
-import CollectionReports from "./pages/CollectionReports";
+import PaymentDashboard from "./pages/payment/PaymentDashboard";
+import Invoices from "./pages/payment/Invoices";
+import GenerateInvoice from "./pages/payment/GenerateInvoice";
+import Payments from "./pages/payment/Payments";
+import OverdueAccounts from "./pages/payment/OverdueAccounts";
+import CollectionReports from "./pages/payment/CollectionReports";
 
 
 function App() {

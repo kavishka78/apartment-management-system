@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import PaymentSidebar from "../components/PaymentSidebar";
+import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
 import "./Payments.css";
 
@@ -18,6 +18,10 @@ function Payments() {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [verifyingId, setVerifyingId] = useState(null);
+
+  // Receipt states
+  const [receipt, setReceipt] = useState(null);
+  const [receiptLoading, setReceiptLoading] = useState(false);
 
   const fetchPayments = async () => {
     setLoading(true);
@@ -129,6 +133,59 @@ function Payments() {
     }
   };
 
+  // Load receipt from backend
+  const handleViewReceipt = async (paymentId) => {
+    setErrorMessage("");
+    setReceiptLoading(true);
+
+    try {
+      const response = await fetch(
+        `http://localhost:5073/api/payments/${paymentId}/receipt`
+      );
+
+      if (!response.ok) {
+        let message = "Failed to load receipt.";
+
+        try {
+          const errorData = await response.json();
+          message = errorData.message || message;
+        } catch {
+          // Keep default message
+        }
+
+        setErrorMessage(message);
+        return;
+      }
+
+      const data = await response.json();
+      setReceipt(data);
+    } catch (error) {
+      console.error("Error loading receipt:", error);
+
+      setErrorMessage(
+        "Unable to connect to the server. Please try again."
+      );
+    } finally {
+      setReceiptLoading(false);
+    }
+  };
+
+  const handlePrintReceipt = () => {
+    window.print();
+  };
+
+  const formatDate = (date) => {
+    if (!date) {
+      return "-";
+    }
+
+    return new Date(date).toLocaleString();
+  };
+
+  const formatCurrency = (amount) => {
+    return `Rs. ${Number(amount || 0).toLocaleString()}`;
+  };
+
   return (
     <div className="payment-page">
       <PaymentSidebar activePage="payments" />
@@ -193,8 +250,12 @@ function Payments() {
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
-            <option value="amountHigh">Amount: High to Low</option>
-            <option value="amountLow">Amount: Low to High</option>
+            <option value="amountHigh">
+              Amount: High to Low
+            </option>
+            <option value="amountLow">
+              Amount: Low to High
+            </option>
           </select>
         </div>
 
@@ -202,6 +263,7 @@ function Payments() {
           <div className="payments-panel-header">
             <div>
               <h2>Payment Transactions</h2>
+
               <p>
                 Review payment details and verify successful
                 transactions.
@@ -246,10 +308,7 @@ function Payments() {
                         </td>
 
                         <td>
-                          Rs.{" "}
-                          {Number(
-                            payment.amount
-                          ).toLocaleString()}
+                          {formatCurrency(payment.amount)}
                         </td>
 
                         <td>
@@ -279,8 +338,7 @@ function Payments() {
                         </td>
 
                         <td>
-                          {payment.status ===
-                          "Successful" ? (
+                          {payment.status === "Successful" ? (
                             <button
                               className="verify-payment-btn"
                               onClick={() =>
@@ -290,16 +348,20 @@ function Payments() {
                                 verifyingId === payment.id
                               }
                             >
-                              {verifyingId ===
-                              payment.id
+                              {verifyingId === payment.id
                                 ? "Verifying..."
                                 : "Verify"}
                             </button>
-                          ) : payment.status ===
-                            "Verified" ? (
-                            <span className="verified-label">
-                              Verified
-                            </span>
+                          ) : payment.status === "Verified" ? (
+                            <button
+                              className="view-receipt-btn"
+                              onClick={() =>
+                                handleViewReceipt(payment.id)
+                              }
+                              disabled={receiptLoading}
+                            >
+                              View Receipt
+                            </button>
                           ) : (
                             <span className="no-action">
                               —
@@ -341,6 +403,137 @@ function Payments() {
           )}
         </section>
       </main>
+
+      {receiptLoading && (
+        <div className="receipt-modal-overlay">
+          <div className="receipt-modal receipt-loading-modal">
+            Loading receipt...
+          </div>
+        </div>
+      )}
+
+      {receipt && !receiptLoading && (
+        <div
+          className="receipt-modal-overlay"
+          onClick={() => setReceipt(null)}
+        >
+          <div
+            className="receipt-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="receipt-print-area"
+              id="receipt-print-area"
+            >
+              <div className="receipt-header">
+                <div>
+                  <p className="receipt-company">
+                    APARTMENTHUB
+                  </p>
+
+                  <h2>Payment Receipt</h2>
+
+                  <p className="receipt-subtitle">
+                    Maintenance Fee & Payment Management
+                  </p>
+                </div>
+
+                <span className="receipt-paid-badge">
+                  PAID
+                </span>
+              </div>
+
+              <div className="receipt-number-section">
+                <span>Receipt Number</span>
+
+                <strong>
+                  {receipt.receiptNumber || "-"}
+                </strong>
+              </div>
+
+              <div className="receipt-details-grid">
+                <div>
+                  <span>Payment Reference</span>
+                  <strong>
+                    {receipt.paymentReference || "-"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Invoice Number</span>
+                  <strong>
+                    {receipt.invoiceNumber || "-"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Payment Method</span>
+                  <strong>
+                    {receipt.paymentMethod || "-"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Card</span>
+                  <strong>
+                    {receipt.cardLastFourDigits
+                      ? `•••• ${receipt.cardLastFourDigits}`
+                      : "-"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Paid Date</span>
+                  <strong>
+                    {formatDate(receipt.paidAt)}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Receipt Issued</span>
+                  <strong>
+                    {formatDate(receipt.issuedAt)}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="receipt-total">
+                <div>
+                  <span>Total Paid</span>
+                  <p>Payment successfully verified</p>
+                </div>
+
+                <strong>
+                  {formatCurrency(receipt.amount)}
+                </strong>
+              </div>
+
+              <div className="receipt-footer-note">
+                <p>
+                  Thank you. This receipt confirms the
+                  verified payment recorded in ApartmentHub.
+                </p>
+              </div>
+            </div>
+
+            <div className="receipt-modal-actions">
+              <button
+                className="receipt-close-btn"
+                onClick={() => setReceipt(null)}
+              >
+                Close
+              </button>
+
+              <button
+                className="receipt-print-btn"
+                onClick={handlePrintReceipt}
+              >
+                Print Receipt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

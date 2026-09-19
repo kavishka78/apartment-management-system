@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import PaymentSidebar from "../components/PaymentSidebar";
+import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
 import "./OverdueAccounts.css";
 

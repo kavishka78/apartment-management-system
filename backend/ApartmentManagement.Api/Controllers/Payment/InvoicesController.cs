@@ -141,18 +141,24 @@ public async Task<IActionResult> GetInvoices(
 
 // PUT: api/invoices/5
 [HttpPut("{id}")]
-public async Task<IActionResult> UpdateInvoice(int id, Invoice updatedInvoice)
+public async Task<IActionResult> UpdateInvoice(
+    int id,
+    Invoice updatedInvoice)
 {
     var invoice = await _context.Invoices
         .Include(i => i.InvoiceItems)
+        .Include(i => i.Payments)
         .FirstOrDefaultAsync(i => i.Id == id);
 
     if (invoice == null)
     {
-        return NotFound();
+        return NotFound(new
+        {
+            message = "Invoice not found."
+        });
     }
 
-    // Prevent modification of paid invoices
+    // Paid invoices cannot be changed
     if (invoice.Status == "Paid")
     {
         return BadRequest(new
@@ -161,23 +167,131 @@ public async Task<IActionResult> UpdateInvoice(int id, Invoice updatedInvoice)
         });
     }
 
+    // Protect invoices that already have payment activity
+    if (invoice.Payments.Any())
+    {
+        return BadRequest(new
+        {
+            message =
+                "Invoices with existing payment transactions cannot be modified."
+        });
+    }
+
+    // Validate resident and apartment IDs
+    if (updatedInvoice.ResidentId <= 0 ||
+        updatedInvoice.ApartmentId <= 0)
+    {
+        return BadRequest(new
+        {
+            message =
+                "Resident ID and Apartment ID must be valid."
+        });
+    }
+
+    // Validate dates
+    if (updatedInvoice.DueDate <=
+        updatedInvoice.BillingMonth)
+    {
+        return BadRequest(new
+        {
+            message =
+                "Due date must be after the billing month."
+        });
+    }
+
+    // Invoice must contain charges
+    if (updatedInvoice.InvoiceItems == null ||
+        updatedInvoice.InvoiceItems.Count == 0)
+    {
+        return BadRequest(new
+        {
+            message =
+                "At least one invoice charge is required."
+        });
+    }
+
+    // Prevent negative or zero charges
+    if (updatedInvoice.InvoiceItems.Any(
+        item => item.Amount <= 0))
+    {
+        return BadRequest(new
+        {
+            message =
+                "Invoice charges must be greater than zero."
+        });
+    }
+
+    // Prevent duplicate invoice for same resident,
+    // apartment and billing month
+    var duplicateInvoice = await _context.Invoices
+        .AnyAsync(i =>
+            i.Id != id &&
+            i.ResidentId == updatedInvoice.ResidentId &&
+            i.ApartmentId == updatedInvoice.ApartmentId &&
+            i.BillingMonth.Year ==
+                updatedInvoice.BillingMonth.Year &&
+            i.BillingMonth.Month ==
+                updatedInvoice.BillingMonth.Month);
+
+    if (duplicateInvoice)
+    {
+        return BadRequest(new
+        {
+            message =
+                "An invoice already exists for this resident and billing month."
+        });
+    }
+
+    // Update basic invoice information
     invoice.ResidentId = updatedInvoice.ResidentId;
-invoice.ApartmentId = updatedInvoice.ApartmentId;
-invoice.BillingMonth = updatedInvoice.BillingMonth;
-invoice.DueDate = updatedInvoice.DueDate;
+    invoice.ApartmentId = updatedInvoice.ApartmentId;
 
-    // Remove old invoice items
-    _context.InvoiceItems.RemoveRange(invoice.InvoiceItems);
+    // Ensure PostgreSQL receives UTC DateTimes
+    invoice.BillingMonth = DateTime.SpecifyKind(
+        updatedInvoice.BillingMonth,
+        DateTimeKind.Utc
+    );
 
-    // Add updated invoice items
-    invoice.InvoiceItems = updatedInvoice.InvoiceItems;
+    invoice.DueDate = DateTime.SpecifyKind(
+        updatedInvoice.DueDate,
+        DateTimeKind.Utc
+    );
 
-    // Recalculate total on the server
-    invoice.TotalAmount = updatedInvoice.InvoiceItems.Sum(item => item.Amount);
+    // Remove existing invoice items
+    _context.InvoiceItems.RemoveRange(
+        invoice.InvoiceItems
+    );
+
+    // Add new invoice items
+    invoice.InvoiceItems =
+        updatedInvoice.InvoiceItems
+            .Select(item => new InvoiceItem
+            {
+                Description = item.Description,
+                ChargeType = item.ChargeType,
+                Amount = item.Amount
+            })
+            .ToList();
+
+    // Calculate total on backend
+    invoice.TotalAmount =
+        invoice.InvoiceItems.Sum(item => item.Amount);
 
     await _context.SaveChangesAsync();
 
-    return Ok(invoice);
+    return Ok(new
+    {
+        message = "Invoice updated successfully.",
+        invoice.Id,
+        invoice.InvoiceNumber,
+        invoice.ResidentId,
+        invoice.ApartmentId,
+        invoice.BillingMonth,
+        invoice.DueDate,
+        invoice.TotalAmount,
+        invoice.Status,
+        invoice.InvoiceItems
+    });
 }
 
 // DELETE: api/invoices/5
@@ -186,22 +300,39 @@ public async Task<IActionResult> DeleteInvoice(int id)
 {
     var invoice = await _context.Invoices
         .Include(i => i.InvoiceItems)
+        .Include(i => i.Payments)
         .FirstOrDefaultAsync(i => i.Id == id);
 
     if (invoice == null)
     {
-        return NotFound();
+        return NotFound(new
+        {
+            message = "Invoice not found."
+        });
     }
 
+    // Paid invoices cannot be deleted
     if (invoice.Status == "Paid")
-{
-    return BadRequest(new
     {
-        message = "Paid invoices cannot be deleted."
-    });
-}
+        return BadRequest(new
+        {
+            message = "Paid invoices cannot be deleted."
+        });
+    }
+
+    // Do not delete an invoice if a payment
+    // transaction already exists
+    if (invoice.Payments.Any())
+    {
+        return BadRequest(new
+        {
+            message =
+                "Invoices with existing payment transactions cannot be deleted."
+        });
+    }
 
     _context.Invoices.Remove(invoice);
+
     await _context.SaveChangesAsync();
 
     return NoContent();
