@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from state import FacilityWorkflowState
 from tools import check_facility_availability
 from dotenv import load_dotenv
@@ -8,7 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize the LLM Temperature = 0 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+#llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", temperature=0)
 
 
 class PlanOutput(BaseModel):
