@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
+# from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from state import FacilityWorkflowState
 from tools import check_facility_availability
