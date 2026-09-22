@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Header from "../../components/admin/Header";
 import {
   getFacilities,
@@ -24,22 +24,28 @@ export default function Facilities() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
-  async function load() {
+  const fetchData = useCallback(() => {
+    return getFacilities()
+      .then((data) => {
+        setFacilities(data);
+      })
+      .catch((err) => {
+        setError(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  function load() {
     setLoading(true);
     setError(null);
-    try {
-      const data = await getFacilities();
-      setFacilities(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    return fetchData();
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   function openAdd() {
     setEditing(null);
