@@ -43,57 +43,56 @@ function Invoices() {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const fetchInvoices = useCallback(async () => {
-    setLoading(true);
+  const fetchInvoices = useCallback(() => {
+    let sortBy = "createdAt";
+    let sortOrder = "desc";
 
-    try {
-      let sortBy = "createdAt";
-      let sortOrder = "desc";
-
-      if (sort === "oldest") {
-        sortOrder = "asc";
-      } else if (sort === "amountHigh") {
-        sortBy = "totalAmount";
-        sortOrder = "desc";
-      } else if (sort === "amountLow") {
-        sortBy = "totalAmount";
-        sortOrder = "asc";
-      }
-
-      const params = new URLSearchParams({
-        page: page.toString(),
-        pageSize: pageSize.toString(),
-        sortBy,
-        sortOrder,
-      });
-
-      if (search.trim()) {
-        params.append("search", search.trim());
-      }
-
-      if (status) {
-        params.append("status", status);
-      }
-
-      const response = await fetch(
-        `http://localhost:5073/api/invoices?${params.toString()}`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to load invoices.");
-      }
-
-      const data = await response.json();
-
-      setInvoices(data.items || []);
-      setTotalPages(data.totalPages || 1);
-      setTotalCount(data.totalCount || 0);
-    } catch (error) {
-      console.error("Error loading invoices:", error);
-      setErrorMessage("Unable to load invoices.");
-    } finally {
-      setLoading(false);
+    if (sort === "oldest") {
+      sortOrder = "asc";
+    } else if (sort === "amountHigh") {
+      sortBy = "totalAmount";
+      sortOrder = "desc";
+    } else if (sort === "amountLow") {
+      sortBy = "totalAmount";
+      sortOrder = "asc";
     }
+
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+      sortBy,
+      sortOrder,
+    });
+
+    if (search.trim()) {
+      params.append("search", search.trim());
+    }
+
+    if (status) {
+      params.append("status", status);
+    }
+
+    return fetch(
+      `http://localhost:5073/api/invoices?${params.toString()}`
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load invoices.");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setInvoices(data.items || []);
+        setTotalPages(data.totalPages || 1);
+        setTotalCount(data.totalCount || 0);
+      })
+      .catch((error) => {
+        console.error("Error loading invoices:", error);
+        setErrorMessage("Unable to load invoices.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [page, search, status, sort]);
 
   useEffect(() => {
@@ -314,6 +313,7 @@ function Invoices() {
       setEditingInvoice(null);
       setSuccessMessage("Invoice updated successfully.");
 
+      setLoading(true);
       await fetchInvoices();
     } catch (error) {
       console.error("Error updating invoice:", error);
@@ -364,6 +364,7 @@ function Invoices() {
 
       setSuccessMessage("Invoice deleted successfully.");
 
+      setLoading(true);
       if (invoices.length === 1 && page > 1) {
         setPage((previous) => previous - 1);
       } else {
@@ -423,6 +424,7 @@ function Invoices() {
               placeholder="Search invoice number..."
               value={search}
               onChange={(event) => {
+                setLoading(true);
                 setSearch(event.target.value);
                 setPage(1);
               }}
@@ -433,6 +435,7 @@ function Invoices() {
             className="sort-filter"
             value={sort}
             onChange={(event) => {
+              setLoading(true);
               setSort(event.target.value);
               setPage(1);
             }}
@@ -451,6 +454,7 @@ function Invoices() {
             className="status-filter"
             value={status}
             onChange={(event) => {
+              setLoading(true);
               setStatus(event.target.value);
               setPage(1);
             }}
@@ -604,9 +608,10 @@ function Invoices() {
           {!loading && totalPages > 1 && (
             <div className="invoice-pagination">
               <button
-                onClick={() =>
-                  setPage((previous) => previous - 1)
-                }
+                onClick={() => {
+                  setLoading(true);
+                  setPage((previous) => previous - 1);
+                }}
                 disabled={page === 1}
               >
                 ← Previous
@@ -617,9 +622,10 @@ function Invoices() {
               </span>
 
               <button
-                onClick={() =>
-                  setPage((previous) => previous + 1)
-                }
+                onClick={() => {
+                  setLoading(true);
+                  setPage((previous) => previous + 1);
+                }}
                 disabled={page === totalPages}
               >
                 Next →

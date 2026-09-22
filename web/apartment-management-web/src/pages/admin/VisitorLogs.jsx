@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Header from "../../components/admin/Header";
 import { getActiveVisitors, checkOutVisitor } from "../../services/api";
 import "./VisitorLogs.css";
@@ -8,22 +8,28 @@ export default function VisitorLogs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  async function load() {
+  const fetchData = useCallback(() => {
+    return getActiveVisitors()
+      .then((data) => {
+        setVisitors(data);
+      })
+      .catch((err) => {
+        setError(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  function load() {
     setLoading(true);
     setError(null);
-    try {
-      const data = await getActiveVisitors();
-      setVisitors(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    return fetchData();
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   async function handleCheckOut(id) {
     if (!confirm("Check out this visitor?")) return;

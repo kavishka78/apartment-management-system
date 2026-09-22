@@ -1,26 +1,35 @@
 import { useState, useEffect, useCallback } from "react";
 
-export default function useApi(fetchFn, deps = []) {
+// Pass a stable fetch function (useCallback when it depends on props or state).
+export default function useApi(fetchFn) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const execute = useCallback(async () => {
+  const fetchData = useCallback(() => {
+    return Promise.resolve()
+      .then(() => fetchFn())
+      .then((result) => {
+        setData(result);
+        setError(null);
+      })
+      .catch((err) => {
+        setError(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [fetchFn]);
+
+  const execute = useCallback(() => {
     setLoading(true);
     setError(null);
-    try {
-      const result = await fetchFn();
-      setData(result);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, deps);
+    return fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
-    execute();
-  }, [execute]);
+    fetchData();
+  }, [fetchData]);
 
   return { data, loading, error, refetch: execute };
 }
