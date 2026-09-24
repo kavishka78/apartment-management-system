@@ -12,30 +12,36 @@ class FacilitiesListScreen extends StatefulWidget {
 
 class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
   List<dynamic> _facilities = [];
+  List<dynamic> _bookings = [];
   bool _isLoading = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadFacilities();
+    _loadData();
   }
 
-  Future<void> _loadFacilities() async {
+  Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
-    final result = await FacilityApiService.getFacilities();
+    final facilityRes = await FacilityApiService.getFacilities();
+    final bookingRes = await FacilityApiService.getBookings();
 
     if (mounted) {
       setState(() {
         _isLoading = false;
-        if (result['success'] == true) {
-          _facilities = result['data'] ?? [];
+        if (facilityRes['success'] == true) {
+          _facilities = facilityRes['data'] ?? [];
         } else {
-          _errorMessage = result['message'];
+          _errorMessage = facilityRes['message'];
+        }
+
+        if (bookingRes['success'] == true) {
+          _bookings = bookingRes['data'] ?? [];
         }
       });
     }
@@ -68,12 +74,12 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: _loadFacilities,
+            onPressed: _loadData,
           ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadFacilities,
+        onRefresh: _loadData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
@@ -138,7 +144,7 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'Reserve swimming pools, gyms, and sports courts.',
+                      'Instant booking confirmation if spots are available.',
                       style: TextStyle(
                         color: Color(0xFFD5DADF),
                         fontSize: 13,
@@ -202,7 +208,9 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                   itemCount: _facilities.length,
                   itemBuilder: (context, index) {
                     final facility = _facilities[index];
-                    return _buildFacilityCard(context, facility);
+                    final facilityId = facility['id'] ?? facility['facilityId'];
+                    final totalBookings = _bookings.where((b) => b['facilityId'] == facilityId).length;
+                    return _buildFacilityCard(context, facility, totalBookings);
                   },
                 ),
             ],
@@ -212,7 +220,7 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
     );
   }
 
-  Widget _buildFacilityCard(BuildContext context, dynamic facility) {
+  Widget _buildFacilityCard(BuildContext context, dynamic facility, int totalBookings) {
     final name = facility['name'] ?? 'Facility';
     final description = facility['description'] ?? 'No description';
     final capacity = facility['capacity'] ?? 0;
@@ -280,19 +288,56 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            // Bookings Count Badge Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.bookmark_added_rounded, size: 16, color: Color(0xFF059669)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Resident Bookings: $totalBookings total',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0f172a),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'Cap: $capacity',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF059669),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const Divider(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.people_alt_outlined, size: 16, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Cap: $capacity',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    const SizedBox(width: 14),
                     const Icon(Icons.access_time_rounded, size: 16, color: Colors.grey),
                     const SizedBox(width: 4),
                     Text(
@@ -302,13 +347,17 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                   ],
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: () async {
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => BookFacilityScreen(facility: facility),
+                        builder: (context) => BookFacilityScreen(
+                          facility: facility,
+                          totalBookings: totalBookings,
+                        ),
                       ),
                     );
+                    _loadData();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF17212B),
@@ -318,7 +367,7 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   ),
-                  child: const Text('Book Now', style: TextStyle(fontSize: 13)),
+                  child: const Text('Book Spot', style: TextStyle(fontSize: 13)),
                 ),
               ],
             ),

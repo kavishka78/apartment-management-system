@@ -59,17 +59,27 @@ namespace ApartmentManagement.Api.Controllers
                 ? dto.BookingDate.Date
                 : DateTime.SpecifyKind(dto.BookingDate.Date, DateTimeKind.Utc);
 
-            // Check for Double Bookings
-            var hasConflicts = await _context.FacilityBookings.AnyAsync(b =>
+            // 1. Validate Past Date & Time
+            var bookingStartDateTime = bookingDateUtc.Add(dto.StartTime);
+            if (bookingStartDateTime < DateTime.UtcNow.AddMinutes(-5))
+            {
+                return BadRequest("Cannot book a facility for a past date or time.");
+            }
+
+            // 2. Check Capacity & Existing Bookings Count
+            var activeBookingsCount = await _context.FacilityBookings.CountAsync(b =>
                 b.FacilityId == dto.FacilityId &&
                 b.BookingDate.Date == bookingDateUtc &&
                 b.Status != BookingStatus.Rejected &&
                 ((dto.StartTime < b.EndTime) && (dto.EndTime > b.StartTime))
             );
 
-            if(hasConflicts)
-                return Conflict("The Facility is Already Booked for the Selected Time.");
+            if (activeBookingsCount >= facility.Capacity)
+            {
+                return Conflict($"Facility capacity limit reached ({activeBookingsCount}/{facility.Capacity} spots taken) for the selected time slot.");
+            }
 
+            // 3. Auto-Confirm Booking (No manual approval needed if spots are available)
             var booking = new FacilityBooking
             {
                 FacilityId = dto.FacilityId,
@@ -77,13 +87,13 @@ namespace ApartmentManagement.Api.Controllers
                 BookingDate = bookingDateUtc,
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
-                Status = BookingStatus.Pending
+                Status = BookingStatus.Approved
             };
 
             _context.FacilityBookings.Add(booking);
             await _context.SaveChangesAsync();
 
-            return StatusCode(201, "Booking Request Submitted Successfully.");
+            return StatusCode(201, new { Message = "Booking confirmed! Spot reserved successfully.", BookingId = booking.BookingId });
         }
 
 
