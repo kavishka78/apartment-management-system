@@ -52,8 +52,23 @@ export async function getActiveVisitors() {
   return request("/visitors/active");
 }
 
+export async function getAllVisitors() {
+  return request("/visitors");
+}
+
+export async function updateVisitor(id, data) {
+  return request(`/visitors/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function cancelVisitor(id) {
+  return request(`/visitors/${id}/cancel`, { method: "POST" });
+}
+
 export async function checkInVisitor(id, accessCode) {
-  return request(`/visitors/${id}/check-in?accessCode=${accessCode}`, {
+  return request(`/visitors/${id}/check-in${accessCode ? `?accessCode=${accessCode}` : ""}`, {
     method: "POST",
   });
 }

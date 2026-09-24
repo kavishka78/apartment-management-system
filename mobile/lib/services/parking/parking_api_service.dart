@@ -83,4 +83,34 @@ class ParkingApiService {
       return {'success': false, 'message': 'Cannot connect to server: $e'};
     }
   }
+
+  // =========================================================
+  // CANCEL VISITOR PASS
+  // =========================================================
+  static Future<Map<String, dynamic>> cancelVisitorPass(int passId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/visitors/$passId/cancel'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      debugPrint('CANCEL VISITOR STATUS: ${response.statusCode}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        return {
+          'success': true,
+          'message': decoded['message'] ?? 'Visitor pass cancelled successfully!',
+        };
+      }
+
+      return {
+        'success': false,
+        'message': 'Failed to cancel visitor pass (${response.statusCode})',
+      };
+    } catch (e) {
+      debugPrint('CANCEL VISITOR ERROR: $e');
+      return {'success': false, 'message': 'Cannot connect to server: $e'};
+    }
+  }
 }

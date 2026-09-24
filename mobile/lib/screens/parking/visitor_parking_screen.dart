@@ -81,6 +81,50 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
     }
   }
 
+  Future<void> _cancelVisitorPass(int passId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Visitor Pass?'),
+        content: const Text(
+          'Are you sure you want to cancel this visitor pass? Any assigned parking slot will be released.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Yes, Cancel', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final res = await ParkingApiService.cancelVisitorPass(passId);
+      if (mounted) {
+        if (res['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Visitor pass cancelled and parking spot released.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _loadActiveVisitors();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res['message'] ?? 'Failed to cancel pass'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   void _showPassDialog(String code) {
     showDialog(
       context: context,
@@ -138,6 +182,12 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: const Color(0xFF17212B),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _loadActiveVisitors,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -279,6 +329,7 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                 itemCount: _activeVisitors.length,
                 itemBuilder: (context, index) {
                   final v = _activeVisitors[index];
+                  final passId = v['id'] ?? v['passId'];
                   final name = v['visitorName'] ?? 'Visitor';
                   final vehicle = v['vehicleNumber'] ?? 'No vehicle';
                   final code = v['accessCode'] ?? '—';
@@ -289,30 +340,79 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: const Color(0xFFE8ECEF)),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                            const SizedBox(height: 2),
-                            Text('Vehicle: $vehicle | Code: $code', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Vehicle: $vehicle | Code: $code',
+                                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: slot != 'Unassigned' ? const Color(0xFFEFF6FF) : const Color(0xFFF3F4F6),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: slot != 'Unassigned' ? const Color(0xFFBFDBFE) : const Color(0xFFE5E7EB),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.local_parking_rounded,
+                                    size: 16,
+                                    color: slot != 'Unassigned' ? const Color(0xFF2563EB) : Colors.grey,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    slot != 'Unassigned' ? 'Slot: $slot' : 'No Slot',
+                                    style: TextStyle(
+                                      color: slot != 'Unassigned' ? const Color(0xFF1E40AF) : Colors.grey,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Slot: $slot',
-                            style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold, fontSize: 12),
-                          ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () => _cancelVisitorPass(passId),
+                              icon: const Icon(Icons.cancel_outlined, size: 16, color: Colors.red),
+                              label: const Text(
+                                'Cancel Pass',
+                                style: TextStyle(color: Colors.red, fontSize: 12),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Color(0xFFFECACA)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
