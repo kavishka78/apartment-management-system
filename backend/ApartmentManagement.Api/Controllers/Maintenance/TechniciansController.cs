@@ -38,6 +38,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                 t.ContactInformation,
                 t.Skills,
                 t.Status,
+                t.PhotoBase64,
                 ActiveWorkload = workloads.ContainsKey(t.Id) ? workloads[t.Id] : 0
             });
 
