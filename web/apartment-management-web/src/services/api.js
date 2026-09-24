@@ -41,6 +41,12 @@ export async function updateFacility(id, data) {
   });
 }
 
+export async function toggleFacilityStatus(id) {
+  return request(`/facilities/${id}/toggle-status`, {
+    method: "PATCH",
+  });
+}
+
 // ─── Visitors ────────────────────────────────────────────────
 export async function getActiveVisitors() {
   return request("/visitors/active");

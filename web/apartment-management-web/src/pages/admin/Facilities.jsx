@@ -4,6 +4,7 @@ import {
   getFacilities,
   createFacility,
   updateFacility,
+  toggleFacilityStatus,
 } from "../../services/api";
 import "./Facilities.css";
 
@@ -13,6 +14,7 @@ const EMPTY_FORM = {
   capacity: "",
   openTime: "08:00",
   closeTime: "22:00",
+  isActive: true,
 };
 
 export default function Facilities() {
@@ -61,6 +63,7 @@ export default function Facilities() {
       capacity: String(facility.capacity),
       openTime: facility.openTime?.substring(0, 5) || "08:00",
       closeTime: facility.closeTime?.substring(0, 5) || "22:00",
+      isActive: facility.isActive,
     });
     setShowModal(true);
   }
@@ -72,7 +75,17 @@ export default function Facilities() {
   }
 
   function handleChange(e) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    setForm((prev) => ({ ...prev, [e.target.name]: value }));
+  }
+
+  async function handleToggleStatus(facility) {
+    try {
+      await toggleFacilityStatus(facility.id);
+      await load();
+    } catch (err) {
+      alert("Failed to toggle status: " + err.message);
+    }
   }
 
   async function handleSubmit(e) {
@@ -85,6 +98,7 @@ export default function Facilities() {
         capacity: parseInt(form.capacity, 10),
         openTime: form.openTime + ":00",
         closeTime: form.closeTime + ":00",
+        isActive: form.isActive,
       };
 
       if (editing) {
@@ -166,12 +180,22 @@ export default function Facilities() {
                         </span>
                       </td>
                       <td>
-                        <button
-                          className="admin-btn admin-btn--secondary admin-btn--sm"
-                          onClick={() => openEdit(f)}
-                        >
-                          Edit
-                        </button>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            className="admin-btn admin-btn--secondary admin-btn--sm"
+                            onClick={() => openEdit(f)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className={`admin-btn admin-btn--sm ${
+                              f.isActive ? "admin-btn--danger" : "admin-btn--success"
+                            }`}
+                            onClick={() => handleToggleStatus(f)}
+                          >
+                            {f.isActive ? "Deactivate" : "Activate"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -252,6 +276,18 @@ export default function Facilities() {
                     onChange={handleChange}
                   />
                 </div>
+              </div>
+
+              <div className="form-group" style={{ marginTop: "12px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={form.isActive}
+                    onChange={handleChange}
+                  />
+                  <span>Active Facility</span>
+                </label>
               </div>
 
               <div className="form-actions">
