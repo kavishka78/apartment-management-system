@@ -137,6 +137,11 @@ namespace ApartmentManagement.Api.Controllers
             {
                 visitor.Status = parsedStatus;
 
+                if (parsedStatus == PassStatus.CheckedIn && !visitor.CheckInTime.HasValue)
+                {
+                    visitor.CheckInTime = DateTime.UtcNow;
+                }
+
                 // If Status is set to CheckedOut or Cancelled, free any assigned parking slot
                 if (parsedStatus == PassStatus.CheckedOut || parsedStatus == PassStatus.Cancelled)
                 {

@@ -221,7 +221,9 @@ export default function VisitorLogs() {
                           <button
                             className="admin-btn admin-btn--secondary admin-btn--sm"
                             onClick={() => openEditModal(v)}
-                            title="Edit Visitor & Assign Slot"
+                            disabled={v.status === "Cancelled"}
+                            style={v.status === "Cancelled" ? { opacity: 0.45, cursor: "not-allowed" } : {}}
+                            title={v.status === "Cancelled" ? "Cancelled by resident" : "Edit Visitor & Assign Slot"}
                           >
                             ✏️ Edit
                           </button>
@@ -273,64 +275,59 @@ export default function VisitorLogs() {
             </h3>
 
             <form onSubmit={handleSaveEdit}>
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600" }}>
-                  Visitor Name
-                </label>
-                <input
-                  type="text"
-                  className="admin-input"
-                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db" }}
-                  value={editForm.visitorName}
-                  onChange={(e) => setEditForm({ ...editForm, visitorName: e.target.value })}
-                  required
-                />
+              <div style={{ marginBottom: "14px", padding: "12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "2px" }}>Visitor & Vehicle</div>
+                <div style={{ fontWeight: "700", fontSize: "14px", color: "#0f172a" }}>
+                  {editingVisitor.visitorName} ({editingVisitor.vehicleNumber || "No vehicle"})
+                </div>
               </div>
 
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600" }}>
-                  Vehicle Number
-                </label>
-                <input
-                  type="text"
-                  className="admin-input"
-                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db" }}
-                  placeholder="e.g. WP CAA-1234"
-                  value={editForm.vehicleNumber}
-                  onChange={(e) => setEditForm({ ...editForm, vehicleNumber: e.target.value })}
-                />
-              </div>
-
-              <div style={{ marginBottom: "14px" }}>
+              <div style={{ marginBottom: "16px" }}>
                 <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600" }}>
                   Assign Visitor Parking Slot
                 </label>
-                <select
-                  className="admin-input"
-                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db" }}
-                  value={editForm.assignedParkingSlotId}
-                  onChange={(e) => setEditForm({ ...editForm, assignedParkingSlotId: e.target.value })}
-                >
-                  <option value="">-- No Slot / Auto Assign --</option>
-                  {visitorSlots.map((slot) => (
-                    <option key={slot.slotId} value={slot.slotId}>
-                      {slot.slotNumber} ({slot.isAvailable ? "Available" : "Occupied"})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600" }}>
-                  Check-In Time
-                </label>
-                <input
-                  type="datetime-local"
-                  className="admin-input"
-                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db" }}
-                  value={editForm.checkInTime}
-                  onChange={(e) => setEditForm({ ...editForm, checkInTime: e.target.value })}
-                />
+                {(() => {
+                  const hasVehicle = editingVisitor.vehicleNumber && editingVisitor.vehicleNumber.trim().length > 0;
+                  return (
+                    <>
+                      <select
+                        className="admin-input"
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid #d1d5db",
+                          opacity: hasVehicle ? 1 : 0.5,
+                          cursor: hasVehicle ? "default" : "not-allowed",
+                        }}
+                        value={editForm.assignedParkingSlotId}
+                        onChange={(e) => setEditForm({ ...editForm, assignedParkingSlotId: e.target.value })}
+                        disabled={!hasVehicle}
+                      >
+                        <option value="">-- No Slot Assigned --</option>
+                        {visitorSlots.map((slot) => {
+                          const isCurrentSlot = slot.slotId === editingVisitor.assignedParkingSlotId;
+                          const isOccupied = !slot.isAvailable && !isCurrentSlot;
+                          return (
+                            <option
+                              key={slot.slotId}
+                              value={slot.slotId}
+                              disabled={isOccupied}
+                              style={isOccupied ? { color: "#9ca3af" } : {}}
+                            >
+                              {slot.slotNumber} {isOccupied ? "(Occupied)" : slot.isAvailable ? "(Available)" : "(Currently Assigned)"}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {!hasVehicle && (
+                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
+                          ⚠️ Visitor has no registered vehicle. Parking slot assignment disabled.
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               <div style={{ marginBottom: "20px" }}>
@@ -344,9 +341,8 @@ export default function VisitorLogs() {
                   onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                 >
                   <option value="Pending">Pending</option>
-                  <option value="CheckedIn">Checked In</option>
+                  <option value="CheckedIn">Checked In (Auto-sets current check-in time)</option>
                   <option value="CheckedOut">Checked Out</option>
-                  <option value="Cancelled">Cancelled</option>
                 </select>
               </div>
 
