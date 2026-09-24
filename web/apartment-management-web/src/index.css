@@ -22,3 +22,6 @@ select {
 
 @media print { .payment-sidebar { display: none !important; } .payment-content { margin-left: 0 !important; width: 100% !important; padding: 20px !important; } .primary-btn { display: none !important; } }
 
+
+@media print { .recharts-responsive-container { width: 500px !important; height: 300px !important; min-width: 500px !important; } .dashboard-panel { break-inside: avoid; } .view-btn, .action-btn-dark, button { display: none !important; } .payment-table th:last-child, .payment-table td:last-child { display: none !important; } }
+

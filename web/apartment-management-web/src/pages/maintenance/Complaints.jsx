@@ -60,6 +60,9 @@ function Complaints() {
               View and manage all resident complaints.
             </p>
           </div>
+          <button onClick={() => window.print()} style={{ alignSelf: 'center', height: 'fit-content', padding: '10px 24px', border: 'none', borderRadius: '50px', background: '#000', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'opacity 0.2s' }} onMouseOver={(e) => e.target.style.opacity = '0.8'} onMouseOut={(e) => e.target.style.opacity = '1'}>
+            Download PDF
+          </button>
         </header>
         
         <section className="dashboard-panel">
