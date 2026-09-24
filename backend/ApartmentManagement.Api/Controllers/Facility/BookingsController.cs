@@ -54,10 +54,15 @@ namespace ApartmentManagement.Api.Controllers
             if (dto.StartTime < facility.OpenTime || dto.EndTime > facility.CloseTime)
                 return BadRequest("Booking Time is Outside Facility Operating Hours");
 
+            // Ensure UTC DateTime for PostgreSQL Npgsql compatibility
+            var bookingDateUtc = dto.BookingDate.Kind == DateTimeKind.Utc
+                ? dto.BookingDate.Date
+                : DateTime.SpecifyKind(dto.BookingDate.Date, DateTimeKind.Utc);
+
             // Check for Double Bookings
             var hasConflicts = await _context.FacilityBookings.AnyAsync(b =>
                 b.FacilityId == dto.FacilityId &&
-                b.BookingDate.Date == dto.BookingDate.Date &&
+                b.BookingDate.Date == bookingDateUtc &&
                 b.Status != BookingStatus.Rejected &&
                 ((dto.StartTime < b.EndTime) && (dto.EndTime > b.StartTime))
             );
@@ -69,7 +74,7 @@ namespace ApartmentManagement.Api.Controllers
             {
                 FacilityId = dto.FacilityId,
                 ResidentId = dto.ResidentId,
-                BookingDate = dto.BookingDate.Date,
+                BookingDate = bookingDateUtc,
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
                 Status = BookingStatus.Pending

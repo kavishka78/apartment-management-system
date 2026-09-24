@@ -47,13 +47,17 @@ namespace ApartmentManagement.Api.Controllers
             // Generate a code for the QR generator
             var accessCode = Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper();
 
+            var arrivalUtc = dto.ExpectedArrival.Kind == DateTimeKind.Utc
+                ? dto.ExpectedArrival
+                : DateTime.SpecifyKind(dto.ExpectedArrival, DateTimeKind.Utc);
+
             var visitorPass = new VisitorPass
             {
                 ResidentId = dto.ResidentId,
                 VisitorName = dto.VisitorName,
                 PhoneNumber = dto.PhoneNumber,
                 VehicleNumber = dto.VehicleNumber,
-                ExpectedArrival = dto.ExpectedArrival,
+                ExpectedArrival = arrivalUtc,
                 AccessCode = accessCode,
                 Status = PassStatus.Pending
             };
