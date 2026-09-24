@@ -15,6 +15,8 @@ function TechniciansList() {
   const [showModal, setShowModal] = useState(false);
   const [editingTech, setEditingTech] = useState(null);
   const [formData, setFormData] = useState({ name: '', contactInformation: '', skills: '', status: 'Available' });
+  const [availableSkills, setAvailableSkills] = useState(['Plumbing', 'Electrical', 'HVAC', 'Carpentry', 'General', 'Appliances', 'Painting']);
+  const [newSkill, setNewSkill] = useState('');
 
   const fetchTechs = () => {
     setLoading(true);
@@ -48,6 +50,19 @@ function TechniciansList() {
       skills: tech.skills, 
       status: tech.status 
     });
+    
+    // Add any custom skills they have to the available list
+    if (tech.skills) {
+      const currentSkills = tech.skills.split(',').map(s => s.trim()).filter(s => s);
+      setAvailableSkills(prev => {
+        const updated = [...prev];
+        currentSkills.forEach(s => {
+          if (!updated.includes(s)) updated.push(s);
+        });
+        return updated;
+      });
+    }
+    
     setShowModal(true);
   };
 
@@ -233,13 +248,14 @@ function TechniciansList() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700', color: '#68727c', marginBottom: '12px' }}>Skills & Expertise</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {['Plumbing', 'Electrical', 'HVAC', 'Carpentry', 'General', 'Appliances', 'Painting'].map(skill => {
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                    {availableSkills.map(skill => {
                       const isSelected = formData.skills.includes(skill);
                       return (
                         <button 
                           key={skill}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
                             let currentSkills = formData.skills.split(',').map(s => s.trim()).filter(s => s);
                             if (isSelected) currentSkills = currentSkills.filter(s => s !== skill);
                             else currentSkills.push(skill);
@@ -251,6 +267,44 @@ function TechniciansList() {
                         </button>
                       );
                     })}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      type="text" 
+                      value={newSkill} 
+                      onChange={e => setNewSkill(e.target.value)} 
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (newSkill.trim() && !availableSkills.includes(newSkill.trim())) {
+                            const skill = newSkill.trim();
+                            setAvailableSkills([...availableSkills, skill]);
+                            let currentSkills = formData.skills.split(',').map(s => s.trim()).filter(s => s);
+                            if (!currentSkills.includes(skill)) currentSkills.push(skill);
+                            setFormData({...formData, skills: currentSkills.join(', ')});
+                            setNewSkill('');
+                          }
+                        }
+                      }}
+                      placeholder="Add custom skill..." 
+                      style={{ padding: '8px 16px', borderRadius: '50px', border: '1px solid #e0e0e0', fontSize: '13px', outline: 'none', flex: 1 }}
+                    />
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (newSkill.trim() && !availableSkills.includes(newSkill.trim())) {
+                          const skill = newSkill.trim();
+                          setAvailableSkills([...availableSkills, skill]);
+                          let currentSkills = formData.skills.split(',').map(s => s.trim()).filter(s => s);
+                          if (!currentSkills.includes(skill)) currentSkills.push(skill);
+                          setFormData({...formData, skills: currentSkills.join(', ')});
+                          setNewSkill('');
+                        }
+                      }}
+                      style={{ padding: '8px 16px', borderRadius: '50px', border: 'none', background: '#17212b', color: '#fff', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+                    >
+                      Add
+                    </button>
                   </div>
                 </div>
 

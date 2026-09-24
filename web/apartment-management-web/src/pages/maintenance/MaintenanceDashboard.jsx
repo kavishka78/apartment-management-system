@@ -14,7 +14,7 @@ function MaintenanceDashboard() {
     ])
     .then(([reportData, maintenanceData]) => {
       setReport(reportData);
-      setRecentComplaints(maintenanceData.slice(0, 5));
+      setRecentComplaints(maintenanceData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5));
       setLoading(false);
     })
     .catch(err => {
