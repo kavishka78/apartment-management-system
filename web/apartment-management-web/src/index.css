@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap");
 
 html {
   scroll-behavior: smooth;
@@ -8,7 +8,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  font-family: "Inter", Arial, sans-serif;
+  font-family: "Montserrat", Arial, sans-serif;
 }
 
 button,
@@ -17,3 +17,8 @@ textarea,
 select {
   font-family: inherit;
 }
+.logo-img { height: 48px; width: auto; object-fit: contain; }
+
+
+@media print { .payment-sidebar { display: none !important; } .payment-content { margin-left: 0 !important; width: 100% !important; padding: 20px !important; } .primary-btn { display: none !important; } }
+

@@ -16,6 +16,9 @@ builder.Services.AddControllers()
             System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 
+builder.Services.AddHttpClient<ApartmentManagement.Api.Services.IMaintenanceTriageService, ApartmentManagement.Api.Services.MaintenanceTriageClient>();
+builder.Services.AddHostedService<ApartmentManagement.Api.Services.SlaEscalationService>();
+
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -41,6 +44,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseStaticFiles();
 
 app.UseCors("ReactApp");
 
