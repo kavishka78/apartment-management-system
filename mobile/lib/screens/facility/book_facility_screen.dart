@@ -94,7 +94,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
       _endTime.minute,
     );
 
-    // 1. Time Validation: Check if start time is in the past
+    // Time Validation: Check if start time is in the past
     if (startDateTime.isBefore(now.subtract(const Duration(minutes: 5)))) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -105,7 +105,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
       return;
     }
 
-    // 2. Time Validation: End time must be after start time
+    // Time Validation: End time must be after start time
     if (!endDateTime.isAfter(startDateTime)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -135,7 +135,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
       if (result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('🎉 Booking Confirmed! Your spot is reserved.'),
+            content: Text('Booking Confirmed! Your spot is reserved.'),
             backgroundColor: Colors.green,
           ),
         );

@@ -42,7 +42,7 @@ namespace ApartmentManagement.Api.Controllers
             return Ok(passes);
         }
 
-        // Get Active Visitors for Security / App Dashboard
+        // Get Active Visitors / App Dashboard
         [HttpGet("active")]
         public async Task<ActionResult<IEnumerable<VisitorPassResponseDto>>> GetActiveVisitors()
         {
@@ -197,7 +197,7 @@ namespace ApartmentManagement.Api.Controllers
             return Ok(new { Message = "Visitor pass updated successfully." });
         }
 
-        // Security / Admin Check In
+        // Staff / Admin Check In
         [HttpPost("{id}/check-in")]
         public async Task<IActionResult> CheckInVisitor(int id, [FromQuery] string? accessCode)
         {
@@ -239,7 +239,7 @@ namespace ApartmentManagement.Api.Controllers
             });
         }
 
-        // Security / Admin Check Out
+        // Staff / Admin Check Out
         [HttpPost("{id}/check-out")]
         public async Task<IActionResult> CheckOutVisitor(int id)
         {

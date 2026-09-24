@@ -16,7 +16,7 @@ namespace ApartmentManagement.Api.Controllers
             _context = context;
         }
 
-        // GET: api/parkingslots
+        // GET
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ParkingSlot>>> GetParkingSlots()
         {
@@ -44,7 +44,7 @@ namespace ApartmentManagement.Api.Controllers
             return Ok(slots);
         }
 
-        // GET: api/parkingslots/visitor
+        
         [HttpGet("visitor")]
         public async Task<ActionResult<IEnumerable<ParkingSlot>>> GetVisitorParkingSlots()
         {
@@ -56,7 +56,7 @@ namespace ApartmentManagement.Api.Controllers
             return Ok(visitorSlots);
         }
 
-        // POST: api/parkingslots
+        
         [HttpPost]
         public async Task<ActionResult<ParkingSlot>> CreateParkingSlot(ParkingSlot slot)
         {
@@ -65,7 +65,7 @@ namespace ApartmentManagement.Api.Controllers
             return CreatedAtAction(nameof(GetParkingSlots), new { id = slot.SlotId }, slot);
         }
 
-        // PUT: api/parkingslots/{id}
+        
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateParkingSlot(int id, ParkingSlot slot)
         {

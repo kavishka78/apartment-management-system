@@ -59,14 +59,14 @@ namespace ApartmentManagement.Api.Controllers
                 ? dto.BookingDate.Date
                 : DateTime.SpecifyKind(dto.BookingDate.Date, DateTimeKind.Utc);
 
-            // 1. Validate Past Date & Time
+            // Validate Past Date & Time
             var bookingStartDateTime = bookingDateUtc.Add(dto.StartTime);
             if (bookingStartDateTime < DateTime.UtcNow.AddMinutes(-5))
             {
                 return BadRequest("Cannot book a facility for a past date or time.");
             }
 
-            // 2. Check Capacity & Existing Bookings Count
+            // Check Capacity & Existing Bookings Count
             var activeBookingsCount = await _context.FacilityBookings.CountAsync(b =>
                 b.FacilityId == dto.FacilityId &&
                 b.BookingDate.Date == bookingDateUtc &&
@@ -79,7 +79,7 @@ namespace ApartmentManagement.Api.Controllers
                 return Conflict($"Facility capacity limit reached ({activeBookingsCount}/{facility.Capacity} spots taken) for the selected time slot.");
             }
 
-            // 3. Auto-Confirm Booking (No manual approval needed if spots are available)
+            // Auto-Confirm Booking
             var booking = new FacilityBooking
             {
                 FacilityId = dto.FacilityId,

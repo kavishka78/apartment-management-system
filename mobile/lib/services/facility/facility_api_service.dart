@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -6,9 +7,7 @@ class FacilityApiService {
   // Use 10.0.2.2 for Android Emulator, localhost for iOS/Web
   static const String baseUrl = 'http://10.0.2.2:5073/api';
 
-  // =========================================================
   // GET ALL FACILITIES
-  // =========================================================
   static Future<Map<String, dynamic>> getFacilities() async {
     try {
       final response = await http.get(
@@ -33,9 +32,7 @@ class FacilityApiService {
     }
   }
 
-  // =========================================================
   // GET ALL BOOKINGS FOR RESIDENT
-  // =========================================================
   static Future<Map<String, dynamic>> getBookings() async {
     try {
       final response = await http.get(
@@ -60,15 +57,13 @@ class FacilityApiService {
     }
   }
 
-  // =========================================================
   // CREATE A FACILITY BOOKING
-  // =========================================================
   static Future<Map<String, dynamic>> createBooking({
     required int facilityId,
     required int residentId,
     required DateTime bookingDate,
     required String startTime, // Format "HH:mm:ss"
-    required String endTime,   // Format "HH:mm:ss"
+    required String endTime, // Format "HH:mm:ss"
   }) async {
     try {
       final response = await http.post(

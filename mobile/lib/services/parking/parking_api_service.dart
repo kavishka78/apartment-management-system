@@ -1,13 +1,12 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ParkingApiService {
   static const String baseUrl = 'http://10.0.2.2:5073/api';
 
-  // =========================================================
   // GET ACTIVE VISITORS / PASSES
-  // =========================================================
   static Future<Map<String, dynamic>> getActiveVisitors() async {
     try {
       final response = await http.get(
@@ -32,9 +31,7 @@ class ParkingApiService {
     }
   }
 
-  // =========================================================
   // PRE-REGISTER VISITOR & REQUEST PARKING
-  // =========================================================
   static Future<Map<String, dynamic>> preRegisterVisitor({
     required int residentId,
     required String visitorName,
@@ -63,7 +60,8 @@ class ParkingApiService {
         return {
           'success': true,
           'accessCode': decoded['accessCode'] ?? decoded['AccessCode'],
-          'message': decoded['message'] ?? 'Visitor pass pre-registered successfully!',
+          'message':
+              decoded['message'] ?? 'Visitor pass pre-registered successfully!',
         };
       }
 
@@ -84,9 +82,7 @@ class ParkingApiService {
     }
   }
 
-  // =========================================================
   // CANCEL VISITOR PASS
-  // =========================================================
   static Future<Map<String, dynamic>> cancelVisitorPass(int passId) async {
     try {
       final response = await http.post(
@@ -100,7 +96,8 @@ class ParkingApiService {
         final decoded = jsonDecode(response.body);
         return {
           'success': true,
-          'message': decoded['message'] ?? 'Visitor pass cancelled successfully!',
+          'message':
+              decoded['message'] ?? 'Visitor pass cancelled successfully!',
         };
       }
 
