@@ -1,4 +1,4 @@
-﻿import "./App.css";
+import "./App.css";
 import apartmentHero from "./assets/apartment-hero2.jpg";
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
@@ -56,6 +56,7 @@ function App() {
       <nav className={`navbar${isOverHero ? " navbar--hero" : ""}`}>
         <div className="logo">
           <img src="/logo.png" alt="ApartmentHub" className="logo-img" />
+          <span>ApartmentHub</span>
         </div>
 
         <div className="nav-links">
