@@ -106,14 +106,16 @@ export async function reviseWorkflow(id, data) {
 // ─── Dashboard Aggregates ────────────────────────────────────
 export async function getDashboardStats() {
   // We aggregate from multiple endpoints
-  const [facilities, visitors] = await Promise.allSettled([
+  const [facilities, visitors, bookings] = await Promise.allSettled([
     getFacilities(),
     getActiveVisitors(),
+    getBookings(),
   ]);
 
   const facilitiesData =
     facilities.status === "fulfilled" ? facilities.value : [];
   const visitorsData = visitors.status === "fulfilled" ? visitors.value : [];
+  const bookingsData = bookings.status === "fulfilled" ? bookings.value : [];
 
   const checkedIn = visitorsData.filter(
     (v) => v.status === "CheckedIn"
@@ -127,7 +129,9 @@ export async function getDashboardStats() {
     currentVisitors: checkedIn,
     totalVisitors: visitorsData.length,
     visitorsWithParking: withParking,
+    totalBookings: bookingsData.length,
     facilities: facilitiesData,
     visitors: visitorsData,
+    bookings: bookingsData,
   };
 }

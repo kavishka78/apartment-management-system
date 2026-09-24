@@ -17,6 +17,28 @@ namespace ApartmentManagement.Api.Controllers
             _context = context;
         }
 
+        // Get All Bookings
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookings()
+        {
+            var bookings = await _context.FacilityBookings
+                .Include(b => b.Facility)
+                .OrderByDescending(b => b.BookingDate)
+                .Select(b => new BookingResponseDto
+                {
+                    Id = b.BookingId,
+                    FacilityId = b.FacilityId,
+                    FacilityName = b.Facility != null ? b.Facility.FacilityName : "Unknown",
+                    ResidentId = b.ResidentId,
+                    BookingDate = b.BookingDate,
+                    StartTime = b.StartTime,
+                    EndTime = b.EndTime,
+                    Status = b.Status.ToString()
+                }).ToListAsync();
+
+            return Ok(bookings);
+        }
+
         // Create a Booking For A Facility
         [HttpPost]
         public async Task<ActionResult<BookingResponseDto>> CreateBooking(CreateBookingDto dto)

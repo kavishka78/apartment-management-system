@@ -19,14 +19,14 @@ const KPI_ICONS = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
     </svg>
   ),
+  bookings: (
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
   visitors: (
     <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
       <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  ),
-  parking: (
-    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h4a4 4 0 010 8H8V7zm0 0V5m0 2v10m0-10H6m2 10H6m2 0v2" />
     </svg>
   ),
   ai: (
@@ -71,18 +71,18 @@ export default function Overview() {
       bg: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)",
     },
     {
-      label: "Visitors Checked-In",
-      value: stats?.currentVisitors ?? "—",
-      icon: KPI_ICONS.visitors,
-      color: "#10b981",
+      label: "Resident Bookings",
+      value: stats?.totalBookings ?? "0",
+      icon: KPI_ICONS.bookings,
+      color: "#059669",
       bg: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
     },
     {
-      label: "Visitors with Parking",
-      value: stats?.visitorsWithParking ?? "—",
-      icon: KPI_ICONS.parking,
-      color: "#f59e0b",
-      bg: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+      label: "Visitors Checked-In",
+      value: stats?.currentVisitors ?? "—",
+      icon: KPI_ICONS.visitors,
+      color: "#3b82f6",
+      bg: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
     },
     {
       label: "Pending AI Workflows",
@@ -93,11 +93,18 @@ export default function Overview() {
     },
   ];
 
-  // Build chart data from facilities
-  const chartData = (stats?.facilities || []).map((f) => ({
-    name: f.name,
-    capacity: f.capacity,
-  }));
+  // Build chart data comparing facility capacity with total resident bookings per facility
+  const chartData = (stats?.facilities || []).map((f) => {
+    const bookingCount = (stats?.bookings || []).filter(
+      (b) => b.facilityId === f.id || b.facilityName?.toLowerCase() === f.name?.toLowerCase()
+    ).length;
+
+    return {
+      name: f.name,
+      capacity: f.capacity,
+      bookings: bookingCount,
+    };
+  });
 
   if (loading) {
     return (
@@ -111,7 +118,7 @@ export default function Overview() {
     <div id="overview-page">
       <Header
         title="Overview Dashboard"
-        subtitle="Real-time snapshot of facilities, visitors and AI workflows."
+        subtitle="Real-time snapshot of facilities, resident bookings, visitors and AI workflows."
       />
 
       {error && (
@@ -137,13 +144,13 @@ export default function Overview() {
         ))}
       </section>
 
-      {/* Facility Usage Chart */}
+      {/* Facility Usage & Bookings Chart */}
       <section className="admin-card overview-chart-card" id="facility-chart">
         <div className="chart-header">
           <div>
-            <h3 className="chart-title">Facility Capacity Overview</h3>
+            <h3 className="chart-title">Facility Capacity vs. Resident Bookings</h3>
             <p className="chart-subtitle">
-              Maximum capacity per active facility
+              Comparison of maximum capacity and resident bookings per facility
             </p>
           </div>
         </div>
@@ -156,7 +163,7 @@ export default function Overview() {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={340}>
-            <BarChart data={chartData} barSize={40} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <BarChart data={chartData} barSize={32} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f5" />
               <XAxis
                 dataKey="name"
@@ -182,18 +189,86 @@ export default function Overview() {
               <Bar
                 dataKey="capacity"
                 name="Capacity"
-                fill="url(#barGradient)"
-                radius={[8, 8, 0, 0]}
+                fill="url(#capGradient)"
+                radius={[6, 6, 0, 0]}
+              />
+              <Bar
+                dataKey="bookings"
+                name="Resident Bookings"
+                fill="url(#bookingGradient)"
+                radius={[6, 6, 0, 0]}
               />
               <defs>
-                <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="capGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#6366f1" />
                   <stop offset="100%" stopColor="#8b5cf6" />
+                </linearGradient>
+                <linearGradient id="bookingGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#059669" />
                 </linearGradient>
               </defs>
             </BarChart>
           </ResponsiveContainer>
         )}
+      </section>
+
+      {/* Resident Bookings Table */}
+      <section className="admin-card" style={{ marginTop: "24px" }} id="resident-bookings-section">
+        <div style={{ padding: "20px 24px", borderBottom: "1px solid #e5e7eb" }}>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#1f2937", margin: 0 }}>
+            Recent Resident Facility Bookings
+          </h3>
+          <p style={{ fontSize: "0.875rem", color: "#6b7280", margin: "4px 0 0 0" }}>
+            List of facility reservations requested by residents
+          </p>
+        </div>
+
+        <div className="admin-table-wrap">
+          <table className="admin-table" id="bookings-table">
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Facility</th>
+                <th>Resident ID</th>
+                <th>Booking Date</th>
+                <th>Time Slot</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(!stats?.bookings || stats.bookings.length === 0) ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: "center", padding: "32px 0", color: "#9ca3af" }}>
+                    No resident bookings recorded yet.
+                  </td>
+                </tr>
+              ) : (
+                stats.bookings.map((b) => (
+                  <tr key={b.id}>
+                    <td>#{b.id}</td>
+                    <td>
+                      <span className="facility-name">{b.facilityName || `Facility #${b.facilityId}`}</span>
+                    </td>
+                    <td>Resident #{b.residentId}</td>
+                    <td>{new Date(b.bookingDate).toLocaleDateString()}</td>
+                    <td>
+                      {b.startTime?.substring(0, 5)} - {b.endTime?.substring(0, 5)}
+                    </td>
+                    <td>
+                      <span className={`badge ${
+                        b.status === "Approved" ? "badge--success" :
+                        b.status === "Pending" ? "badge--warning" : "badge--danger"
+                      }`}>
+                        {b.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );
