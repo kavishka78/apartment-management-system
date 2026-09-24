@@ -158,7 +158,7 @@ export default function VisitorLogs() {
         </button>
       </Header>
 
-      {error && <div className="overview-error-banner">⚠️ {error}</div>}
+      {error && <div className="overview-error-banner">{error}</div>}
 
       {loading ? (
         <div className="admin-loading">
@@ -225,7 +225,7 @@ export default function VisitorLogs() {
                             style={v.status === "Cancelled" ? { opacity: 0.45, cursor: "not-allowed" } : {}}
                             title={v.status === "Cancelled" ? "Cancelled by resident" : "Edit Visitor & Assign Slot"}
                           >
-                            ✏️ Edit
+                            Edit
                           </button>
 
                           {v.status === "Pending" && (
@@ -322,7 +322,7 @@ export default function VisitorLogs() {
                       </select>
                       {!hasVehicle && (
                         <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
-                          ⚠️ Visitor has no registered vehicle. Parking slot assignment disabled.
+                          Visitor has no registered vehicle. Parking slot assignment disabled.
                         </div>
                       )}
                     </>

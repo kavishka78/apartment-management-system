@@ -123,7 +123,7 @@ export default function Overview() {
 
       {error && (
         <div className="overview-error-banner">
-          <span>⚠️ Some data failed to load: {error}</span>
+          <span>Some data failed to load: {error}</span>
         </div>
       )}
 
@@ -256,10 +256,9 @@ export default function Overview() {
                       {b.startTime?.substring(0, 5)} - {b.endTime?.substring(0, 5)}
                     </td>
                     <td>
-                      <span className={`badge ${
-                        b.status === "Approved" ? "badge--success" :
-                        b.status === "Pending" ? "badge--warning" : "badge--danger"
-                      }`}>
+                      <span className={`badge ${b.status === "Approved" ? "badge--success" :
+                          b.status === "Pending" ? "badge--warning" : "badge--danger"
+                        }`}>
                         {b.status}
                       </span>
                     </td>

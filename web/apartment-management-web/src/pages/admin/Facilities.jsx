@@ -132,7 +132,7 @@ export default function Facilities() {
 
       {error && (
         <div className="overview-error-banner">
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
@@ -188,9 +188,8 @@ export default function Facilities() {
                             Edit
                           </button>
                           <button
-                            className={`admin-btn admin-btn--sm ${
-                              f.isActive ? "admin-btn--danger" : "admin-btn--success"
-                            }`}
+                            className={`admin-btn admin-btn--sm ${f.isActive ? "admin-btn--danger" : "admin-btn--success"
+                              }`}
                             onClick={() => handleToggleStatus(f)}
                           >
                             {f.isActive ? "Deactivate" : "Activate"}
