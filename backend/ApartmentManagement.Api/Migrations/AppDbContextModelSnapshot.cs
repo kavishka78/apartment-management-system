@@ -139,6 +139,9 @@ namespace ApartmentManagement.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("InvoiceNumber")
+                        .IsUnique();
+
                     b.ToTable("Invoices");
                 });
 
@@ -244,6 +247,9 @@ namespace ApartmentManagement.Api.Migrations
 
                     b.HasIndex("InvoiceId");
 
+                    b.HasIndex("PaymentReference")
+                        .IsUnique();
+
                     b.ToTable("Payments");
                 });
 
@@ -268,6 +274,9 @@ namespace ApartmentManagement.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PaymentId")
+                        .IsUnique();
+
+                    b.HasIndex("ReceiptNumber")
                         .IsUnique();
 
                     b.ToTable("Receipts");
