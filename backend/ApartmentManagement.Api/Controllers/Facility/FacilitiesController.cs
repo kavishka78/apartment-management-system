@@ -79,6 +79,24 @@ namespace ApartmentManagement.Api.Controllers
 
             return CreatedAtAction(nameof(GetFacility), new {id = facility.FacilityId }, facility);
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateFacility(int id, CreateFacilityDto dto)
+        {
+            var facility = await _context.Facilities.FindAsync(id);
+            if (facility == null)
+                return NotFound("Facility not found.");
+
+            facility.FacilityName = dto.Name;
+            facility.FacilityDescription = dto.Description;
+            facility.Capacity = dto.Capacity;
+            facility.OpenTime = dto.OpenTime;
+            facility.CloseTime = dto.CloseTime;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 
 }
