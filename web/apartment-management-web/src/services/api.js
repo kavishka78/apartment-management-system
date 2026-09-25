@@ -109,6 +109,26 @@ export async function getParkingSlots() {
   return request("/parkingslots");
 }
 
+export async function createParkingSlot(data) {
+  return request("/parkingslots", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateParkingSlot(id, data) {
+  return request(`/parkingslots/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteParkingSlot(id) {
+  return request(`/parkingslots/${id}`, {
+    method: "DELETE",
+  });
+}
+
 // ─── Workflows (AI Approvals) ────────────────────────────────
 export async function getPendingWorkflows() {
   return request("/workflows?status=pending");

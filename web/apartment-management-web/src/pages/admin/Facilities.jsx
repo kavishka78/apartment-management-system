@@ -272,7 +272,7 @@ export default function Facilities() {
         subtitle="Manage building amenities, operating hours, capacity and resident reservations."
       >
         <button className="admin-btn admin-btn--primary" onClick={openAdd} id="btn-add-facility">
-          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
           Add Facility
@@ -281,28 +281,22 @@ export default function Facilities() {
 
       {error && <div className="overview-error-banner">{error}</div>}
 
-      {/* Top Metric Cards */}
+      {/* Metric Cards - Clean Professional Layout */}
       <section className="fac-kpi-grid">
         <div className="fac-kpi-card">
           <div className="fac-kpi-header">
             <span className="fac-kpi-label">Active Amenities</span>
-            <span className="fac-kpi-icon" style={{ background: "#eef2ff", color: "#4f46e5" }}>
-              🏢
-            </span>
           </div>
           <h2 className="fac-kpi-value">
-            {activeCount} <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "500" }}>/ {facilities.length} Total</span>
+            {activeCount} <span style={{ fontSize: "13px", color: "#64748b", fontWeight: "500" }}>/ {facilities.length} Total</span>
           </h2>
         </div>
 
         <div className="fac-kpi-card">
           <div className="fac-kpi-header">
             <span className="fac-kpi-label">Bookings ({filterRange.toUpperCase()})</span>
-            <span className="fac-kpi-icon" style={{ background: "#ecfdf5", color: "#059669" }}>
-              📅
-            </span>
           </div>
-          <h2 className="fac-kpi-value" style={{ color: "#059669" }}>
+          <h2 className="fac-kpi-value" style={{ color: "#0f172a" }}>
             {totalPeriodBookings}
           </h2>
         </div>
@@ -310,11 +304,8 @@ export default function Facilities() {
         <div className="fac-kpi-card">
           <div className="fac-kpi-header">
             <span className="fac-kpi-label">Top Amenity</span>
-            <span className="fac-kpi-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
-              ⭐
-            </span>
           </div>
-          <h2 className="fac-kpi-value" style={{ fontSize: "1.15rem", color: "#1e293b" }}>
+          <h2 className="fac-kpi-value" style={{ fontSize: "1.1rem", color: "#0f172a" }}>
             {topFacilityName}
           </h2>
         </div>
@@ -323,7 +314,7 @@ export default function Facilities() {
       {/* Timeframe Segmented Control Bar */}
       <div className="fac-filter-bar">
         <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-          <span className="fac-filter-label">View Bookings For:</span>
+          <span className="fac-filter-label">Time Period:</span>
           <div className="fac-segmented-control">
             <button
               className={`fac-seg-button ${filterRange === "today" ? "active" : ""}`}
@@ -398,7 +389,7 @@ export default function Facilities() {
               <tbody>
                 {facilities.length === 0 ? (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: "center", padding: "48px 0", color: "#9ca3af" }}>
+                    <td colSpan="5" style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
                       No facilities found. Click "Add Facility" to get started.
                     </td>
                   </tr>
@@ -614,12 +605,12 @@ export default function Facilities() {
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: "480px", borderRadius: "14px", padding: "24px", background: "#fff" }}
           >
-            <h3 style={{ margin: "0 0 10px 0", fontSize: "18px", fontWeight: "700", color: "#991b1b" }}>
-              Deactivate {deactivatingFacility.name}?
+            <h3 style={{ margin: "0 0 10px 0", fontSize: "17px", fontWeight: "700", color: "#0f172a" }}>
+              Deactivate {deactivatingFacility.name}
             </h3>
 
-            <p style={{ fontSize: "14px", color: "#475569", marginBottom: "16px", lineHeight: "1.5" }}>
-              Are you sure you want to deactivate <strong>{deactivatingFacility.name}</strong>? Residents will see a notification on the mobile app indicating that this facility is currently unavailable.
+            <p style={{ fontSize: "13.5px", color: "#475569", marginBottom: "16px", lineHeight: "1.5" }}>
+              Are you sure you want to deactivate <strong>{deactivatingFacility.name}</strong>? Residents will see a notice on the mobile app that this facility is currently unavailable.
             </p>
 
             <form onSubmit={confirmDeactivation}>
@@ -635,7 +626,7 @@ export default function Facilities() {
                     padding: "10px",
                     borderRadius: "8px",
                     border: "1px solid #cbd5e1",
-                    fontSize: "14px",
+                    fontSize: "13.5px",
                     resize: "vertical"
                   }}
                   placeholder="e.g. Maintenance in progress, Closed for cleaning until Friday..."
