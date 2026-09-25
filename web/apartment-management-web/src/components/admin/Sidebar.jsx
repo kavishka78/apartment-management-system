@@ -21,7 +21,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    label: "Visitor Logs",
+    label: "Visitors and Parkings",
     path: "/admin/visitors",
     icon: (
       <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">

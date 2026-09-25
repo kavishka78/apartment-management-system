@@ -57,6 +57,31 @@ class FacilityApiService {
     }
   }
 
+  // GET BOOKINGS FOR SPECIFIC FACILITY
+  static Future<Map<String, dynamic>> getBookingsForFacility(int facilityId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/bookings/facility/$facilityId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      debugPrint('GET FACILITY BOOKINGS STATUS: ${response.statusCode}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        return {'success': true, 'data': decoded};
+      }
+
+      return {
+        'success': false,
+        'message': 'Failed to load facility bookings (${response.statusCode})',
+      };
+    } catch (e) {
+      debugPrint('GET FACILITY BOOKINGS ERROR: $e');
+      return {'success': false, 'message': 'Cannot connect to server: $e'};
+    }
+  }
+
   // CREATE A FACILITY BOOKING
   static Future<Map<String, dynamic>> createBooking({
     required int facilityId,
