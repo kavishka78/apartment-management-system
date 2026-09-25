@@ -4,7 +4,7 @@ import {
   getFacilities,
   createFacility,
   updateFacility,
-  toggleFacilityStatus,
+  updateFacilityStatus,
 } from "../../services/api";
 import "./Facilities.css";
 
@@ -25,6 +25,11 @@ export default function Facilities() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+
+  // Deactivation Modal State
+  const [deactivatingFacility, setDeactivatingFacility] = useState(null);
+  const [deactivationReason, setDeactivationReason] = useState("");
+  const [toggling, setToggling] = useState(false);
 
   const fetchData = useCallback(() => {
     return getFacilities()
@@ -79,12 +84,46 @@ export default function Facilities() {
     setForm((prev) => ({ ...prev, [e.target.name]: value }));
   }
 
-  async function handleToggleStatus(facility) {
+  // Open Deactivate Confirmation Modal
+  function handleDeactivateClick(facility) {
+    setDeactivatingFacility(facility);
+    setDeactivationReason("");
+  }
+
+  function closeDeactivateModal() {
+    setDeactivatingFacility(null);
+    setDeactivationReason("");
+  }
+
+  // Confirm Deactivation
+  async function confirmDeactivation(e) {
+    e.preventDefault();
+    if (!deactivatingFacility) return;
+
+    setToggling(true);
     try {
-      await toggleFacilityStatus(facility.id);
+      await updateFacilityStatus(deactivatingFacility.id, false, deactivationReason);
+      closeDeactivateModal();
       await load();
     } catch (err) {
-      alert("Failed to toggle status: " + err.message);
+      alert("Failed to deactivate facility: " + err.message);
+    } finally {
+      setToggling(false);
+    }
+  }
+
+  // Handle Direct Activation
+  async function handleActivateClick(facility) {
+    if (!window.confirm(`Are you sure you want to activate ${facility.name}?`)) return;
+
+    setToggling(true);
+    try {
+      await updateFacilityStatus(facility.id, true, "");
+      await load();
+    } catch (err) {
+      alert("Failed to activate facility: " + err.message);
+    } finally {
+      setToggling(false);
     }
   }
 
@@ -167,6 +206,11 @@ export default function Facilities() {
                     <tr key={f.id}>
                       <td>
                         <span className="facility-name">{f.name}</span>
+                        {!f.isActive && f.deactivationReason && (
+                          <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "2px" }}>
+                            Reason: {f.deactivationReason}
+                          </div>
+                        )}
                       </td>
                       <td className="td-desc">{f.description}</td>
                       <td>
@@ -187,13 +231,23 @@ export default function Facilities() {
                           >
                             Edit
                           </button>
-                          <button
-                            className={`admin-btn admin-btn--sm ${f.isActive ? "admin-btn--danger" : "admin-btn--success"
-                              }`}
-                            onClick={() => handleToggleStatus(f)}
-                          >
-                            {f.isActive ? "Deactivate" : "Activate"}
-                          </button>
+                          {f.isActive ? (
+                            <button
+                              className="admin-btn admin-btn--sm admin-btn--danger"
+                              onClick={() => handleDeactivateClick(f)}
+                              disabled={toggling}
+                            >
+                              Deactivate
+                            </button>
+                          ) : (
+                            <button
+                              className="admin-btn admin-btn--sm admin-btn--success"
+                              onClick={() => handleActivateClick(f)}
+                              disabled={toggling}
+                            >
+                              Activate
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -205,7 +259,7 @@ export default function Facilities() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Add / Edit Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -303,6 +357,66 @@ export default function Facilities() {
                   disabled={saving}
                 >
                   {saving ? "Saving…" : editing ? "Update" : "Create"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Deactivation Confirmation Modal */}
+      {deactivatingFacility && (
+        <div className="modal-overlay" onClick={closeDeactivateModal}>
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "480px", borderRadius: "16px", padding: "24px", background: "#fff" }}
+          >
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "18px", fontWeight: "700", color: "#991b1b" }}>
+              Deactivate Facility: {deactivatingFacility.name}?
+            </h3>
+
+            <p style={{ fontSize: "14px", color: "#4b5563", marginBottom: "16px", lineHeight: "1.5" }}>
+              Are you sure you want to deactivate <strong>{deactivatingFacility.name}</strong>? Residents will see a notification on the mobile app indicating that this facility is currently unavailable.
+            </p>
+
+            <form onSubmit={confirmDeactivation}>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#374151" }}>
+                  Reason for Deactivation (Optional)
+                </label>
+                <textarea
+                  className="admin-input"
+                  rows="3"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "1px solid #d1d5db",
+                    fontSize: "14px",
+                    resize: "vertical"
+                  }}
+                  placeholder="e.g. Maintenance in progress, Closed for cleaning until Friday..."
+                  value={deactivationReason}
+                  onChange={(e) => setDeactivationReason(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--secondary"
+                  onClick={closeDeactivateModal}
+                  disabled={toggling}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn--danger"
+                  disabled={toggling}
+                >
+                  {toggling ? "Deactivating..." : "Deactivate Facility"}
                 </button>
               </div>
             </form>

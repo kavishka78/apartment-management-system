@@ -26,6 +26,9 @@ namespace ApartmentManagement.Api.Models
 
         public bool IsActive {get;set;} = true;
 
+        [MaxLength(255)]
+        public string? DeactivationReason { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 

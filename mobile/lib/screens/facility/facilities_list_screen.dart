@@ -196,7 +196,7 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                   padding: EdgeInsets.symmetric(vertical: 40),
                   child: Center(
                     child: Text(
-                      'No active facilities available right now.',
+                      'No facilities available right now.',
                       style: TextStyle(color: Colors.grey),
                     ),
                   ),
@@ -226,13 +226,17 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
     final capacity = facility['capacity'] ?? 0;
     final openTime = facility['openTime']?.toString().substring(0, 5) ?? '08:00';
     final closeTime = facility['closeTime']?.toString().substring(0, 5) ?? '22:00';
+    final bool isActive = facility['isActive'] ?? true;
+    final String? deactivationReason = facility['deactivationReason'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8ECEF)),
+        border: Border.all(
+          color: isActive ? const Color(0xFFE8ECEF) : Colors.red.shade200,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -251,12 +255,12 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEF1F2),
+                    color: isActive ? const Color(0xFFEEF1F2) : Colors.red.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     _getFacilityIcon(name),
-                    color: const Color(0xFF17212B),
+                    color: isActive ? const Color(0xFF17212B) : Colors.red.shade700,
                     size: 24,
                   ),
                 ),
@@ -265,13 +269,35 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF17212B),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: isActive ? const Color(0xFF17212B) : Colors.red.shade900,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isActive ? Colors.green.shade50 : Colors.red.shade100,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              isActive ? 'Available' : 'Not Available',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isActive ? Colors.green.shade800 : Colors.red.shade900,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -288,7 +314,41 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                 ),
               ],
             ),
+
+            // Inactive Deactivation Reason Alert Box
+            if (!isActive) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.red.shade700, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        (deactivationReason != null && deactivationReason.trim().isNotEmpty)
+                            ? 'Not Available: $deactivationReason'
+                            : 'Not Available (Temporarily closed by Admin)',
+                        style: TextStyle(
+                          color: Colors.red.shade900,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 12),
+
             // Bookings Count Badge Bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -347,27 +407,32 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                   ],
                 ),
                 ElevatedButton(
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BookFacilityScreen(
-                          facility: facility,
-                          totalBookings: totalBookings,
-                        ),
-                      ),
-                    );
-                    _loadData();
-                  },
+                  onPressed: isActive
+                      ? () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BookFacilityScreen(
+                                facility: facility,
+                                totalBookings: totalBookings,
+                              ),
+                            ),
+                          );
+                          _loadData();
+                        }
+                      : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF17212B),
-                    foregroundColor: Colors.white,
+                    backgroundColor: isActive ? const Color(0xFF17212B) : Colors.grey.shade300,
+                    foregroundColor: isActive ? Colors.white : Colors.grey.shade600,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   ),
-                  child: const Text('Book Spot', style: TextStyle(fontSize: 13)),
+                  child: Text(
+                    isActive ? 'Book Spot' : 'Unavailable',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),

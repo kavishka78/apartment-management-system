@@ -1,19 +1,22 @@
 import 'dart:convert';
-
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class FacilityApiService {
   // Use 10.0.2.2 for Android Emulator, localhost for iOS/Web
   static const String baseUrl = 'http://10.0.2.2:5073/api';
+  static const Duration timeoutDuration = Duration(seconds: 10);
 
   // GET ALL FACILITIES
   static Future<Map<String, dynamic>> getFacilities() async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/facilities'),
-        headers: {'Content-Type': 'application/json'},
-      );
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/facilities'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(timeoutDuration);
 
       debugPrint('GET FACILITIES STATUS: ${response.statusCode}');
 
@@ -28,17 +31,19 @@ class FacilityApiService {
       };
     } catch (e) {
       debugPrint('GET FACILITIES ERROR: $e');
-      return {'success': false, 'message': 'Cannot connect to server: $e'};
+      return {'success': false, 'message': 'Cannot connect to server (Timeout or Network Error)'};
     }
   }
 
   // GET ALL BOOKINGS FOR RESIDENT
   static Future<Map<String, dynamic>> getBookings() async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/bookings'),
-        headers: {'Content-Type': 'application/json'},
-      );
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/bookings'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(timeoutDuration);
 
       debugPrint('GET BOOKINGS STATUS: ${response.statusCode}');
 
@@ -53,17 +58,19 @@ class FacilityApiService {
       };
     } catch (e) {
       debugPrint('GET BOOKINGS ERROR: $e');
-      return {'success': false, 'message': 'Cannot connect to server: $e'};
+      return {'success': false, 'message': 'Cannot connect to server (Timeout or Network Error)'};
     }
   }
 
   // GET BOOKINGS FOR SPECIFIC FACILITY
   static Future<Map<String, dynamic>> getBookingsForFacility(int facilityId) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/bookings/facility/$facilityId'),
-        headers: {'Content-Type': 'application/json'},
-      );
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/bookings/facility/$facilityId'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(timeoutDuration);
 
       debugPrint('GET FACILITY BOOKINGS STATUS: ${response.statusCode}');
 
@@ -78,7 +85,7 @@ class FacilityApiService {
       };
     } catch (e) {
       debugPrint('GET FACILITY BOOKINGS ERROR: $e');
-      return {'success': false, 'message': 'Cannot connect to server: $e'};
+      return {'success': false, 'message': 'Cannot connect to server (Timeout or Network Error)'};
     }
   }
 
@@ -91,17 +98,19 @@ class FacilityApiService {
     required String endTime, // Format "HH:mm:ss"
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/bookings'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'facilityId': facilityId,
-          'residentId': residentId,
-          'bookingDate': bookingDate.toIso8601String(),
-          'startTime': startTime,
-          'endTime': endTime,
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/bookings'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'facilityId': facilityId,
+              'residentId': residentId,
+              'bookingDate': bookingDate.toIso8601String(),
+              'startTime': startTime,
+              'endTime': endTime,
+            }),
+          )
+          .timeout(timeoutDuration);
 
       debugPrint('CREATE BOOKING STATUS: ${response.statusCode}');
       debugPrint('CREATE BOOKING RESPONSE: ${response.body}');
@@ -129,7 +138,7 @@ class FacilityApiService {
       return {'success': false, 'message': errorMsg};
     } catch (e) {
       debugPrint('CREATE BOOKING ERROR: $e');
-      return {'success': false, 'message': 'Cannot connect to server: $e'};
+      return {'success': false, 'message': 'Cannot connect to server (Timeout or Network Error)'};
     }
   }
 }

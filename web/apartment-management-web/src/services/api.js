@@ -47,6 +47,13 @@ export async function toggleFacilityStatus(id) {
   });
 }
 
+export async function updateFacilityStatus(id, isActive, deactivationReason = "") {
+  return request(`/facilities/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ isActive, deactivationReason }),
+  });
+}
+
 // ─── Visitors ────────────────────────────────────────────────
 export async function getActiveVisitors() {
   return request("/visitors/active");
