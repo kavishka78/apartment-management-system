@@ -4,10 +4,8 @@ using ApartmentManagement.Api.Models;
 using ApartmentManagement.Api.DTOs;
 using ApartmentManagement.Api.Data;
 
-
 namespace ApartmentManagement.Api.Controllers
 {
-
     [ApiController]
     [Route("api/[controller]")]
     public class FacilitiesController : ControllerBase
@@ -37,7 +35,8 @@ namespace ApartmentManagement.Api.Controllers
                     Capacity = f.Capacity,
                     OpenTime = f.OpenTime,
                     CloseTime = f.CloseTime,
-                    IsActive = f.IsActive
+                    IsActive = f.IsActive,
+                    DeactivationReason = f.DeactivationReason
                 }).ToListAsync();
 
             return Ok(facilities);
@@ -56,7 +55,8 @@ namespace ApartmentManagement.Api.Controllers
                     Capacity = f.Capacity,
                     OpenTime = f.OpenTime,
                     CloseTime = f.CloseTime,
-                    IsActive = f.IsActive
+                    IsActive = f.IsActive,
+                    DeactivationReason = f.DeactivationReason
                 }).FirstOrDefaultAsync();
 
             if (facility == null)
@@ -65,9 +65,8 @@ namespace ApartmentManagement.Api.Controllers
             return Ok(facility);
         }
 
-
         [HttpPost]
-        public async Task<ActionResult<FacilityResponseDto>> CreateFacility (CreateFacilityDto dto)
+        public async Task<ActionResult<FacilityResponseDto>> CreateFacility(CreateFacilityDto dto)
         {
             var facility = new Facility
             {
@@ -76,13 +75,14 @@ namespace ApartmentManagement.Api.Controllers
                 Capacity = dto.Capacity,
                 OpenTime = dto.OpenTime,
                 CloseTime = dto.CloseTime,
-                IsActive = dto.IsActive
+                IsActive = dto.IsActive,
+                DeactivationReason = dto.IsActive ? null : dto.DeactivationReason
             };
 
             _context.Facilities.Add(facility);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetFacility), new {id = facility.FacilityId }, facility);
+            return CreatedAtAction(nameof(GetFacility), new { id = facility.FacilityId }, facility);
         }
 
         [HttpPut("{id}")]
@@ -98,10 +98,28 @@ namespace ApartmentManagement.Api.Controllers
             facility.OpenTime = dto.OpenTime;
             facility.CloseTime = dto.CloseTime;
             facility.IsActive = dto.IsActive;
+            facility.DeactivationReason = dto.IsActive ? null : dto.DeactivationReason;
+            facility.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> UpdateFacilityStatus(int id, [FromBody] UpdateFacilityStatusDto dto)
+        {
+            var facility = await _context.Facilities.FindAsync(id);
+            if (facility == null)
+                return NotFound("Facility not found.");
+
+            facility.IsActive = dto.IsActive;
+            facility.DeactivationReason = dto.IsActive ? null : dto.DeactivationReason;
+            facility.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { id = facility.FacilityId, isActive = facility.IsActive, deactivationReason = facility.DeactivationReason });
         }
 
         [HttpPatch("{id}/toggle-status")]
@@ -112,10 +130,15 @@ namespace ApartmentManagement.Api.Controllers
                 return NotFound("Facility not found.");
 
             facility.IsActive = !facility.IsActive;
+            if (facility.IsActive)
+            {
+                facility.DeactivationReason = null;
+            }
+            facility.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
 
-            return Ok(new { id = facility.FacilityId, isActive = facility.IsActive });
+            return Ok(new { id = facility.FacilityId, isActive = facility.IsActive, deactivationReason = facility.DeactivationReason });
         }
     }
-
 }

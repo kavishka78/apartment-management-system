@@ -128,6 +128,17 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
   }
 
   Future<void> _submitBooking() async {
+    final bool isActive = widget.facility['isActive'] ?? true;
+    if (!isActive) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This facility is currently inactive and cannot be booked.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final now = DateTime.now();
     final startDateTime = DateTime(
       _selectedDate.year,
@@ -206,6 +217,9 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
   Widget build(BuildContext context) {
     final name = widget.facility['name'] ?? 'Facility';
     final capacity = widget.facility['capacity'] ?? 0;
+    final bool isActive = widget.facility['isActive'] ?? true;
+    final String? deactivationReason = widget.facility['deactivationReason'];
+
     final dateFormatted =
         '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
     final currentDayBookings = _dayBookings;
@@ -225,6 +239,36 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (!isActive)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.block, color: Colors.red.shade700, size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          (deactivationReason != null && deactivationReason.trim().isNotEmpty)
+                              ? 'Facility Inactive: $deactivationReason'
+                              : 'This facility is currently inactive and unavailable for bookings.',
+                          style: TextStyle(
+                            color: Colors.red.shade900,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // Header Card
               Container(
                 width: double.infinity,
@@ -407,19 +451,19 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submitBooking,
+                  onPressed: (_isSubmitting || !isActive) ? null : _submitBooking,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF17212B),
-                    foregroundColor: Colors.white,
+                    backgroundColor: isActive ? const Color(0xFF17212B) : Colors.grey.shade300,
+                    foregroundColor: isActive ? Colors.white : Colors.grey.shade600,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: _isSubmitting
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Instantly Book Spot',
-                          style: TextStyle(
+                      : Text(
+                          !isActive ? 'Facility Currently Inactive' : 'Instantly Book Spot',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),

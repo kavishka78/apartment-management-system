@@ -36,6 +36,23 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Ensure DB columns exist for new properties
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        dbContext.Database.ExecuteSqlRaw(@"
+            ALTER TABLE ""Facilities"" 
+            ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text;
+        ");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"DB Auto-Migration Notice: {ex.Message}");
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
