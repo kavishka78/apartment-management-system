@@ -89,6 +89,10 @@ export async function getBookings() {
   return request("/bookings");
 }
 
+export async function getBookingsForFacility(facilityId) {
+  return request(`/bookings/facility/${facilityId}`);
+}
+
 export async function createBooking(data) {
   return request("/bookings", {
     method: "POST",

@@ -5,6 +5,7 @@ import {
   createFacility,
   updateFacility,
   updateFacilityStatus,
+  getBookings,
 } from "../../services/api";
 import "./Facilities.css";
 
@@ -19,22 +20,35 @@ const EMPTY_FORM = {
 
 export default function Facilities() {
   const [facilities, setFacilities] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Modals state
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+
+  // Timeframe Filter State: 'today' | 'week' | 'month' | 'all' | 'custom'
+  const [filterRange, setFilterRange] = useState("today");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
 
   // Deactivation Modal State
   const [deactivatingFacility, setDeactivatingFacility] = useState(null);
   const [deactivationReason, setDeactivationReason] = useState("");
   const [toggling, setToggling] = useState(false);
 
+  // View Facility Bookings Modal State
+  const [viewingFacility, setViewingFacility] = useState(null);
+  const [bookingSearch, setBookingSearch] = useState("");
+
   const fetchData = useCallback(() => {
-    return getFacilities()
-      .then((data) => {
-        setFacilities(data);
+    return Promise.allSettled([getFacilities(), getBookings()])
+      .then(([facRes, bookRes]) => {
+        if (facRes.status === "fulfilled") setFacilities(facRes.value || []);
+        if (bookRes.status === "fulfilled") setBookings(bookRes.value || []);
       })
       .catch((err) => {
         setError(err.message);
@@ -53,6 +67,89 @@ export default function Facilities() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Date filtering logic
+  const filterBookingByTimeframe = useCallback((b) => {
+    if (!b.bookingDate) return false;
+    const bDate = new Date(b.bookingDate);
+    const now = new Date();
+
+    if (filterRange === "today") {
+      return (
+        bDate.getFullYear() === now.getFullYear() &&
+        bDate.getMonth() === now.getMonth() &&
+        bDate.getDate() === now.getDate()
+      );
+    }
+
+    if (filterRange === "week") {
+      const firstDayOfWeek = new Date(now);
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      firstDayOfWeek.setDate(diff);
+      firstDayOfWeek.setHours(0, 0, 0, 0);
+
+      const lastDayOfWeek = new Date(firstDayOfWeek);
+      lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
+      lastDayOfWeek.setHours(23, 59, 59, 999);
+
+      return bDate >= firstDayOfWeek && bDate <= lastDayOfWeek;
+    }
+
+    if (filterRange === "month") {
+      return (
+        bDate.getFullYear() === now.getFullYear() &&
+        bDate.getMonth() === now.getMonth()
+      );
+    }
+
+    if (filterRange === "custom") {
+      if (!customStartDate || !customEndDate) return true;
+      const start = new Date(customStartDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(customEndDate);
+      end.setHours(23, 59, 59, 999);
+      return bDate >= start && bDate <= end;
+    }
+
+    return true;
+  }, [filterRange, customStartDate, customEndDate]);
+
+  // Calculate filtered non-rejected bookings
+  const filteredBookings = bookings.filter(
+    (b) => b.status !== "Rejected" && filterBookingByTimeframe(b)
+  );
+
+  // Compute facility booking statistics
+  const getFacilityStats = (facilityId) => {
+    const facilityBookings = filteredBookings.filter(
+      (b) => b.facilityId === facilityId
+    );
+    const totalAllTime = bookings.filter(
+      (b) => b.facilityId === facilityId && b.status !== "Rejected"
+    ).length;
+
+    return {
+      count: facilityBookings.length,
+      bookings: facilityBookings,
+      totalAllTime,
+    };
+  };
+
+  // Compute overall KPI metrics
+  const activeCount = facilities.filter((f) => f.isActive).length;
+  const totalPeriodBookings = filteredBookings.length;
+
+  // Find top booked facility for selected timeframe
+  let topFacilityName = "—";
+  let maxBookings = 0;
+  facilities.forEach((f) => {
+    const count = filteredBookings.filter((b) => b.facilityId === f.id).length;
+    if (count > maxBookings) {
+      maxBookings = count;
+      topFacilityName = f.name;
+    }
+  });
 
   function openAdd() {
     setEditing(null);
@@ -84,7 +181,7 @@ export default function Facilities() {
     setForm((prev) => ({ ...prev, [e.target.name]: value }));
   }
 
-  // Open Deactivate Confirmation Modal
+  // Deactivation Handlers
   function handleDeactivateClick(facility) {
     setDeactivatingFacility(facility);
     setDeactivationReason("");
@@ -95,7 +192,6 @@ export default function Facilities() {
     setDeactivationReason("");
   }
 
-  // Confirm Deactivation
   async function confirmDeactivation(e) {
     e.preventDefault();
     if (!deactivatingFacility) return;
@@ -112,7 +208,6 @@ export default function Facilities() {
     }
   }
 
-  // Handle Direct Activation
   async function handleActivateClick(facility) {
     if (!window.confirm(`Are you sure you want to activate ${facility.name}?`)) return;
 
@@ -155,25 +250,133 @@ export default function Facilities() {
     }
   }
 
+  // Get bookings for viewing facility modal
+  const viewFacilityBookings = viewingFacility
+    ? bookings
+      .filter((b) => b.facilityId === viewingFacility.id)
+      .filter((b) => {
+        if (!bookingSearch) return true;
+        const searchLower = bookingSearch.toLowerCase();
+        return (
+          String(b.residentId).includes(searchLower) ||
+          String(b.id).includes(searchLower) ||
+          (b.bookingDate && b.bookingDate.includes(searchLower))
+        );
+      })
+    : [];
+
   return (
     <div id="facilities-page">
       <Header
         title="Facilities Management"
-        subtitle="Manage building amenities, operating hours and capacity."
+        subtitle="Manage building amenities, operating hours, capacity and resident reservations."
       >
         <button className="admin-btn admin-btn--primary" onClick={openAdd} id="btn-add-facility">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
           Add Facility
         </button>
       </Header>
 
-      {error && (
-        <div className="overview-error-banner">
-          {error}
+      {error && <div className="overview-error-banner">{error}</div>}
+
+      {/* Top Metric Cards */}
+      <section className="fac-kpi-grid">
+        <div className="fac-kpi-card">
+          <div className="fac-kpi-header">
+            <span className="fac-kpi-label">Active Amenities</span>
+            <span className="fac-kpi-icon" style={{ background: "#eef2ff", color: "#4f46e5" }}>
+              🏢
+            </span>
+          </div>
+          <h2 className="fac-kpi-value">
+            {activeCount} <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "500" }}>/ {facilities.length} Total</span>
+          </h2>
         </div>
-      )}
+
+        <div className="fac-kpi-card">
+          <div className="fac-kpi-header">
+            <span className="fac-kpi-label">Bookings ({filterRange.toUpperCase()})</span>
+            <span className="fac-kpi-icon" style={{ background: "#ecfdf5", color: "#059669" }}>
+              📅
+            </span>
+          </div>
+          <h2 className="fac-kpi-value" style={{ color: "#059669" }}>
+            {totalPeriodBookings}
+          </h2>
+        </div>
+
+        <div className="fac-kpi-card">
+          <div className="fac-kpi-header">
+            <span className="fac-kpi-label">Top Amenity</span>
+            <span className="fac-kpi-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
+              ⭐
+            </span>
+          </div>
+          <h2 className="fac-kpi-value" style={{ fontSize: "1.15rem", color: "#1e293b" }}>
+            {topFacilityName}
+          </h2>
+        </div>
+      </section>
+
+      {/* Timeframe Segmented Control Bar */}
+      <div className="fac-filter-bar">
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <span className="fac-filter-label">View Bookings For:</span>
+          <div className="fac-segmented-control">
+            <button
+              className={`fac-seg-button ${filterRange === "today" ? "active" : ""}`}
+              onClick={() => setFilterRange("today")}
+            >
+              Today
+            </button>
+            <button
+              className={`fac-seg-button ${filterRange === "week" ? "active" : ""}`}
+              onClick={() => setFilterRange("week")}
+            >
+              This Week
+            </button>
+            <button
+              className={`fac-seg-button ${filterRange === "month" ? "active" : ""}`}
+              onClick={() => setFilterRange("month")}
+            >
+              This Month
+            </button>
+            <button
+              className={`fac-seg-button ${filterRange === "all" ? "active" : ""}`}
+              onClick={() => setFilterRange("all")}
+            >
+              All Time
+            </button>
+            <button
+              className={`fac-seg-button ${filterRange === "custom" ? "active" : ""}`}
+              onClick={() => setFilterRange("custom")}
+            >
+              Custom Date
+            </button>
+          </div>
+        </div>
+
+        {filterRange === "custom" && (
+          <div className="fac-custom-dates">
+            <label>From:</label>
+            <input
+              type="date"
+              className="fac-date-input"
+              value={customStartDate}
+              onChange={(e) => setCustomStartDate(e.target.value)}
+            />
+            <label>To:</label>
+            <input
+              type="date"
+              className="fac-date-input"
+              value={customEndDate}
+              onChange={(e) => setCustomEndDate(e.target.value)}
+            />
+          </div>
+        )}
+      </div>
 
       {loading ? (
         <div className="admin-loading">
@@ -186,10 +389,8 @@ export default function Facilities() {
               <thead>
                 <tr>
                   <th>Facility</th>
-                  <th>Description</th>
-                  <th>Capacity</th>
-                  <th>Opens</th>
-                  <th>Closes</th>
+                  <th>Operating Hours & Capacity</th>
+                  <th>Bookings ({filterRange})</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -197,61 +398,102 @@ export default function Facilities() {
               <tbody>
                 {facilities.length === 0 ? (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: "center", padding: "48px 0", color: "#9ca3af" }}>
+                    <td colSpan="5" style={{ textAlign: "center", padding: "48px 0", color: "#9ca3af" }}>
                       No facilities found. Click "Add Facility" to get started.
                     </td>
                   </tr>
                 ) : (
-                  facilities.map((f) => (
-                    <tr key={f.id}>
-                      <td>
-                        <span className="facility-name">{f.name}</span>
-                        {!f.isActive && f.deactivationReason && (
-                          <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "2px" }}>
-                            Reason: {f.deactivationReason}
+                  facilities.map((f) => {
+                    const stats = getFacilityStats(f.id);
+                    const bookingCount = stats.count;
+
+                    return (
+                      <tr key={f.id}>
+                        <td>
+                          <div>
+                            <span className="facility-name">{f.name}</span>
+                            <div className="td-desc" style={{ marginTop: "2px" }}>
+                              {f.description}
+                            </div>
                           </div>
-                        )}
-                      </td>
-                      <td className="td-desc">{f.description}</td>
-                      <td>
-                        <span className="capacity-badge">{f.capacity}</span>
-                      </td>
-                      <td>{formatTime(f.openTime)}</td>
-                      <td>{formatTime(f.closeTime)}</td>
-                      <td>
-                        <span className={`badge ${f.isActive ? "badge--success" : "badge--danger"}`}>
-                          {f.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          <button
-                            className="admin-btn admin-btn--secondary admin-btn--sm"
-                            onClick={() => openEdit(f)}
+                        </td>
+                        <td>
+                          <div style={{ fontSize: "13px", fontWeight: "500", color: "#334155" }}>
+                            {formatTime(f.openTime)} – {formatTime(f.closeTime)}
+                          </div>
+                          <div style={{ marginTop: "4px" }}>
+                            <span className="capacity-badge">Capacity: {f.capacity}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                            <span
+                              className={`fac-booking-chip ${bookingCount === 0 ? "zero" : ""}`}
+                            >
+                              {bookingCount} {bookingCount === 1 ? "Booking" : "Bookings"}
+                            </span>
+                            <span style={{ fontSize: "11px", color: "#64748b" }}>
+                              All-Time Total: {stats.totalAllTime}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <span
+                            className={`badge ${f.isActive ? "badge--success" : "badge--danger"}`}
                           >
-                            Edit
-                          </button>
-                          {f.isActive ? (
-                            <button
-                              className="admin-btn admin-btn--sm admin-btn--danger"
-                              onClick={() => handleDeactivateClick(f)}
-                              disabled={toggling}
+                            {f.isActive ? "Active" : "Inactive"}
+                          </span>
+                          {!f.isActive && f.deactivationReason && (
+                            <div
+                              style={{
+                                fontSize: "11px",
+                                color: "#dc2626",
+                                marginTop: "4px",
+                                maxWidth: "170px",
+                                lineHeight: "1.3",
+                              }}
                             >
-                              Deactivate
-                            </button>
-                          ) : (
-                            <button
-                              className="admin-btn admin-btn--sm admin-btn--success"
-                              onClick={() => handleActivateClick(f)}
-                              disabled={toggling}
-                            >
-                              Activate
-                            </button>
+                              Reason: {f.deactivationReason}
+                            </div>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td>
+                          <div className="fac-action-group">
+                            <button
+                              className="fac-btn fac-btn--view"
+                              onClick={() => setViewingFacility(f)}
+                              title="View all bookings for this facility"
+                            >
+                              View Bookings
+                            </button>
+                            <button
+                              className="fac-btn fac-btn--edit"
+                              onClick={() => openEdit(f)}
+                            >
+                              Edit
+                            </button>
+                            {f.isActive ? (
+                              <button
+                                className="fac-btn fac-btn--deactivate"
+                                onClick={() => handleDeactivateClick(f)}
+                                disabled={toggling}
+                              >
+                                Deactivate
+                              </button>
+                            ) : (
+                              <button
+                                className="fac-btn fac-btn--activate"
+                                onClick={() => handleActivateClick(f)}
+                                disabled={toggling}
+                              >
+                                Activate
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -259,7 +501,7 @@ export default function Facilities() {
         </div>
       )}
 
-      {/* Add / Edit Modal */}
+      {/* Add / Edit Facility Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -287,7 +529,7 @@ export default function Facilities() {
                   maxLength={100}
                   value={form.description}
                   onChange={handleChange}
-                  placeholder="Brief description"
+                  placeholder="Brief description of the amenity"
                 />
               </div>
 
@@ -307,7 +549,7 @@ export default function Facilities() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="fac-open">Opens</label>
+                  <label htmlFor="fac-open">Opens At</label>
                   <input
                     id="fac-open"
                     name="openTime"
@@ -319,7 +561,7 @@ export default function Facilities() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="fac-close">Closes</label>
+                  <label htmlFor="fac-close">Closes At</label>
                   <input
                     id="fac-close"
                     name="closeTime"
@@ -370,19 +612,19 @@ export default function Facilities() {
           <div
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "480px", borderRadius: "16px", padding: "24px", background: "#fff" }}
+            style={{ maxWidth: "480px", borderRadius: "14px", padding: "24px", background: "#fff" }}
           >
-            <h3 style={{ margin: "0 0 12px 0", fontSize: "18px", fontWeight: "700", color: "#991b1b" }}>
-              Deactivate Facility: {deactivatingFacility.name}?
+            <h3 style={{ margin: "0 0 10px 0", fontSize: "18px", fontWeight: "700", color: "#991b1b" }}>
+              Deactivate {deactivatingFacility.name}?
             </h3>
 
-            <p style={{ fontSize: "14px", color: "#4b5563", marginBottom: "16px", lineHeight: "1.5" }}>
+            <p style={{ fontSize: "14px", color: "#475569", marginBottom: "16px", lineHeight: "1.5" }}>
               Are you sure you want to deactivate <strong>{deactivatingFacility.name}</strong>? Residents will see a notification on the mobile app indicating that this facility is currently unavailable.
             </p>
 
             <form onSubmit={confirmDeactivation}>
               <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#374151" }}>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#334155" }}>
                   Reason for Deactivation (Optional)
                 </label>
                 <textarea
@@ -392,7 +634,7 @@ export default function Facilities() {
                     width: "100%",
                     padding: "10px",
                     borderRadius: "8px",
-                    border: "1px solid #d1d5db",
+                    border: "1px solid #cbd5e1",
                     fontSize: "14px",
                     resize: "vertical"
                   }}
@@ -405,7 +647,7 @@ export default function Facilities() {
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                 <button
                   type="button"
-                  className="admin-btn admin-btn--secondary"
+                  className="fac-btn fac-btn--edit"
                   onClick={closeDeactivateModal}
                   disabled={toggling}
                 >
@@ -413,13 +655,103 @@ export default function Facilities() {
                 </button>
                 <button
                   type="submit"
-                  className="admin-btn admin-btn--danger"
+                  className="fac-btn fac-btn--deactivate"
                   disabled={toggling}
                 >
                   {toggling ? "Deactivating..." : "Deactivate Facility"}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Facility Bookings Modal */}
+      {viewingFacility && (
+        <div className="modal-overlay" onClick={() => setViewingFacility(null)}>
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "720px", borderRadius: "14px", padding: "24px", background: "#fff" }}
+          >
+            <div className="fac-modal-header">
+              <div>
+                <h3 className="fac-modal-title">
+                  {viewingFacility.name} Bookings
+                </h3>
+                <p className="fac-modal-subtitle">
+                  Capacity: {viewingFacility.capacity} spots | Operating Hours: {formatTime(viewingFacility.openTime)} – {formatTime(viewingFacility.closeTime)}
+                </p>
+              </div>
+              <button
+                className="fac-btn fac-btn--edit"
+                onClick={() => setViewingFacility(null)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div style={{ marginBottom: "16px" }}>
+              <input
+                type="text"
+                placeholder="Search by Resident ID or Date..."
+                style={{
+                  width: "100%",
+                  padding: "9px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "13px"
+                }}
+                value={bookingSearch}
+                onChange={(e) => setBookingSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="admin-table-wrap" style={{ maxHeight: "360px", overflowY: "auto" }}>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Booking ID</th>
+                    <th>Resident ID</th>
+                    <th>Date</th>
+                    <th>Time Slot</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {viewFacilityBookings.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: "center", padding: "28px 0", color: "#94a3b8" }}>
+                        No bookings recorded for this facility.
+                      </td>
+                    </tr>
+                  ) : (
+                    viewFacilityBookings.map((b) => (
+                      <tr key={b.id}>
+                        <td>#{b.id}</td>
+                        <td>Resident #{b.residentId}</td>
+                        <td>{new Date(b.bookingDate).toLocaleDateString()}</td>
+                        <td>
+                          {b.startTime?.substring(0, 5)} – {b.endTime?.substring(0, 5)}
+                        </td>
+                        <td>
+                          <span
+                            className={`badge ${b.status === "Approved"
+                                ? "badge--success"
+                                : b.status === "Pending"
+                                  ? "badge--warning"
+                                  : "badge--danger"
+                              }`}
+                          >
+                            {b.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
