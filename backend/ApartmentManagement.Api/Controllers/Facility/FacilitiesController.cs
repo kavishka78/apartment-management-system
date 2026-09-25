@@ -20,10 +20,15 @@ namespace ApartmentManagement.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<FacilityResponseDto>>> GetFacilities()
+        public async Task<ActionResult<IEnumerable<FacilityResponseDto>>> GetFacilities([FromQuery] bool includeInactive = true)
         {
-            var facilities = await _context.Facilities
-                .Where(f => f.IsActive)
+            var query = _context.Facilities.AsQueryable();
+            if (!includeInactive)
+            {
+                query = query.Where(f => f.IsActive);
+            }
+
+            var facilities = await query
                 .Select(f => new FacilityResponseDto
                 {
                     Id = f.FacilityId,
@@ -35,14 +40,14 @@ namespace ApartmentManagement.Api.Controllers
                     IsActive = f.IsActive
                 }).ToListAsync();
 
-                return Ok(facilities);
+            return Ok(facilities);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<FacilityResponseDto>> GetFacility(int id)
         {
             var facility = await _context.Facilities
-                .Where(f => f.IsActive && f.FacilityId == id)
+                .Where(f => f.FacilityId == id)
                 .Select(f => new FacilityResponseDto
                 {
                     Id = f.FacilityId,
@@ -71,13 +76,45 @@ namespace ApartmentManagement.Api.Controllers
                 Capacity = dto.Capacity,
                 OpenTime = dto.OpenTime,
                 CloseTime = dto.CloseTime,
-                IsActive = true
+                IsActive = dto.IsActive
             };
 
             _context.Facilities.Add(facility);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetFacility), new {id = facility.FacilityId }, facility);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateFacility(int id, CreateFacilityDto dto)
+        {
+            var facility = await _context.Facilities.FindAsync(id);
+            if (facility == null)
+                return NotFound("Facility not found.");
+
+            facility.FacilityName = dto.Name;
+            facility.FacilityDescription = dto.Description;
+            facility.Capacity = dto.Capacity;
+            facility.OpenTime = dto.OpenTime;
+            facility.CloseTime = dto.CloseTime;
+            facility.IsActive = dto.IsActive;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpPatch("{id}/toggle-status")]
+        public async Task<IActionResult> ToggleFacilityStatus(int id)
+        {
+            var facility = await _context.Facilities.FindAsync(id);
+            if (facility == null)
+                return NotFound("Facility not found.");
+
+            facility.IsActive = !facility.IsActive;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { id = facility.FacilityId, isActive = facility.IsActive });
         }
     }
 

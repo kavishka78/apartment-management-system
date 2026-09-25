@@ -1,17 +1,37 @@
 import { useCallback, useEffect, useState } from "react";
 import Header from "../../components/admin/Header";
-import { getActiveVisitors, checkOutVisitor } from "../../services/api";
+import {
+  getAllVisitors,
+  checkInVisitor,
+  checkOutVisitor,
+  updateVisitor,
+  cancelVisitor,
+  getParkingSlots,
+} from "../../services/api";
 import "./VisitorLogs.css";
 
 export default function VisitorLogs() {
   const [visitors, setVisitors] = useState([]);
+  const [parkingSlots, setParkingSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Edit Modal State
+  const [editingVisitor, setEditingVisitor] = useState(null);
+  const [editForm, setEditForm] = useState({
+    visitorName: "",
+    vehicleNumber: "",
+    checkInTime: "",
+    status: "Pending",
+    assignedParkingSlotId: "",
+  });
+  const [saving, setSaving] = useState(false);
+
   const fetchData = useCallback(() => {
-    return getActiveVisitors()
-      .then((data) => {
-        setVisitors(data);
+    return Promise.all([getAllVisitors(), getParkingSlots()])
+      .then(([vData, pData]) => {
+        setVisitors(vData);
+        setParkingSlots(pData);
       })
       .catch((err) => {
         setError(err.message);
@@ -31,8 +51,56 @@ export default function VisitorLogs() {
     fetchData();
   }, [fetchData]);
 
+  function openEditModal(v) {
+    setEditingVisitor(v);
+    setEditForm({
+      visitorName: v.visitorName || "",
+      vehicleNumber: v.vehicleNumber || "",
+      checkInTime: v.checkInTime ? new Date(v.checkInTime).toISOString().slice(0, 16) : "",
+      status: v.status || "Pending",
+      assignedParkingSlotId: v.assignedParkingSlotId || "",
+    });
+  }
+
+  function closeEditModal() {
+    setEditingVisitor(null);
+  }
+
+  async function handleSaveEdit(e) {
+    e.preventDefault();
+    if (!editingVisitor) return;
+
+    setSaving(true);
+    try {
+      const payload = {
+        visitorName: editForm.visitorName,
+        vehicleNumber: editForm.vehicleNumber,
+        status: editForm.status,
+        checkInTime: editForm.checkInTime ? new Date(editForm.checkInTime).toISOString() : null,
+        assignedParkingSlotId: editForm.assignedParkingSlotId ? parseInt(editForm.assignedParkingSlotId) : null,
+      };
+
+      await updateVisitor(editingVisitor.id, payload);
+      closeEditModal();
+      await load();
+    } catch (err) {
+      alert("Failed to update visitor: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleCheckIn(id) {
+    try {
+      await checkInVisitor(id);
+      await load();
+    } catch (err) {
+      alert("Error checking in: " + err.message);
+    }
+  }
+
   async function handleCheckOut(id) {
-    if (!confirm("Check out this visitor?")) return;
+    if (!confirm("Check out this visitor and release any assigned parking spot?")) return;
     try {
       await checkOutVisitor(id);
       await load();
@@ -41,24 +109,42 @@ export default function VisitorLogs() {
     }
   }
 
+  async function handleCancel(id) {
+    if (!confirm("Cancel this visitor pass and free assigned parking slot?")) return;
+    try {
+      await cancelVisitor(id);
+      await load();
+    } catch (err) {
+      alert("Error cancelling visitor pass: " + err.message);
+    }
+  }
+
   function statusBadgeClass(status) {
     switch (status) {
       case "CheckedIn":
         return "badge badge--success";
       case "Pending":
+      case "Active":
         return "badge badge--warning";
       case "CheckedOut":
         return "badge badge--neutral";
+      case "Cancelled":
+        return "badge badge--danger";
       default:
         return "badge badge--info";
     }
   }
 
+  // Available Visitor Slots for dropdown
+  const visitorSlots = parkingSlots.filter(
+    (s) => s.slotType === "Visitor" || s.slotType === 1
+  );
+
   return (
     <div id="visitors-page">
       <Header
         title="Visitor & Parking Logs"
-        subtitle="Active visitor passes, access codes and parking assignments."
+        subtitle="Manage visitor passes, update check-in times, assign parking slots, and monitor status."
       >
         <button
           className="admin-btn admin-btn--secondary"
@@ -72,9 +158,7 @@ export default function VisitorLogs() {
         </button>
       </Header>
 
-      {error && (
-        <div className="overview-error-banner">⚠️ {error}</div>
-      )}
+      {error && <div className="overview-error-banner">{error}</div>}
 
       {loading ? (
         <div className="admin-loading">
@@ -91,7 +175,7 @@ export default function VisitorLogs() {
                   <th>Expected Arrival</th>
                   <th>Check-In Time</th>
                   <th>Parking Slot</th>
-                  <th>Vehicle</th>
+                  <th>Vehicle Number</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -100,7 +184,7 @@ export default function VisitorLogs() {
                 {visitors.length === 0 ? (
                   <tr>
                     <td colSpan="8" style={{ textAlign: "center", padding: "48px 0", color: "#9ca3af" }}>
-                      No active visitors at the moment.
+                      No visitor passes registered.
                     </td>
                   </tr>
                 ) : (
@@ -133,20 +217,153 @@ export default function VisitorLogs() {
                         </span>
                       </td>
                       <td>
-                        {v.status === "CheckedIn" && (
+                        <div style={{ display: "flex", gap: "6px" }}>
                           <button
-                            className="admin-btn admin-btn--warning admin-btn--sm"
-                            onClick={() => handleCheckOut(v.id)}
+                            className="admin-btn admin-btn--secondary admin-btn--sm"
+                            onClick={() => openEditModal(v)}
+                            disabled={v.status === "Cancelled"}
+                            style={v.status === "Cancelled" ? { opacity: 0.45, cursor: "not-allowed" } : {}}
+                            title={v.status === "Cancelled" ? "Cancelled by resident" : "Edit Visitor & Assign Slot"}
                           >
-                            Check Out
+                            Edit
                           </button>
-                        )}
+
+                          {v.status === "Pending" && (
+                            <button
+                              className="admin-btn admin-btn--primary admin-btn--sm"
+                              onClick={() => handleCheckIn(v.id)}
+                            >
+                              Check In
+                            </button>
+                          )}
+
+                          {v.status === "CheckedIn" && (
+                            <button
+                              className="admin-btn admin-btn--warning admin-btn--sm"
+                              onClick={() => handleCheckOut(v.id)}
+                            >
+                              Check Out
+                            </button>
+                          )}
+
+                          {v.status !== "CheckedOut" && v.status !== "Cancelled" && (
+                            <button
+                              className="admin-btn admin-btn--danger admin-btn--sm"
+                              onClick={() => handleCancel(v.id)}
+                              title="Cancel Pass"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Visitor Modal */}
+      {editingVisitor && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "500px", padding: "24px", background: "#fff", borderRadius: "16px" }}>
+            <h3 style={{ margin: "0 0 16px 0", fontSize: "18px", fontWeight: "700" }}>
+              Edit Visitor: {editingVisitor.visitorName}
+            </h3>
+
+            <form onSubmit={handleSaveEdit}>
+              <div style={{ marginBottom: "14px", padding: "12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "2px" }}>Visitor & Vehicle</div>
+                <div style={{ fontWeight: "700", fontSize: "14px", color: "#0f172a" }}>
+                  {editingVisitor.visitorName} ({editingVisitor.vehicleNumber || "No vehicle"})
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600" }}>
+                  Assign Visitor Parking Slot
+                </label>
+                {(() => {
+                  const hasVehicle = editingVisitor.vehicleNumber && editingVisitor.vehicleNumber.trim().length > 0;
+                  return (
+                    <>
+                      <select
+                        className="admin-input"
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid #d1d5db",
+                          opacity: hasVehicle ? 1 : 0.5,
+                          cursor: hasVehicle ? "default" : "not-allowed",
+                        }}
+                        value={editForm.assignedParkingSlotId}
+                        onChange={(e) => setEditForm({ ...editForm, assignedParkingSlotId: e.target.value })}
+                        disabled={!hasVehicle}
+                      >
+                        <option value="">-- No Slot Assigned --</option>
+                        {visitorSlots.map((slot) => {
+                          const isCurrentSlot = slot.slotId === editingVisitor.assignedParkingSlotId;
+                          const isOccupied = !slot.isAvailable && !isCurrentSlot;
+                          return (
+                            <option
+                              key={slot.slotId}
+                              value={slot.slotId}
+                              disabled={isOccupied}
+                              style={isOccupied ? { color: "#9ca3af" } : {}}
+                            >
+                              {slot.slotNumber} {isOccupied ? "(Occupied)" : slot.isAvailable ? "(Available)" : "(Currently Assigned)"}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {!hasVehicle && (
+                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
+                          Visitor has no registered vehicle. Parking slot assignment disabled.
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600" }}>
+                  Visitor Status
+                </label>
+                <select
+                  className="admin-input"
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #d1d5db" }}
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="CheckedIn">Checked In (Auto-sets current check-in time)</option>
+                  <option value="CheckedOut">Checked Out</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--secondary"
+                  onClick={closeEditModal}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn--primary"
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

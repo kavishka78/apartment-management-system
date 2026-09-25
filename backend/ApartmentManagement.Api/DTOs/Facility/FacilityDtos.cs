@@ -29,5 +29,7 @@ namespace ApartmentManagement.Api.DTOs
         
         [Required]
         public TimeSpan CloseTime { get; set; }
+
+        public bool IsActive { get; set; } = true;
     }
 }

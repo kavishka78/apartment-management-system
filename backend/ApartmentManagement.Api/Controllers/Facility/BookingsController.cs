@@ -17,6 +17,28 @@ namespace ApartmentManagement.Api.Controllers
             _context = context;
         }
 
+        // Get All Bookings
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookings()
+        {
+            var bookings = await _context.FacilityBookings
+                .Include(b => b.Facility)
+                .OrderByDescending(b => b.BookingDate)
+                .Select(b => new BookingResponseDto
+                {
+                    Id = b.BookingId,
+                    FacilityId = b.FacilityId,
+                    FacilityName = b.Facility != null ? b.Facility.FacilityName : "Unknown",
+                    ResidentId = b.ResidentId,
+                    BookingDate = b.BookingDate,
+                    StartTime = b.StartTime,
+                    EndTime = b.EndTime,
+                    Status = b.Status.ToString()
+                }).ToListAsync();
+
+            return Ok(bookings);
+        }
+
         // Create a Booking For A Facility
         [HttpPost]
         public async Task<ActionResult<BookingResponseDto>> CreateBooking(CreateBookingDto dto)
@@ -32,31 +54,46 @@ namespace ApartmentManagement.Api.Controllers
             if (dto.StartTime < facility.OpenTime || dto.EndTime > facility.CloseTime)
                 return BadRequest("Booking Time is Outside Facility Operating Hours");
 
-            // Check for Double Bookings
-            var hasConflicts = await _context.FacilityBookings.AnyAsync(b =>
+            // Ensure UTC DateTime for PostgreSQL Npgsql compatibility
+            var bookingDateUtc = dto.BookingDate.Kind == DateTimeKind.Utc
+                ? dto.BookingDate.Date
+                : DateTime.SpecifyKind(dto.BookingDate.Date, DateTimeKind.Utc);
+
+            // Validate Past Date & Time
+            var bookingStartDateTime = bookingDateUtc.Add(dto.StartTime);
+            if (bookingStartDateTime < DateTime.UtcNow.AddMinutes(-5))
+            {
+                return BadRequest("Cannot book a facility for a past date or time.");
+            }
+
+            // Check Capacity & Existing Bookings Count
+            var activeBookingsCount = await _context.FacilityBookings.CountAsync(b =>
                 b.FacilityId == dto.FacilityId &&
-                b.BookingDate.Date == dto.BookingDate.Date &&
+                b.BookingDate.Date == bookingDateUtc &&
                 b.Status != BookingStatus.Rejected &&
                 ((dto.StartTime < b.EndTime) && (dto.EndTime > b.StartTime))
             );
 
-            if(hasConflicts)
-                return Conflict("The Facility is Already Booked for the Selected Time.");
+            if (activeBookingsCount >= facility.Capacity)
+            {
+                return Conflict($"Facility capacity limit reached ({activeBookingsCount}/{facility.Capacity} spots taken) for the selected time slot.");
+            }
 
+            // Auto-Confirm Booking
             var booking = new FacilityBooking
             {
                 FacilityId = dto.FacilityId,
                 ResidentId = dto.ResidentId,
-                BookingDate = dto.BookingDate.Date,
+                BookingDate = bookingDateUtc,
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
-                Status = BookingStatus.Pending
+                Status = BookingStatus.Approved
             };
 
             _context.FacilityBookings.Add(booking);
             await _context.SaveChangesAsync();
 
-            return StatusCode(201, "Booking Request Submitted Successfully.");
+            return StatusCode(201, new { Message = "Booking confirmed! Spot reserved successfully.", BookingId = booking.BookingId });
         }
 
 

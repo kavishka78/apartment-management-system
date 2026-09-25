@@ -29,7 +29,18 @@ namespace ApartmentManagement.Api.DTOs
         public string AccessCode { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public string? AssignedParkingSlot { get; set; }
+        public int? AssignedParkingSlotId { get; set; }
         public DateTime? CheckInTime { get; set; }
         public DateTime? CheckOutTime { get; set; }
+    }
+
+    public class UpdateVisitorPassDto
+    {
+        public string? VisitorName { get; set; }
+        public string? VehicleNumber { get; set; }
+        public DateTime? CheckInTime { get; set; }
+        public string? Status { get; set; }
+        public int? AssignedParkingSlotId { get; set; }
+        public bool AutoAssignParking { get; set; } = false;
     }
 }

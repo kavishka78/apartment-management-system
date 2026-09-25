@@ -41,13 +41,34 @@ export async function updateFacility(id, data) {
   });
 }
 
+export async function toggleFacilityStatus(id) {
+  return request(`/facilities/${id}/toggle-status`, {
+    method: "PATCH",
+  });
+}
+
 // ─── Visitors ────────────────────────────────────────────────
 export async function getActiveVisitors() {
   return request("/visitors/active");
 }
 
+export async function getAllVisitors() {
+  return request("/visitors");
+}
+
+export async function updateVisitor(id, data) {
+  return request(`/visitors/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function cancelVisitor(id) {
+  return request(`/visitors/${id}/cancel`, { method: "POST" });
+}
+
 export async function checkInVisitor(id, accessCode) {
-  return request(`/visitors/${id}/check-in?accessCode=${accessCode}`, {
+  return request(`/visitors/${id}/check-in${accessCode ? `?accessCode=${accessCode}` : ""}`, {
     method: "POST",
   });
 }
@@ -100,14 +121,16 @@ export async function reviseWorkflow(id, data) {
 // ─── Dashboard Aggregates ────────────────────────────────────
 export async function getDashboardStats() {
   // We aggregate from multiple endpoints
-  const [facilities, visitors] = await Promise.allSettled([
+  const [facilities, visitors, bookings] = await Promise.allSettled([
     getFacilities(),
     getActiveVisitors(),
+    getBookings(),
   ]);
 
   const facilitiesData =
     facilities.status === "fulfilled" ? facilities.value : [];
   const visitorsData = visitors.status === "fulfilled" ? visitors.value : [];
+  const bookingsData = bookings.status === "fulfilled" ? bookings.value : [];
 
   const checkedIn = visitorsData.filter(
     (v) => v.status === "CheckedIn"
@@ -121,7 +144,9 @@ export async function getDashboardStats() {
     currentVisitors: checkedIn,
     totalVisitors: visitorsData.length,
     visitorsWithParking: withParking,
+    totalBookings: bookingsData.length,
     facilities: facilitiesData,
     visitors: visitorsData,
+    bookings: bookingsData,
   };
 }

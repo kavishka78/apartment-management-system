@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'screens/payment/payment_home_screen.dart';
+import 'screens/facility/facilities_list_screen.dart';
+import 'screens/facility/my_bookings_screen.dart';
+import 'screens/parking/visitor_parking_screen.dart';
 
 void main() {
   runApp(const ApartmentResidentApp());
@@ -37,21 +40,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    PlaceholderScreen(
-      title: 'Facilities',
-      icon: Icons.apartment_rounded,
-      message: 'Facility services will be available here.',
-    ),
-    PlaceholderScreen(
-      title: 'Maintenance',
-      icon: Icons.build_circle_outlined,
-      message: 'Maintenance requests will be available here.',
-    ),
-
-  
+    FacilitiesListScreen(),
+    VisitorParkingScreen(),
     PaymentHomeScreen(),
-
-
     PlaceholderScreen(
       title: 'Profile',
       icon: Icons.person_outline_rounded,
@@ -86,9 +77,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'Facilities',
           ),
           NavigationDestination(
-            icon: Icon(Icons.build_outlined),
-            selectedIcon: Icon(Icons.build),
-            label: 'Requests',
+            icon: Icon(Icons.local_parking_outlined),
+            selectedIcon: Icon(Icons.local_parking),
+            label: 'Parking',
           ),
           NavigationDestination(
             icon: Icon(Icons.account_balance_wallet_outlined),
@@ -191,7 +182,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  'Manage your apartment services easily.',
+                  'Manage facilities, visitor passes, & payments.',
                   style: TextStyle(
                     color: Color(0xFFD5DADF),
                     fontSize: 14,
@@ -220,26 +211,50 @@ class HomeScreen extends StatelessWidget {
             mainAxisSpacing: 14,
             crossAxisSpacing: 14,
             childAspectRatio: 1.15,
-            children: const [
+            children: [
               ServiceCard(
                 title: 'Facilities',
-                subtitle: 'View facilities',
+                subtitle: 'Book amenities',
                 icon: Icons.apartment_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const FacilitiesListScreen()),
+                  );
+                },
               ),
               ServiceCard(
-                title: 'Maintenance',
-                subtitle: 'Send a request',
-                icon: Icons.build_circle_outlined,
+                title: 'Visitor & Parking',
+                subtitle: 'Passes & Slots',
+                icon: Icons.local_parking_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const VisitorParkingScreen()),
+                  );
+                },
               ),
               ServiceCard(
                 title: 'Payments',
                 subtitle: 'Pay your bills',
                 icon: Icons.credit_card_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PaymentHomeScreen()),
+                  );
+                },
               ),
               ServiceCard(
-                title: 'My Profile',
-                subtitle: 'Account details',
-                icon: Icons.person_outline_rounded,
+                title: 'My Bookings',
+                subtitle: 'Facility status',
+                icon: Icons.bookmark_outline_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MyBookingsScreen()),
+                  );
+                },
               ),
             ],
           ),
@@ -253,61 +268,67 @@ class ServiceCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
+  final VoidCallback? onTap;
 
   const ServiceCard({
     super.key,
     required this.title,
     required this.subtitle,
     required this.icon,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFE8ECEF),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: const Color(0xFFE8ECEF),
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEEF1F2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF17212B),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEEF1F2),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                ),
+              child: Icon(
+                icon,
+                color: const Color(0xFF17212B),
               ),
-            ],
-          ),
-        ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

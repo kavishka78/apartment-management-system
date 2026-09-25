@@ -1,6 +1,9 @@
 using ApartmentManagement.Api.Data;
 using Microsoft.EntityFrameworkCore;
 
+// Enable Npgsql legacy timestamp behavior for seamless DateTime support
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
