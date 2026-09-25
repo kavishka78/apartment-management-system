@@ -39,6 +39,30 @@ namespace ApartmentManagement.Api.Controllers
             return Ok(bookings);
         }
 
+        // Get Bookings for a Specific Facility
+        [HttpGet("facility/{facilityId}")]
+        public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookingsForFacility(int facilityId)
+        {
+            var bookings = await _context.FacilityBookings
+                .Include(b => b.Facility)
+                .Where(b => b.FacilityId == facilityId && b.Status != BookingStatus.Rejected)
+                .OrderBy(b => b.BookingDate)
+                .ThenBy(b => b.StartTime)
+                .Select(b => new BookingResponseDto
+                {
+                    Id = b.BookingId,
+                    FacilityId = b.FacilityId,
+                    FacilityName = b.Facility != null ? b.Facility.FacilityName : "Unknown",
+                    ResidentId = b.ResidentId,
+                    BookingDate = b.BookingDate,
+                    StartTime = b.StartTime,
+                    EndTime = b.EndTime,
+                    Status = b.Status.ToString()
+                }).ToListAsync();
+
+            return Ok(bookings);
+        }
+
         // Create a Booking For A Facility
         [HttpPost]
         public async Task<ActionResult<BookingResponseDto>> CreateBooking(CreateBookingDto dto)
