@@ -1,14 +1,16 @@
+/* ─── Super Admin Minimalist Light Sidebar ──────────────────────── */
+
 .super-sidebar {
-  width: 270px;
-  background: #0f172a;
-  border-right: 1px solid #1e293b;
+  width: 260px;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
   height: 100vh;
   position: fixed;
   top: 0;
   left: 0;
   display: flex;
   flex-direction: column;
-  padding: 24px 18px;
+  padding: 24px 16px;
   box-sizing: border-box;
   z-index: 100;
 }
@@ -17,75 +19,91 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   padding: 0 8px;
 }
 
-.super-sidebar-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: #fff;
+.super-sidebar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 16px;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  font-size: 13px;
+  letter-spacing: -0.5px;
+}
+
+.super-sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .super-sidebar-title {
-  font-size: 16px;
-  font-weight: 800;
-  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .super-sidebar-sub {
   font-size: 11px;
-  color: #94a3b8;
+  color: #64748b;
   margin: 0;
 }
 
 .super-nav-section-lbl {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 1.2px;
-  color: #64748b;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
   text-transform: uppercase;
-  margin: 16px 8px 8px;
+  margin: 16px 8px 6px;
 }
 
 .super-nav-link {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  border-radius: 9px;
-  color: #94a3b8;
+  padding: 8px 12px;
+  border-radius: 7px;
+  color: #475569;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
-  transition: all 0.15s ease;
-  margin-bottom: 4px;
+  transition: all 0.12s ease;
+  margin-bottom: 2px;
 }
 
 .super-nav-link:hover {
-  background: #1e293b;
-  color: #f1f5f9;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .super-nav-link--active {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
-  color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.super-nav-link-icon {
+  color: #64748b;
+  display: flex;
+  align-items: center;
+}
+
+.super-nav-link--active .super-nav-link-icon {
+  color: #4f46e5;
 }
 
 .super-sidebar-footer {
   margin-top: auto;
-  padding: 14px 12px;
-  background: #1e293b;
-  border-radius: 12px;
-  border: 1px solid #334155;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
 }

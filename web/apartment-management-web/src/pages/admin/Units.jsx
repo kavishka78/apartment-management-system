@@ -61,7 +61,7 @@ export default function Units() {
           squareFeet: parseInt(formData.squareFeet, 10),
           monthlyRent: parseFloat(formData.monthlyRent),
         });
-        setToast({ type: "success", message: `Unit ${formData.unitNumber} updated successfully!` });
+        setToast({ type: "success", message: `Unit ${formData.unitNumber} updated successfully.` });
       } else {
         await createUnit({
           ...formData,
@@ -72,7 +72,7 @@ export default function Units() {
           squareFeet: parseInt(formData.squareFeet, 10),
           monthlyRent: parseFloat(formData.monthlyRent),
         });
-        setToast({ type: "success", message: `Unit ${formData.unitNumber} added to ${activeComplexName}!` });
+        setToast({ type: "success", message: `Unit ${formData.unitNumber} added to registry.` });
       }
 
       setShowAddModal(false);
@@ -149,9 +149,10 @@ export default function Units() {
             zIndex: 9999,
             padding: "12px 20px",
             borderRadius: "8px",
-            background: toast.type === "success" ? "#10b981" : "#ef4444",
+            background: toast.type === "success" ? "#0f172a" : "#ef4444",
             color: "#fff",
             fontWeight: 600,
+            fontSize: "13px",
           }}
         >
           {toast.message}
@@ -162,12 +163,12 @@ export default function Units() {
       <div className="page-header">
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-            <span style={{ fontSize: "12px", background: "#ede9fe", color: "#6d28d9", fontWeight: 700, padding: "2px 8px", borderRadius: "6px" }}>
-              🏢 {activeComplexName}
+            <span style={{ fontSize: "11px", background: "#f1f5f9", color: "#334155", fontWeight: 700, padding: "2px 8px", borderRadius: "4px", textTransform: "uppercase" }}>
+              {activeComplexName}
             </span>
           </div>
           <h1>Unit Directory & Floor Allocations</h1>
-          <p>Apartment Manager portal for configuring units, floor allocations, occupancy status, and rent structures.</p>
+          <p>Configure apartment units, floor allocations, occupancy status, and monthly rent structures.</p>
         </div>
         <button
           className="admin-btn admin-btn--primary"
@@ -177,22 +178,22 @@ export default function Units() {
           }}
           id="btn-add-unit"
         >
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
-          Add Unit to {activeComplexName}
+          Add Unit
         </button>
       </div>
 
       {/* Filter & Search Bar */}
       <div className="units-filter-bar">
         <div className="search-input-wrap">
-          <svg className="search-input-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg className="search-input-icon" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
           </svg>
           <input
             type="text"
-            placeholder="Search by unit number, block, resident..."
+            placeholder="Search unit number, block, resident..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -227,9 +228,11 @@ export default function Units() {
               style={{
                 padding: "8px 12px",
                 border: "none",
-                background: viewMode === "grid" ? "#6366f1" : "#fff",
+                background: viewMode === "grid" ? "#0f172a" : "#fff",
                 color: viewMode === "grid" ? "#fff" : "#475569",
                 cursor: "pointer",
+                fontSize: "12px",
+                fontWeight: 600,
               }}
             >
               Grid
@@ -239,9 +242,11 @@ export default function Units() {
               style={{
                 padding: "8px 12px",
                 border: "none",
-                background: viewMode === "table" ? "#6366f1" : "#fff",
+                background: viewMode === "table" ? "#0f172a" : "#fff",
                 color: viewMode === "table" ? "#fff" : "#475569",
                 cursor: "pointer",
+                fontSize: "12px",
+                fontWeight: 600,
               }}
             >
               Table
@@ -272,10 +277,10 @@ export default function Units() {
                 <p className="unit-block-subtitle">{u.blockName} • Floor {u.floorNumber}</p>
 
                 <div className="unit-specs-pills">
-                  <span className="spec-pill">🛏️ {u.numberOfBedrooms} Beds</span>
-                  <span className="spec-pill">🚿 {u.numberOfBathrooms} Baths</span>
-                  <span className="spec-pill">📐 {u.squareFeet} sqft</span>
-                  {u.parkingSlot && <span className="spec-pill">🚗 {u.parkingSlot}</span>}
+                  <span className="spec-pill">{u.numberOfBedrooms} Beds</span>
+                  <span className="spec-pill">{u.numberOfBathrooms} Baths</span>
+                  <span className="spec-pill">{u.squareFeet} sqft</span>
+                  {u.parkingSlot && <span className="spec-pill">Slot {u.parkingSlot}</span>}
                 </div>
 
                 <div className="unit-resident-box">
@@ -309,7 +314,7 @@ export default function Units() {
                     className="admin-btn admin-btn--primary admin-btn--sm"
                     style={{ flex: 1 }}
                   >
-                    History
+                    Details
                   </button>
                 </div>
               </div>
@@ -321,7 +326,7 @@ export default function Units() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Unit #</th>
+                <th>Unit Number</th>
                 <th>Block / Wing</th>
                 <th>Floor</th>
                 <th>Bedrooms</th>

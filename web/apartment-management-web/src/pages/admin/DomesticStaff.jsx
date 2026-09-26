@@ -117,7 +117,7 @@ export default function DomesticStaff() {
             zIndex: 9999,
             padding: "12px 20px",
             borderRadius: "8px",
-            background: toast.type === "success" ? "#10b981" : "#ef4444",
+            background: toast.type === "success" ? "#0f172a" : "#dc2626",
             color: "#fff",
             fontWeight: 600,
           }}
@@ -130,8 +130,8 @@ export default function DomesticStaff() {
       <div className="page-header">
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-            <span style={{ fontSize: "12px", background: "#ede9fe", color: "#6d28d9", fontWeight: 700, padding: "2px 8px", borderRadius: "6px" }}>
-              🏢 {activeComplexName}
+            <span style={{ fontSize: "11px", background: "#f1f5f9", color: "#334155", fontWeight: 700, padding: "2px 8px", borderRadius: "4px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              {activeComplexName}
             </span>
           </div>
           <h1>Domestic Staff Registry & Security Passes</h1>
@@ -202,7 +202,7 @@ export default function DomesticStaff() {
                   </td>
                   <td style={{ fontFamily: "monospace", fontSize: "12px" }}>{s.nicNumber}</td>
                   <td>
-                    <span className="pass-code-tag">🔑 {s.accessPassCode}</span>
+                    <span className="pass-code-tag">{s.accessPassCode}</span>
                   </td>
                   <td style={{ fontSize: "12px", color: "#64748b" }}>{s.workingHours}</td>
                   <td>
