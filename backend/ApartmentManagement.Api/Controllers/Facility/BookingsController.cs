@@ -169,5 +169,33 @@ namespace ApartmentManagement.Api.Controllers
                 return StatusCode(500, new { Message = "An error occurred while approving the booking.", Details = ex.Message });
             }
         }
+
+        // Cancel / Delete Booking (Upcoming only)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> CancelBooking(int id)
+        {
+            try
+            {
+                var booking = await _context.FacilityBookings.FindAsync(id);
+                if (booking == null) return NotFound("Booking not found.");
+
+                // Validate past booking
+                var bookingStartDateTime = booking.BookingDate.Date.Add(booking.StartTime);
+                if (bookingStartDateTime < DateTime.UtcNow.AddMinutes(-5))
+                {
+                    return BadRequest("Past bookings cannot be cancelled.");
+                }
+
+                _context.FacilityBookings.Remove(booking);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Message = "Booking cancelled successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred in CancelBooking for BookingId: {BookingId}", id);
+                return StatusCode(500, new { Message = "An error occurred while cancelling the booking.", Details = ex.Message });
+            }
+        }
     }
 }
