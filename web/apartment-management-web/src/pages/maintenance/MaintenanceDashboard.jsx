@@ -47,7 +47,7 @@ function MaintenanceDashboard() {
 
           <div className="summary-card">
             <p>Pending / Assigned</p>
-            <h2>{loading ? "..." : (report?.pending + report?.assigned) ?? 0}</h2>
+            <h2>{loading ? "..." : ((report?.pending ?? 0) + (report?.assigned ?? 0))}</h2>
             <span>Requires action</span>
           </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdAssignmentInd, MdClose, MdComment, MdArrowBack } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
@@ -17,7 +17,7 @@ function MaintenanceDetails() {
   const [note, setNote] = useState('');
   const [commentNote, setCommentNote] = useState('');
 
-  const fetchTicket = () => {
+  const fetchTicket = useCallback(() => {
     fetch(`http://localhost:5073/api/maintenance/${id}`)
       .then(res => res.json())
       .then(data => {
@@ -28,11 +28,11 @@ function MaintenanceDetails() {
         console.error(err);
         setLoading(false);
       });
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchTicket();
-  }, [id]);
+  }, [fetchTicket]);
 
   const loadAiTriage = () => {
     setAiRecommendation({ loading: true });

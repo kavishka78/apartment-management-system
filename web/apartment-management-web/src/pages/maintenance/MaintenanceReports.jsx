@@ -56,11 +56,11 @@ function MaintenanceReports() {
 
     tickets.forEach(t => {
       const d = new Date(t.createdAt);
-      let keyStr = '';
-      
-      if (timeFilter === 'day') keyStr = d.toLocaleDateString('default', { month: 'short', day: 'numeric' });
-      else if (timeFilter === 'year') keyStr = d.getFullYear().toString();
-      else keyStr = d.toLocaleString('default', { month: 'short' });
+      const keyStr = timeFilter === 'day' 
+        ? d.toLocaleDateString('default', { month: 'short', day: 'numeric' })
+        : timeFilter === 'year' 
+        ? d.getFullYear().toString()
+        : d.toLocaleString('default', { month: 'short' });
       
       if (dataMap[keyStr]) {
         dataMap[keyStr].Complaints += 1;

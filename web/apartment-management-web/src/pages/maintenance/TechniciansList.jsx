@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSave, MdSearch, MdCameraAlt } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
@@ -25,7 +25,7 @@ function TechniciansList() {
   // Lightbox
   const [lightbox, setLightbox] = useState(null); // { src, name }
 
-  const fetchTechs = () => {
+  const fetchTechs = useCallback(() => {
     setLoading(true);
     fetch('http://localhost:5073/api/technicians')
       .then(res => res.json())
@@ -37,11 +37,11 @@ function TechniciansList() {
         console.error(err);
         setLoading(false);
       });
-  };
+  }, []);
 
   useEffect(() => {
     fetchTechs();
-  }, []);
+  }, [fetchTechs]);
 
   const openAddModal = () => {
     setEditingTech(null);
