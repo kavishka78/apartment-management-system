@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSave, MdSearch, MdCameraAlt } from 'react-icons/md';
+import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSave, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
 import './Complaints.css';
+import '../admin/DomesticStaff.css';
 
 function TechniciansList() {
   const [techs, setTechs] = useState([]);
@@ -10,13 +11,30 @@ function TechniciansList() {
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All Statuses');
+  const [skillFilter, setSkillFilter] = useState('All Skills');
+  const [accessFilter, setAccessFilter] = useState('All Access');
+
+  // Filter Dropdown Visibility
+  const [openFilterDropdown, setOpenFilterDropdown] = useState(null); // 'status', 'skill', 'access'
 
   // Modal / Form state
   const [showModal, setShowModal] = useState(false);
   const [editingTech, setEditingTech] = useState(null);
-  const [formData, setFormData] = useState({ name: '', contactInformation: '', skills: '', status: 'Available' });
+  const [formData, setFormData] = useState({ name: '', contactInformation: '', skills: '', status: 'Available', nicNumber: '', accessPassCode: '', workingHours: '', isAccessGranted: true });
   const [availableSkills, setAvailableSkills] = useState(['Plumbing', 'Electrical', 'HVAC', 'Carpentry', 'General', 'Appliances', 'Painting']);
   const [newSkill, setNewSkill] = useState('');
+
+  // Dropdown state
+  const [showTimeDropdown, setShowTimeDropdown] = useState(false);
+  const workingHourOptions = [
+    "08:00 AM - 05:00 PM (Mon-Fri)",
+    "07:00 AM - 07:00 PM (Daily)",
+    "09:00 AM - 03:00 PM (Daily)",
+    "08:00 AM - 08:00 PM (Daily)",
+    "24/7 Access",
+    "On-Call / As Needed"
+  ];
 
   // Photo upload
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -44,8 +62,9 @@ function TechniciansList() {
 
   const openAddModal = () => {
     setEditingTech(null);
-    setFormData({ name: '', contactInformation: '', skills: '', status: 'Available' });
+    setFormData({ name: '', contactInformation: '', skills: '', status: 'Available', nicNumber: '', accessPassCode: '', workingHours: '', isAccessGranted: true });
     setPhotoPreview(null);
+    setShowTimeDropdown(false);
     setShowModal(true);
   };
 
@@ -55,7 +74,11 @@ function TechniciansList() {
       name: tech.name,
       contactInformation: tech.contactInformation,
       skills: tech.skills,
-      status: tech.status
+      status: tech.status,
+      nicNumber: tech.nicNumber || '',
+      accessPassCode: tech.accessPassCode || '',
+      workingHours: tech.workingHours || '',
+      isAccessGranted: tech.isAccessGranted !== undefined ? tech.isAccessGranted : true
     });
     setPhotoPreview(tech.photoBase64 || null);
 
@@ -67,6 +90,7 @@ function TechniciansList() {
         return updated;
       });
     }
+    setShowTimeDropdown(false);
     setShowModal(true);
   };
 
@@ -90,9 +114,25 @@ function TechniciansList() {
     }
   };
 
+  const handleToggleAccess = async (tech) => {
+    const updatedTech = { ...tech, isAccessGranted: !tech.isAccessGranted };
+    try {
+      setLoading(true);
+      await fetch(`http://localhost:5073/api/technicians/${tech.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTech)
+      });
+      fetchTechs();
+    } catch (e) {
+      console.error(e);
+      setLoading(false);
+    }
+  };
+
   const handleSave = async () => {
-    if (!formData.name || !formData.skills || !formData.contactInformation) {
-      alert('Please fill in all fields.');
+    if (!formData.name || !formData.skills || !formData.contactInformation || !formData.nicNumber) {
+      alert('Please fill in all required fields (Name, Contact, Skills, NIC).');
       return;
     }
     const contactRegex = /^\d{10}$/;
@@ -100,10 +140,21 @@ function TechniciansList() {
       alert('Contact number must be exactly 10 digits.');
       return;
     }
+    const nicRegex = /^\d{12}$/;
+    if (!nicRegex.test(formData.nicNumber)) {
+      alert('NIC number must be exactly 12 digits.');
+      return;
+    }
 
     const payload = {
-      ...formData,
+      name: formData.name,
       contactInformation: formData.contactInformation.replace(/\s+/g, ''),
+      skills: formData.skills,
+      status: formData.status,
+      nicNumber: formData.nicNumber,
+      accessPassCode: formData.accessPassCode,
+      workingHours: formData.workingHours,
+      isAccessGranted: formData.isAccessGranted,
       photoBase64: photoPreview || null
     };
 
@@ -130,9 +181,62 @@ function TechniciansList() {
     }
   };
 
-  const filteredTechs = techs.filter(t =>
-    t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.skills.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTechs = techs.filter(t => {
+    const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (t.skills && t.skills.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = statusFilter === 'All Statuses' || t.status === statusFilter;
+    const matchesSkill = skillFilter === 'All Skills' || (t.skills && t.skills.includes(skillFilter));
+    const matchesAccess = accessFilter === 'All Access' || 
+                          (accessFilter === 'Granted' && t.isAccessGranted) || 
+                          (accessFilter === 'Revoked' && !t.isAccessGranted);
+    return matchesSearch && matchesStatus && matchesSkill && matchesAccess;
+  });
+
+  const renderFilterDropdown = (value, setValue, options, id) => (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={(e) => { e.preventDefault(); setOpenFilterDropdown(openFilterDropdown === id ? null : id); }}
+        style={{
+          padding: '10px 16px', borderRadius: '50px', border: '1px solid #e2e8f0',
+          background: value.startsWith('All') ? '#ececec' : '#f5f3ff',
+          color: value.startsWith('All') ? '#17212b' : '#6366f1',
+          fontSize: '14px', fontWeight: '500', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '8px',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.02)', whiteSpace: 'nowrap', fontFamily: '"Montserrat", sans-serif'
+        }}
+      >
+        {value}
+        {openFilterDropdown === id ? <MdKeyboardArrowUp size={18} /> : <MdKeyboardArrowDown size={18} />}
+      </button>
+
+      {openFilterDropdown === id && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0,
+          background: '#fff', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+          border: '1px solid #e2e8f0', overflow: 'hidden', zIndex: 50, minWidth: '160px'
+        }}>
+          {options.map((option, idx) => (
+            <div
+              key={idx}
+              onClick={() => { setValue(option); setOpenFilterDropdown(null); }}
+              style={{
+                padding: '10px 16px', fontSize: '14px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: value === option ? '#f5f3ff' : '#fff',
+                color: value === option ? '#6366f1' : '#334155',
+                fontWeight: value === option ? '600' : '400',
+                borderBottom: idx < options.length - 1 ? '1px solid #f1f5f9' : 'none'
+              }}
+              onMouseOver={e => { if (value !== option) e.currentTarget.style.background = '#f8fafc'; }}
+              onMouseOut={e => { if (value !== option) e.currentTarget.style.background = '#fff'; }}
+            >
+              {option}
+              {value === option && <MdCheck size={16} color="#6366f1" />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 
   const statusColor = (status) => {
@@ -159,17 +263,23 @@ function TechniciansList() {
           </button>
         </header>
 
-        {/* Search */}
+        {/* Search & Filters */}
         <div style={{ marginBottom: '20px' }}>
-          <div className="search-pill" style={{ maxWidth: '420px' }}>
-            <MdSearch className="search-pill-icon" />
-            <input
-              type="text"
-              placeholder="Search technicians by name or skill..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="search-pill-input"
-            />
+          <div className="search-filter-row">
+            <div className="search-pill" style={{ maxWidth: '420px' }}>
+              <MdSearch className="search-pill-icon" />
+              <input
+                type="text"
+                placeholder="Search technicians by name or skill..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="search-pill-input"
+              />
+            </div>
+            
+            {renderFilterDropdown(statusFilter, setStatusFilter, ['All Statuses', 'Available', 'Busy', 'Offline'], 'status')}
+            {renderFilterDropdown(skillFilter, setSkillFilter, ['All Skills', 'Plumbing', 'Electrical', 'HVAC', 'Carpentry', 'General', 'Appliances', 'Painting'], 'skill')}
+            {renderFilterDropdown(accessFilter, setAccessFilter, ['All Access', 'Granted', 'Revoked'], 'access')}
           </div>
         </div>
 
@@ -192,11 +302,14 @@ function TechniciansList() {
               <table className="payment-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '220px' }}>Name</th>
+                    <th style={{ width: '220px' }}>Staff Member (Name)</th>
                     <th>Skills</th>
-                    <th style={{ width: '150px' }}>Contact</th>
-                    <th style={{ width: '120px' }}>Status</th>
-                    <th style={{ width: '120px' }}>Workload</th>
+                    <th style={{ width: '130px' }}>Contact</th>
+                    <th style={{ width: '130px' }}>NIC Number</th>
+                    <th style={{ width: '130px' }}>Pass Code</th>
+                    <th style={{ width: '140px' }}>Working Hours</th>
+                    <th style={{ width: '110px' }}>Work State</th>
+                    <th style={{ width: '130px' }}>Access Status</th>
                     <th style={{ width: '90px', textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
@@ -239,19 +352,46 @@ function TechniciansList() {
                             <MdPhone size={13} color="#a0aec0" /> {t.contactInformation}
                           </div>
                         </td>
-
-                        {/* Status */}
-                        <td>
-                          <span className={`status-badge ${sc.badge}`}>
-                            <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: sc.dot, marginRight: '5px' }} />
-                            {t.status}
-                          </span>
+                        
+                        {/* NIC Number */}
+                        <td style={{ fontFamily: 'monospace', fontSize: '12px', opacity: t.status === 'Offline' ? 0.5 : 1 }}>
+                          {t.nicNumber || '-'}
+                        </td>
+                        
+                        {/* Access Pass Code */}
+                        <td style={{ opacity: t.status === 'Offline' ? 0.5 : 1 }}>
+                          {t.accessPassCode ? <span className="pass-code-tag">🔑 {t.accessPassCode}</span> : '-'}
+                        </td>
+                        
+                        {/* Working Hours */}
+                        <td style={{ fontSize: '12px', color: '#64748b', opacity: t.status === 'Offline' ? 0.5 : 1 }}>
+                          {t.workingHours || '-'}
                         </td>
 
-                        {/* Workload */}
+                        {/* Work State */}
                         <td>
-                          <span style={{ fontWeight: '600', color: t.activeWorkload > 3 ? '#e53e3e' : '#4a5568', fontSize: '13px' }}>
-                            {t.activeWorkload} active {t.activeWorkload === 1 ? 'job' : 'jobs'}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span className={`status-badge ${sc.badge}`}>
+                              <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: sc.dot, marginRight: '5px' }} />
+                              {t.status}
+                            </span>
+                            <span style={{ fontWeight: '600', color: t.activeWorkload > 3 ? '#e53e3e' : '#4a5568', fontSize: '11px', paddingLeft: '2px' }}>
+                              {t.activeWorkload} active {t.activeWorkload === 1 ? 'job' : 'jobs'}
+                            </span>
+                          </div>
+                        </td>
+                        
+                        {/* Access Status */}
+                        <td>
+                          <span className={`status-badge ${t.isAccessGranted ? "badge--success" : "badge--danger"}`} style={{ 
+                            background: t.isAccessGranted ? '#d1fae5' : '#fee2e2', 
+                            color: t.isAccessGranted ? '#065f46' : '#991b1b',
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: '600'
+                          }}>
+                            {t.isAccessGranted ? "Granted" : "Revoked"}
                           </span>
                         </td>
 
@@ -294,7 +434,7 @@ function TechniciansList() {
         {/* ── Form Modal ── */}
         {showModal && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-            <div style={{ background: '#fff', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <div className="custom-modal-scroll" style={{ background: '#fff', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
 
               {/* Modal Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -333,6 +473,120 @@ function TechniciansList() {
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g. John Doe"
                   />
+                </div>
+
+                {/* Additional Details Group */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* NIC Number */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700', color: '#68727c', marginBottom: '8px' }}>NIC Number (12 Digits)</label>
+                    <input
+                      type="text"
+                      maxLength={12}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '12px 18px', borderRadius: '50px', border: '1px solid #e0e0e0', fontSize: '14px', outline: 'none' }}
+                      value={formData.nicNumber}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        if (val.length <= 12) setFormData({ ...formData, nicNumber: val });
+                      }}
+                      placeholder="e.g. 199012345678"
+                    />
+                  </div>
+                  
+                  {/* Access Pass Code */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700', color: '#68727c', marginBottom: '8px' }}>Pass Code</label>
+                    <input
+                      type="text"
+                      disabled={true}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '12px 18px', borderRadius: '50px', border: '1px solid #e0e0e0', fontSize: '14px', outline: 'none', background: '#f8fafc', color: '#64748b', cursor: 'not-allowed' }}
+                      value={formData.accessPassCode || 'Auto-generated on save'}
+                      onChange={e => setFormData({ ...formData, accessPassCode: e.target.value })}
+                      title="This is automatically generated when the technician is added"
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
+                    {/* Working Hours (Custom Dropdown) */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700', color: '#68727c', marginBottom: '8px' }}>Working Hours</label>
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          onClick={(e) => { e.preventDefault(); setShowTimeDropdown(!showTimeDropdown); }}
+                          style={{
+                            width: '100%', boxSizing: 'border-box', padding: '12px 18px', borderRadius: '50px',
+                            border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', background: '#f8fafc',
+                            color: formData.workingHours ? '#334155' : '#94a3b8', fontWeight: '500', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+                          }}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <MdAccessTime size={18} color={formData.workingHours ? '#6366f1' : '#a0aec0'} />
+                            {formData.workingHours || "Select working hours"}
+                          </span>
+                          {showTimeDropdown ? <MdKeyboardArrowUp size={20} color="#a0aec0" /> : <MdKeyboardArrowDown size={20} color="#a0aec0" />}
+                        </button>
+
+                        {showTimeDropdown && (
+                          <div style={{
+                            position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+                            background: '#fff', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                            border: '1px solid #e2e8f0', overflow: 'hidden', zIndex: 50
+                          }}>
+                            {workingHourOptions.map((option, idx) => (
+                              <div
+                                key={idx}
+                                onClick={(e) => { e.preventDefault(); setFormData({ ...formData, workingHours: option }); setShowTimeDropdown(false); }}
+                                style={{
+                                  padding: '12px 16px', fontSize: '14px', cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                  background: formData.workingHours === option ? '#f5f3ff' : '#fff',
+                                  color: formData.workingHours === option ? '#6366f1' : '#334155',
+                                  fontWeight: formData.workingHours === option ? '600' : '400',
+                                  borderBottom: idx < workingHourOptions.length - 1 ? '1px solid #f1f5f9' : 'none'
+                                }}
+                                onMouseOver={e => { if (formData.workingHours !== option) e.currentTarget.style.background = '#f8fafc'; }}
+                                onMouseOut={e => { if (formData.workingHours !== option) e.currentTarget.style.background = '#fff'; }}
+                              >
+                                {option}
+                                {formData.workingHours === option && <MdCheck size={18} color="#6366f1" />}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Access Status */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700', color: '#68727c', marginBottom: '8px' }}>Access Status</label>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        onClick={() => setFormData({ ...formData, isAccessGranted: true })}
+                        style={{
+                          flex: 1, padding: '10px', borderRadius: '50px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+                          border: formData.isAccessGranted ? '2px solid #38a169' : '1px solid #e0e0e0',
+                          background: formData.isAccessGranted ? '#f0fff4' : '#fff',
+                          color: formData.isAccessGranted ? '#22543d' : '#a0aec0'
+                        }}
+                      >
+                        Granted
+                      </button>
+                      <button
+                        onClick={() => setFormData({ ...formData, isAccessGranted: false })}
+                        style={{
+                          flex: 1, padding: '10px', borderRadius: '50px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+                          border: !formData.isAccessGranted ? '2px solid #e53e3e' : '1px solid #e0e0e0',
+                          background: !formData.isAccessGranted ? '#fff5f5' : '#fff',
+                          color: !formData.isAccessGranted ? '#9b2c2c' : '#a0aec0'
+                        }}
+                      >
+                        Revoked
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Contact Number */}

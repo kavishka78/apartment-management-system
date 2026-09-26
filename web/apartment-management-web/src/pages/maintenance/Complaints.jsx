@@ -177,7 +177,7 @@ function Complaints() {
                       <td>{c.technician?.name || '-'}</td>
                       <td>{new Date(c.createdAt).toLocaleDateString()}</td>
                       <td>
-                        <Link to={`/maintenance/${c.id}`} style={{ color: '#0d6efd', textDecoration: 'none', fontWeight: 'bold' }}>
+                        <Link to={`/maintenance/complaints/${c.id}`} style={{ color: '#0d6efd', textDecoration: 'none', fontWeight: 'bold' }}>
                           View
                         </Link>
                       </td>

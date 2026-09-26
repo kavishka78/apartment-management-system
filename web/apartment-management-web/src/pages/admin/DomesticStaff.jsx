@@ -24,11 +24,27 @@ export default function DomesticStaff() {
   const loadData = useCallback(async () => {
   try {
     setLoading(true);
-    const [sList, rList] = await Promise.all([
+    const [sList, rList, techsList] = await Promise.all([
       getDomesticStaff(activeTenantId),
       getResidents(activeTenantId),
+      fetch('http://localhost:5073/api/technicians').then(r => r.json()).catch(() => [])
     ]);
-    setStaffList(sList || []);
+
+    const mappedTechs = (techsList || []).map(t => ({
+      id: `tech-${t.id}`,
+      fullName: t.name,
+      staffType: `Technician (${t.skills})`,
+      residentName: "Building Management",
+      unitNumber: "ALL",
+      nicNumber: t.contactInformation || "N/A",
+      accessPassCode: `TECH-${t.id.toString().padStart(4, '0')}`,
+      workingHours: "Authorized Access",
+      isActive: t.status !== 'Offline',
+      isTech: true,
+      originalId: t.id
+    }));
+
+    setStaffList([...(sList || []), ...mappedTechs]);
     setResidents(rList || []);
   } catch (err) {
     console.error(err);
@@ -86,7 +102,12 @@ export default function DomesticStaff() {
     }
   };
 
-  const handleToggleAccess = async (id, name, currentStatus) => {
+  const handleToggleAccess = async (id, name, currentStatus, isTech) => {
+    if (isTech) {
+      setToast({ type: "danger", message: "Cannot modify building technician access from the resident registry." });
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
     try {
       await toggleStaffAccess(id);
       setToast({
@@ -199,11 +220,13 @@ export default function DomesticStaff() {
                 <tr key={s.id}>
                   <td style={{ fontWeight: 600, color: "#0f172a" }}>{s.fullName}</td>
                   <td>
-                    <span className="badge badge--info">{s.staffType}</span>
+                    <span className={`badge ${s.isTech ? "badge--success" : "badge--info"}`}>{s.staffType}</span>
                   </td>
                   <td>{s.residentName}</td>
                   <td>
-                    <span style={{ fontWeight: 700, color: "#4f46e5" }}>Unit {s.unitNumber}</span>
+                    <span style={{ fontWeight: 700, color: "#4f46e5" }}>
+                      {s.isTech ? "ALL" : `Unit ${s.unitNumber}`}
+                    </span>
                   </td>
                   <td style={{ fontFamily: "monospace", fontSize: "12px" }}>{s.nicNumber}</td>
                   <td>
@@ -217,10 +240,10 @@ export default function DomesticStaff() {
                   </td>
                   <td>
                     <button
-                      className={`admin-btn admin-btn--sm ${s.isActive ? "admin-btn--danger" : "admin-btn--success"}`}
-                      onClick={() => handleToggleAccess(s.id, s.fullName, s.isActive)}
+                      className={`admin-btn admin-btn--sm ${s.isTech ? "admin-btn--secondary" : s.isActive ? "admin-btn--danger" : "admin-btn--success"}`}
+                      onClick={() => handleToggleAccess(s.id, s.fullName, s.isActive, s.isTech)}
                     >
-                      {s.isActive ? "Revoke Access" : "Grant Access"}
+                      {s.isTech ? "Manage in Techs" : (s.isActive ? "Revoke Access" : "Grant Access")}
                     </button>
                   </td>
                 </tr>

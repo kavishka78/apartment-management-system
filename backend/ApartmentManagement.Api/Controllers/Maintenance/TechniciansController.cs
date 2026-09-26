@@ -39,6 +39,10 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                 t.Skills,
                 t.Status,
                 t.PhotoBase64,
+                t.NicNumber,
+                t.AccessPassCode,
+                t.WorkingHours,
+                t.IsAccessGranted,
                 ActiveWorkload = workloads.ContainsKey(t.Id) ? workloads[t.Id] : 0
             });
 
@@ -60,6 +64,11 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         {
             _context.Technicians.Add(technician);
             await _context.SaveChangesAsync();
+            
+            // Auto-generate Access Pass Code based on the new ID
+            technician.AccessPassCode = $"TECH-{technician.Id:D3}";
+            await _context.SaveChangesAsync();
+
             return CreatedAtAction(nameof(GetTechnician), new { id = technician.Id }, technician);
         }
 

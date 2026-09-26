@@ -443,6 +443,25 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             return Ok("Sample data seeded successfully.");
         }
 
+        [HttpPost("setup-db")]
+        public async Task<IActionResult> SetupDb()
+        {
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync(@"
+                    ALTER TABLE ""Technicians"" ADD COLUMN IF NOT EXISTS ""NicNumber"" text;
+                    ALTER TABLE ""Technicians"" ADD COLUMN IF NOT EXISTS ""AccessPassCode"" text;
+                    ALTER TABLE ""Technicians"" ADD COLUMN IF NOT EXISTS ""WorkingHours"" text;
+                    ALTER TABLE ""Technicians"" ADD COLUMN IF NOT EXISTS ""IsAccessGranted"" boolean NOT NULL DEFAULT true;
+                ");
+                return Ok("Columns added successfully");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         private static MaintenanceDto MapToDto(Models.Maintenance m)
         {
             return new MaintenanceDto
