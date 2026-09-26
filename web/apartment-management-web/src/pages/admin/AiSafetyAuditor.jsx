@@ -8,21 +8,24 @@ export default function AiSafetyAuditor() {
   const [filterStatus, setFilterStatus] = useState("All");
 
   const loadLogs = async () => {
-    try {
-      setLoading(true);
-      const data = await getAiSafetyLogs(1);
-      setLogs(data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    const data = await getAiSafetyLogs(1);
+    setLogs(data || []);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  useEffect(() => {
+useEffect(() => {
+  const timer = setTimeout(() => {
     loadLogs();
-  }, []);
+  }, 0);
 
+  return () => clearTimeout(timer);
+}, []);
   const filteredLogs = logs.filter((log) => {
     if (filterStatus === "All") return true;
     return log.status === filterStatus;

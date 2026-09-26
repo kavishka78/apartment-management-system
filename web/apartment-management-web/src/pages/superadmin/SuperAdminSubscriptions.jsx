@@ -1,4 +1,3 @@
-import { useState } from "react";
 import "./SuperAdminDashboard.css";
 
 const TIERS = [

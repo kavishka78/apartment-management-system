@@ -6,7 +6,7 @@ import "./SuperAdminDashboard.css";
 export default function SuperAdminAdmins() {
   const { complexAdmins, addComplexAdmin, switchUser } = useAuth();
   const [tenants, setTenants] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState(null);
 

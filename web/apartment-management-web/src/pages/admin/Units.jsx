@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getUnits, createUnit, updateUnit } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import "./Units.css";
@@ -28,21 +28,25 @@ export default function Units() {
     status: "Available",
   });
 
-  const loadUnits = async () => {
-    try {
-      setLoading(true);
-      const data = await getUnits(activeTenantId);
-      setUnits(data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadUnits = useCallback(async () => {
+  try {
+    setLoading(true);
+    const data = await getUnits(activeTenantId);
+    setUnits(data || []);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+}, [activeTenantId]);
 
   useEffect(() => {
+  const timer = setTimeout(() => {
     loadUnits();
-  }, [activeTenantId]);
+  }, 0);
+
+  return () => clearTimeout(timer);
+}, [loadUnits]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

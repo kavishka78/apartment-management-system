@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getVehicles, getResidents, createVehicle } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import "./Vehicles.css";
@@ -21,25 +21,29 @@ export default function Vehicles() {
     parkingSlot: "",
   });
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [vehList, resList] = await Promise.all([
-        getVehicles(activeTenantId),
-        getResidents(activeTenantId),
-      ]);
-      setVehicles(vehList || []);
-      setResidents(resList || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
+const loadData = useCallback(async () => {
+  try {
+    setLoading(true);
+    const [vehList, resList] = await Promise.all([
+      getVehicles(activeTenantId),
+      getResidents(activeTenantId),
+    ]);
+    setVehicles(vehList || []);
+    setResidents(resList || []);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+}, [activeTenantId]);
+  
+useEffect(() => {
+  const timer = setTimeout(() => {
     loadData();
-  }, [activeTenantId]);
+  }, 0);
+
+  return () => clearTimeout(timer);
+}, [loadData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

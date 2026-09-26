@@ -33,8 +33,12 @@ export default function SuperAdminComplexes() {
   };
 
   useEffect(() => {
+  const timer = setTimeout(() => {
     loadData();
-  }, []);
+  }, 0);
+
+  return () => clearTimeout(timer);
+}, []);
 
   const handleCreateComplex = async (e) => {
     e.preventDefault();
