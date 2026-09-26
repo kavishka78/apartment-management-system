@@ -52,6 +52,13 @@ export async function toggleFacilityStatus(id) {
   });
 }
 
+export async function updateFacilityStatus(id, isActive, deactivationReason = "") {
+  return request(`/facilities/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ isActive, deactivationReason }),
+  });
+}
+
 // ─── Visitors ────────────────────────────────────────────────
 export async function getActiveVisitors() {
   return request("/visitors/active");
@@ -87,6 +94,10 @@ export async function getBookings() {
   return request("/bookings");
 }
 
+export async function getBookingsForFacility(facilityId) {
+  return request(`/bookings/facility/${facilityId}`);
+}
+
 export async function createBooking(data) {
   return request("/bookings", {
     method: "POST",
@@ -101,6 +112,26 @@ export async function approveBooking(id) {
 // ─── Parking ─────────────────────────────────────────────────
 export async function getParkingSlots() {
   return request("/parkingslots");
+}
+
+export async function createParkingSlot(data) {
+  return request("/parkingslots", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateParkingSlot(id, data) {
+  return request(`/parkingslots/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteParkingSlot(id) {
+  return request(`/parkingslots/${id}`, {
+    method: "DELETE",
+  });
 }
 
 // ─── Workflows (AI Approvals) ────────────────────────────────

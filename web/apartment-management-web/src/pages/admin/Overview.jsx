@@ -233,13 +233,12 @@ export default function Overview() {
                 <th>Resident ID</th>
                 <th>Booking Date</th>
                 <th>Time Slot</th>
-                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {(!stats?.bookings || stats.bookings.length === 0) ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: "center", padding: "32px 0", color: "#9ca3af" }}>
+                  <td colSpan="5" style={{ textAlign: "center", padding: "32px 0", color: "#9ca3af" }}>
                     No resident bookings recorded yet.
                   </td>
                 </tr>
@@ -254,13 +253,6 @@ export default function Overview() {
                     <td>{new Date(b.bookingDate).toLocaleDateString()}</td>
                     <td>
                       {b.startTime?.substring(0, 5)} - {b.endTime?.substring(0, 5)}
-                    </td>
-                    <td>
-                      <span className={`badge ${b.status === "Approved" ? "badge--success" :
-                          b.status === "Pending" ? "badge--warning" : "badge--danger"
-                        }`}>
-                        {b.status}
-                      </span>
                     </td>
                   </tr>
                 ))

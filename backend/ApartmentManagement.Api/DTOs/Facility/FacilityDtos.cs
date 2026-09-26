@@ -11,6 +11,7 @@ namespace ApartmentManagement.Api.DTOs
         public TimeSpan OpenTime { get; set; }
         public TimeSpan CloseTime { get; set; }
         public bool IsActive { get; set; }
+        public string? DeactivationReason { get; set; }
     }
 
     public class CreateFacilityDto
@@ -31,5 +32,14 @@ namespace ApartmentManagement.Api.DTOs
         public TimeSpan CloseTime { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        [MaxLength(255)]
+        public string? DeactivationReason { get; set; }
+    }
+
+    public class UpdateFacilityStatusDto
+    {
+        public bool IsActive { get; set; }
+        public string? DeactivationReason { get; set; }
     }
 }
