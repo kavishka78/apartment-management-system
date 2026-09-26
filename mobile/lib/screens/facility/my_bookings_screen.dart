@@ -95,37 +95,36 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
         : '—';
     final startTime = booking['startTime']?.toString().substring(0, 5) ?? '';
     final endTime = booking['endTime']?.toString().substring(0, 5) ?? '';
-    final status = booking['status']?.toString() ?? 'Pending';
-
-    Color statusColor;
-    if (status.toLowerCase() == 'approved') {
-      statusColor = Colors.green;
-    } else if (status.toLowerCase() == 'pending') {
-      statusColor = Colors.orange;
-    } else {
-      statusColor = Colors.red;
-    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8ECEF)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: const Color(0xFFF0FDF4),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFBBF7D0)),
             ),
-            child: Icon(
-              Icons.bookmark_outline_rounded,
-              color: statusColor,
-              size: 24,
+            child: const Icon(
+              Icons.bookmark_added_rounded,
+              color: Color(0xFF16A34A),
+              size: 22,
             ),
           ),
           const SizedBox(width: 14),
@@ -136,18 +135,29 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 Text(
                   facilityName,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15.5,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: -0.2,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Date: $dateStr',
-                  style: const TextStyle(color: Colors.grey, fontSize: 13),
-                ),
-                Text(
-                  'Time: $startTime - $endTime',
-                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today_rounded, size: 13, color: Color(0xFF64748B)),
+                    const SizedBox(width: 4),
+                    Text(
+                      dateStr,
+                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12.5),
+                    ),
+                    const SizedBox(width: 12),
+                    const Icon(Icons.schedule_rounded, size: 13, color: Color(0xFF64748B)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$startTime – $endTime',
+                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12.5),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -155,16 +165,24 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFBBF7D0)),
             ),
-            child: Text(
-              status,
-              style: TextStyle(
-                color: statusColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle_rounded, size: 12, color: Color(0xFF16A34A)),
+                SizedBox(width: 4),
+                Text(
+                  'Confirmed',
+                  style: TextStyle(
+                    color: Color(0xFF15803D),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
