@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useAuth, PLATFORM_MODULES, SUBSCRIPTION_TIERS } from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
+import { PLATFORM_MODULES, SUBSCRIPTION_TIERS } from "../../context/authConstants.js";
 import "./SuperAdminLayout.css";
 
 export default function SuperAdminComplexes() {

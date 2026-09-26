@@ -114,22 +114,6 @@ function TechniciansList() {
     }
   };
 
-  const handleToggleAccess = async (tech) => {
-    const updatedTech = { ...tech, isAccessGranted: !tech.isAccessGranted };
-    try {
-      setLoading(true);
-      await fetch(`http://localhost:5073/api/technicians/${tech.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedTech)
-      });
-      fetchTechs();
-    } catch (e) {
-      console.error(e);
-      setLoading(false);
-    }
-  };
-
   const handleSave = async () => {
     if (!formData.name || !formData.skills || !formData.contactInformation || !formData.nicNumber) {
       alert('Please fill in all required fields (Name, Contact, Skills, NIC).');

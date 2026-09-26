@@ -1,4 +1,4 @@
-import { SUBSCRIPTION_TIERS, PLATFORM_MODULES } from "../../context/AuthContext";
+import { SUBSCRIPTION_TIERS, PLATFORM_MODULES } from "../../context/authConstants.js";
 import "./SuperAdminLayout.css";
 
 export default function SuperAdminSubscriptions() {
