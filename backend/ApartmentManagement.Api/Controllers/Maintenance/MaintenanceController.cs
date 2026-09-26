@@ -398,6 +398,51 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             return Ok(MapToDto(maintenance));
         }
 
+        [HttpPost("seed")]
+        public async Task<IActionResult> SeedData()
+        {
+            if (!await _context.MaintenanceCategories.AnyAsync())
+            {
+                _context.MaintenanceCategories.AddRange(
+                    new MaintenanceCategory { Name = "Plumbing" },
+                    new MaintenanceCategory { Name = "Electrical" },
+                    new MaintenanceCategory { Name = "HVAC" },
+                    new MaintenanceCategory { Name = "General" }
+                );
+                await _context.SaveChangesAsync();
+            }
+
+            if (!await _context.Technicians.AnyAsync())
+            {
+                _context.Technicians.AddRange(
+                    new Technician { Name = "Saman Kumara", ContactInformation = "0771234567", Skills = "Plumbing, General", Status = "Available" },
+                    new Technician { Name = "Nimal Perera", ContactInformation = "0712345678", Skills = "Electrical, HVAC", Status = "Available" }
+                );
+                await _context.SaveChangesAsync();
+            }
+
+            var cats = await _context.MaintenanceCategories.ToListAsync();
+            
+            var complaints = new List<Models.Maintenance>
+            {
+                new Models.Maintenance { ResidentId = 1, CategoryId = cats.FirstOrDefault(c => c.Name == "Plumbing")?.Id ?? 1, Title = "Leaking Kitchen Sink", Description = "Water is dripping continuously from the pipe under the kitchen sink.", Priority = "High", Status = "Pending", CreatedAt = DateTimeOffset.UtcNow.AddDays(-2), UpdatedAt = DateTimeOffset.UtcNow.AddDays(-2) },
+                new Models.Maintenance { ResidentId = 2, CategoryId = cats.FirstOrDefault(c => c.Name == "Electrical")?.Id ?? 1, Title = "Master Bedroom Power Outage", Description = "The lights and fan in the master bedroom are not working.", Priority = "Urgent", Status = "Pending", CreatedAt = DateTimeOffset.UtcNow.AddHours(-1), UpdatedAt = DateTimeOffset.UtcNow.AddHours(-1) },
+                new Models.Maintenance { ResidentId = 1, CategoryId = cats.FirstOrDefault(c => c.Name == "HVAC")?.Id ?? 1, Title = "AC Not Cooling", Description = "The living room AC is blowing warm air instead of cold.", Priority = "Medium", Status = "Pending", CreatedAt = DateTimeOffset.UtcNow.AddDays(-1), UpdatedAt = DateTimeOffset.UtcNow.AddDays(-1) },
+                new Models.Maintenance { ResidentId = 3, CategoryId = cats.FirstOrDefault(c => c.Name == "General")?.Id ?? 1, Title = "Broken Window Handle", Description = "The handle on the balcony window is jammed.", Priority = "Low", Status = "Pending", CreatedAt = DateTimeOffset.UtcNow.AddDays(-3), UpdatedAt = DateTimeOffset.UtcNow.AddDays(-3) },
+                new Models.Maintenance { ResidentId = 4, CategoryId = cats.FirstOrDefault(c => c.Name == "Electrical")?.Id ?? 1, Title = "Sparks from Wall Socket", Description = "Sparks fly when I plug something into the kitchen socket.", Priority = "Urgent", Status = "Pending", CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-30), UpdatedAt = DateTimeOffset.UtcNow.AddMinutes(-30) }
+            };
+
+            foreach (var c in complaints)
+            {
+                c.History.Add(new MaintenanceHistory { Status = "Complaint Created", Note = "Seeded by system.", ChangedBy = "System" });
+            }
+
+            _context.Maintenances.AddRange(complaints);
+            await _context.SaveChangesAsync();
+
+            return Ok("Sample data seeded successfully.");
+        }
+
         private static MaintenanceDto MapToDto(Models.Maintenance m)
         {
             return new MaintenanceDto

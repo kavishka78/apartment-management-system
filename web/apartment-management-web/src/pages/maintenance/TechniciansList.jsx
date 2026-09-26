@@ -26,7 +26,6 @@ function TechniciansList() {
   const [lightbox, setLightbox] = useState(null); // { src, name }
 
   const fetchTechs = useCallback(() => {
-    setLoading(true);
     fetch('http://localhost:5073/api/technicians')
       .then(res => res.json())
       .then(data => {
@@ -82,10 +81,12 @@ function TechniciansList() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this technician?')) return;
     try {
+      setLoading(true);
       await fetch(`http://localhost:5073/api/technicians/${id}`, { method: 'DELETE' });
       fetchTechs();
     } catch (e) {
       console.error(e);
+      setLoading(false);
     }
   };
 
@@ -107,6 +108,7 @@ function TechniciansList() {
     };
 
     try {
+      setLoading(true);
       if (editingTech) {
         await fetch(`http://localhost:5073/api/technicians/${editingTech.id}`, {
           method: 'PUT',
@@ -124,6 +126,7 @@ function TechniciansList() {
       fetchTechs();
     } catch (e) {
       console.error('Save failed', e);
+      setLoading(false);
     }
   };
 
