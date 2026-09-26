@@ -97,7 +97,7 @@ function MaintenanceDashboard() {
                     <td><span className={`status-badge ${c.priority.toLowerCase()}`}>{c.priority}</span></td>
                     <td>{new Date(c.createdAt).toLocaleDateString()}</td>
                     <td>
-                      <button style={{ padding: '6px 16px', background: '#17212b', color: '#fff', border: 'none', borderRadius: '50px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseOver={(e) => e.target.style.opacity = '0.8'} onMouseOut={(e) => e.target.style.opacity = '1'} onClick={() => window.location.href=`/maintenance/${c.id}`}>View</button>
+                      <button style={{ padding: '6px 16px', background: '#17212b', color: '#fff', border: 'none', borderRadius: '50px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseOver={(e) => e.target.style.opacity = '0.8'} onMouseOut={(e) => e.target.style.opacity = '1'} onClick={() => window.location.href=`/maintenance/complaints/${c.id}`}>View</button>
                     </td>
                   </tr>
                 ))}
