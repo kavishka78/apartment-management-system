@@ -39,6 +39,7 @@ import MaintenanceDetails from "./pages/maintenance/MaintenanceDetails";
 import TechniciansList from "./pages/maintenance/TechniciansList";
 import WorkOrders from "./pages/maintenance/WorkOrders";
 import SlaRisk from "./pages/maintenance/SlaRisk";
+import MaintenanceReports from "./pages/maintenance/MaintenanceReports";
 
 function App() {
   return (
@@ -87,6 +88,7 @@ function App() {
           <Route path="/maintenance/technicians" element={<TechniciansList />} />
           <Route path="/maintenance/work-orders" element={<WorkOrders />} />
           <Route path="/maintenance/sla-risk" element={<SlaRisk />} />
+          <Route path="/maintenance/reports" element={<MaintenanceReports />} />
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/admin" replace />} />
