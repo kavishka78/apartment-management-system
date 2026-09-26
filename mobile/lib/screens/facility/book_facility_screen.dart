@@ -605,81 +605,52 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                     final b = currentDayBookings[index];
                     final startFormatted = _formatTimeString(b['startTime']);
                     final endFormatted = _formatTimeString(b['endTime']);
-                    final status = b['status'] ?? 'Approved';
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE8ECEF)),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFDBEAFE)),
+                            ),
+                            child: const Icon(
+                              Icons.access_time_filled_rounded,
+                              color: Color(0xFF2563EB),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.indigo.shade50,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.access_time_filled_rounded,
-                                  color: Colors.indigo.shade700,
-                                  size: 20,
+                              Text(
+                                '$startFormatted – $endFormatted',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: Color(0xFF0F172A),
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '$startFormatted - $endFormatted',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Color(0xFF17212B),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Spot Reserved',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Spot Reserved',
+                                style: TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: status == 'Approved'
-                                  ? Colors.green.shade50
-                                  : Colors.orange.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: status == 'Approved'
-                                    ? Colors.green.shade200
-                                    : Colors.orange.shade200,
-                              ),
-                            ),
-                            child: Text(
-                              status,
-                              style: TextStyle(
-                                color: status == 'Approved'
-                                    ? Colors.green.shade800
-                                    : Colors.orange.shade800,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
                           ),
                         ],
                       ),
