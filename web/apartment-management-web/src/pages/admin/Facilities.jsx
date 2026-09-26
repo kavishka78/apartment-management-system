@@ -772,13 +772,12 @@ export default function Facilities() {
                     <th>Resident ID</th>
                     <th>Date</th>
                     <th>Time Slot</th>
-                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {viewFacilityBookings.length === 0 ? (
                     <tr>
-                      <td colSpan="5" style={{ textAlign: "center", padding: "28px 0", color: "#94a3b8" }}>
+                      <td colSpan="4" style={{ textAlign: "center", padding: "28px 0", color: "#94a3b8" }}>
                         No bookings recorded for this facility.
                       </td>
                     </tr>
@@ -790,18 +789,6 @@ export default function Facilities() {
                         <td>{new Date(b.bookingDate).toLocaleDateString()}</td>
                         <td>
                           {b.startTime?.substring(0, 5)} – {b.endTime?.substring(0, 5)}
-                        </td>
-                        <td>
-                          <span
-                            className={`badge ${b.status === "Approved"
-                                ? "badge--success"
-                                : b.status === "Pending"
-                                  ? "badge--warning"
-                                  : "badge--danger"
-                              }`}
-                          >
-                            {b.status}
-                          </span>
                         </td>
                       </tr>
                     ))
