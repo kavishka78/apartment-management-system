@@ -1,0 +1,210 @@
+/* ─── Super Admin Layout ──────────────────────────────────── */
+
+.super-admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #0b0f19;
+  color: #f1f5f9;
+}
+
+.super-admin-main {
+  flex: 1;
+  margin-left: 270px;
+  padding: 36px 44px;
+  box-sizing: border-box;
+  min-width: 0;
+  background: #0f172a;
+  min-height: 100vh;
+}
+
+/* ─── Super Admin Shared Utilities ────────────────────────── */
+
+.super-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 24px;
+  color: #f1f5f9;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.super-card:hover {
+  border-color: #475569;
+}
+
+.super-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  letter-spacing: 0.3px;
+}
+
+.super-btn--primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+}
+
+.super-btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
+.super-btn--success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+}
+
+.super-btn--secondary {
+  background: #334155;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+}
+
+.super-btn--secondary:hover {
+  background: #475569;
+  color: #fff;
+}
+
+.super-btn--sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+/* Super Admin Table */
+.super-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  background: #1e293b;
+}
+
+.super-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.super-table th,
+.super-table td {
+  padding: 14px 18px;
+  text-align: left;
+  font-size: 13px;
+  border-bottom: 1px solid #334155;
+  white-space: nowrap;
+}
+
+.super-table th {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  background: #162032;
+}
+
+.super-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.super-table tbody tr:hover {
+  background: #253349;
+}
+
+/* Super Admin Badges */
+.super-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.super-badge--active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.super-badge--gold {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.super-badge--indigo {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+/* Super Modal */
+.super-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+}
+
+.super-modal-content {
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 18px;
+  padding: 32px;
+  width: 100%;
+  max-width: 540px;
+  color: #f1f5f9;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.super-modal-content h2 {
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.super-modal-content .form-group label {
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.super-modal-content input,
+.super-modal-content select,
+.super-modal-content textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #475569;
+  border-radius: 9px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #ffffff;
+  background: #0f172a;
+  box-sizing: border-box;
+}
+
+.super-modal-content input:focus,
+.super-modal-content select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}

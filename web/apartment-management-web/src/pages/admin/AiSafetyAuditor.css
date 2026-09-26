@@ -1,0 +1,56 @@
+.safety-auditor-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.agent-identity-card {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border-radius: 16px;
+  padding: 24px 28px;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  box-shadow: 0 4px 20px rgba(49, 46, 129, 0.25);
+}
+
+.agent-identity-card h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: #ffffff;
+}
+
+.agent-identity-card p {
+  color: #c7d2fe;
+  font-size: 13px;
+  margin: 0;
+  max-width: 620px;
+  line-height: 1.5;
+}
+
+.agent-badge-pill {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 8px 16px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #a5f3fc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.log-id-badge {
+  font-family: monospace;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
