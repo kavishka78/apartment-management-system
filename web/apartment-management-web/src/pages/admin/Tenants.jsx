@@ -33,9 +33,12 @@ export default function Tenants() {
   };
 
   useEffect(() => {
+  const timer = setTimeout(() => {
     loadTenants();
-  }, []);
+  }, 0);
 
+  return () => clearTimeout(timer);
+}, []);
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../services/parking/parking_api_service.dart';
 
 class VisitorParkingScreen extends StatefulWidget {
@@ -96,7 +97,10 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes, Cancel', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              'Yes, Cancel',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -108,7 +112,9 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
         if (res['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Visitor pass cancelled and parking spot released.'),
+              content: Text(
+                'Visitor pass cancelled and parking spot released.',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -226,10 +232,7 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                   SizedBox(height: 4),
                   Text(
                     'Generate instant gate access pass & auto-allocate visitor parking slots.',
-                    style: TextStyle(
-                      color: Color(0xFFD5DADF),
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Color(0xFFD5DADF), fontSize: 13),
                   ),
                 ],
               ),
@@ -252,7 +255,10 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                   children: [
                     const Text(
                       'Visitor Information',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -260,9 +266,13 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                       decoration: InputDecoration(
                         labelText: 'Visitor Full Name',
                         prefixIcon: const Icon(Icons.person_outline),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
-                      validator: (val) => val == null || val.isEmpty ? 'Enter visitor name' : null,
+                      validator: (val) => val == null || val.isEmpty
+                          ? 'Enter visitor name'
+                          : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -271,16 +281,20 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                       decoration: InputDecoration(
                         labelText: 'Phone Number',
                         prefixIcon: const Icon(Icons.phone_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _vehicleController,
                       decoration: InputDecoration(
-                        labelText: 'Vehicle Number (Optional for parking)',
+                        labelText: 'Vehicle Number (For parking)',
                         prefixIcon: const Icon(Icons.directions_car_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -291,12 +305,16 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                         onPressed: _isSubmitting ? null : _submitVisitorPass,
                         icon: const Icon(Icons.qr_code_2_rounded),
                         label: _isSubmitting
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
                             : const Text('Generate Gate Access Pass'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF17212B),
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
@@ -319,7 +337,10 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 20),
                 child: Center(
-                  child: Text('No active visitors at the gate currently.', style: TextStyle(color: Colors.grey)),
+                  child: Text(
+                    'No active visitors at the gate currently.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
               )
             else
@@ -354,23 +375,36 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                                 children: [
                                   Text(
                                     name,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     'Vehicle: $vehicle | Code: $code',
-                                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
-                                color: slot != 'Unassigned' ? const Color(0xFFEFF6FF) : const Color(0xFFF3F4F6),
+                                color: slot != 'Unassigned'
+                                    ? const Color(0xFFEFF6FF)
+                                    : const Color(0xFFF3F4F6),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: slot != 'Unassigned' ? const Color(0xFFBFDBFE) : const Color(0xFFE5E7EB),
+                                  color: slot != 'Unassigned'
+                                      ? const Color(0xFFBFDBFE)
+                                      : const Color(0xFFE5E7EB),
                                 ),
                               ),
                               child: Row(
@@ -379,13 +413,19 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                                   Icon(
                                     Icons.local_parking_rounded,
                                     size: 16,
-                                    color: slot != 'Unassigned' ? const Color(0xFF2563EB) : Colors.grey,
+                                    color: slot != 'Unassigned'
+                                        ? const Color(0xFF2563EB)
+                                        : Colors.grey,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    slot != 'Unassigned' ? 'Slot: $slot' : 'No Slot',
+                                    slot != 'Unassigned'
+                                        ? 'Slot: $slot'
+                                        : 'No Slot',
                                     style: TextStyle(
-                                      color: slot != 'Unassigned' ? const Color(0xFF1E40AF) : Colors.grey,
+                                      color: slot != 'Unassigned'
+                                          ? const Color(0xFF1E40AF)
+                                          : Colors.grey,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -401,15 +441,29 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                           children: [
                             OutlinedButton.icon(
                               onPressed: () => _cancelVisitorPass(passId),
-                              icon: const Icon(Icons.cancel_outlined, size: 16, color: Colors.red),
+                              icon: const Icon(
+                                Icons.cancel_outlined,
+                                size: 16,
+                                color: Colors.red,
+                              ),
                               label: const Text(
                                 'Cancel Pass',
-                                style: TextStyle(color: Colors.red, fontSize: 12),
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
                               ),
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Color(0xFFFECACA)),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                side: const BorderSide(
+                                  color: Color(0xFFFECACA),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                               ),
                             ),
                           ],

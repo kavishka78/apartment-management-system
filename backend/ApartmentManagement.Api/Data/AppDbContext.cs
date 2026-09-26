@@ -26,9 +26,7 @@ namespace ApartmentManagement.Api.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // =====================================================
             // Payment Module Relationships
-            // =====================================================
 
             // Invoice -> InvoiceItems
             // One invoice can contain many invoice items.
@@ -69,9 +67,7 @@ namespace ApartmentManagement.Api.Data
                 .HasIndex(i => i.InvoiceNumber)
                 .IsUnique();
 
-            // =====================================================
             // Facility and Visitor Module Configurations
-            // =====================================================
 
             modelBuilder.Entity<FacilityBooking>()
                 .Property(b => b.Status)

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getDomesticStaff, getResidents, createDomesticStaff, toggleStaffAccess } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import "./DomesticStaff.css";
@@ -21,25 +21,30 @@ export default function DomesticStaff() {
     workingHours: "08:00 AM - 05:00 PM (Mon-Fri)",
   });
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [sList, rList] = await Promise.all([
-        getDomesticStaff(activeTenantId),
-        getResidents(activeTenantId),
-      ]);
-      setStaffList(sList || []);
-      setResidents(rList || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadData = useCallback(async () => {
+  try {
+    setLoading(true);
+    const [sList, rList] = await Promise.all([
+      getDomesticStaff(activeTenantId),
+      getResidents(activeTenantId),
+    ]);
+    setStaffList(sList || []);
+    setResidents(rList || []);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+}, [activeTenantId]);
 
   useEffect(() => {
+  const timer = setTimeout(() => {
     loadData();
-  }, [activeTenantId]);
+  }, 0);
+
+  return () => clearTimeout(timer);
+}, [loadData]);
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

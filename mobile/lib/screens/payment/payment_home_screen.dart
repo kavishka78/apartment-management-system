@@ -15,7 +15,7 @@ class PaymentHomeScreen extends StatefulWidget {
 }
 
 class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
-  // Temporary until authentication is connected.
+  // TODO: Replace with authenticated resident ID after auth integration.
   static const int residentId = 6;
 
   bool _isLoading = true;

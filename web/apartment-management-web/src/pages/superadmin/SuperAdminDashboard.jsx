@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getTenants, createTenant } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import "./SuperAdminDashboard.css";
@@ -31,24 +31,32 @@ export default function SuperAdminDashboard() {
     complexId: "",
   });
 
-  const loadTenants = async () => {
-    try {
-      setLoading(true);
-      const data = await getTenants();
-      setTenants(data || []);
-      if (data && data.length > 0 && !adminForm.complexId) {
-        setAdminForm((prev) => ({ ...prev, complexId: data[0].id }));
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadTenants = useCallback(async () => {
+  try {
+    setLoading(true);
+    const data = await getTenants();
+    setTenants(data || []);
 
+    if (data && data.length > 0) {
+      setAdminForm((prev) =>
+        prev.complexId
+          ? prev
+          : { ...prev, complexId: data[0].id }
+      );
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+}, []);
   useEffect(() => {
+  const timer = setTimeout(() => {
     loadTenants();
-  }, []);
+  }, 0);
+
+  return () => clearTimeout(timer);
+}, [loadTenants]);
 
   const handleCreateComplex = async (e) => {
     e.preventDefault();

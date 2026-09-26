@@ -7,20 +7,15 @@ async function request(endpoint, options = {}) {
     ...options,
   };
 
-  try {
-    const response = await fetch(url, config);
+  const response = await fetch(url, config);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `HTTP ${response.status}`);
-    }
-
-    const text = await response.text();
-    return text ? JSON.parse(text) : null;
-  } catch (err) {
-    // Return null or rethrow based on caller
-    throw err;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `HTTP ${response.status}`);
   }
+
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
 }
 
 // ─── Facilities ──────────────────────────────────────────────
@@ -49,6 +44,13 @@ export async function updateFacility(id, data) {
 export async function toggleFacilityStatus(id) {
   return request(`/facilities/${id}/toggle-status`, {
     method: "PATCH",
+  });
+}
+
+export async function updateFacilityStatus(id, isActive, deactivationReason = "") {
+  return request(`/facilities/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ isActive, deactivationReason }),
   });
 }
 
@@ -87,6 +89,10 @@ export async function getBookings() {
   return request("/bookings");
 }
 
+export async function getBookingsForFacility(facilityId) {
+  return request(`/bookings/facility/${facilityId}`);
+}
+
 export async function createBooking(data) {
   return request("/bookings", {
     method: "POST",
@@ -101,6 +107,26 @@ export async function approveBooking(id) {
 // ─── Parking ─────────────────────────────────────────────────
 export async function getParkingSlots() {
   return request("/parkingslots");
+}
+
+export async function createParkingSlot(data) {
+  return request("/parkingslots", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateParkingSlot(id, data) {
+  return request(`/parkingslots/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteParkingSlot(id) {
+  return request(`/parkingslots/${id}`, {
+    method: "DELETE",
+  });
 }
 
 // ─── Workflows (AI Approvals) ────────────────────────────────
@@ -526,7 +552,7 @@ let mockSafetyLogs = [
 export async function getTenants() {
   try {
     return await request("/v1/tenants");
-  } catch (err) {
+  } catch {
     return [...mockTenants];
   }
 }
@@ -537,7 +563,7 @@ export async function createTenant(data) {
       method: "POST",
       body: JSON.stringify(data),
     });
-  } catch (err) {
+  } catch {
     const newTenant = {
       id: mockTenants.length + 1,
       ...data,
@@ -555,7 +581,7 @@ export async function createTenant(data) {
 export async function getUnits(tenantId = 1) {
   try {
     return await request(`/v1/tenants/${tenantId}/units`);
-  } catch (err) {
+  } catch {
     return mockUnits.filter((u) => u.tenantId === Number(tenantId));
   }
 }
@@ -566,7 +592,7 @@ export async function createUnit(data) {
       method: "POST",
       body: JSON.stringify(data),
     });
-  } catch (err) {
+  } catch {
     const newUnit = {
       id: mockUnits.length + 1,
       tenantId: data.tenantId || 1,
@@ -586,7 +612,7 @@ export async function updateUnit(id, data) {
       method: "PUT",
       body: JSON.stringify(data),
     });
-  } catch (err) {
+  } catch {
     const idx = mockUnits.findIndex((u) => u.id === id);
     if (idx !== -1) {
       mockUnits[idx] = { ...mockUnits[idx], ...data };
@@ -600,7 +626,7 @@ export async function updateUnit(id, data) {
 export async function getResidents(tenantId = 1) {
   try {
     return await request(`/v1/residents?tenantId=${tenantId}`);
-  } catch (err) {
+  } catch {
     return mockResidents.filter((r) => r.tenantId === Number(tenantId));
   }
 }
@@ -611,7 +637,7 @@ export async function onboardResident(data) {
       method: "POST",
       body: JSON.stringify(data),
     });
-  } catch (err) {
+  } catch {
     const newRes = {
       id: mockResidents.length + 1,
       tenantId: data.tenantId || 1,
@@ -659,7 +685,7 @@ export async function onboardResident(data) {
 export async function getVehicles(tenantId = 1) {
   try {
     return await request(`/v1/vehicles?tenantId=${tenantId}`);
-  } catch (err) {
+  } catch {
     return mockVehicles.filter((v) => v.tenantId === Number(tenantId));
   }
 }
@@ -670,7 +696,7 @@ export async function createVehicle(data) {
       method: "POST",
       body: JSON.stringify(data),
     });
-  } catch (err) {
+  } catch {
     const newVeh = {
       id: mockVehicles.length + 1,
       tenantId: data.tenantId || 1,
@@ -687,7 +713,7 @@ export async function createVehicle(data) {
 export async function getDomesticStaff(tenantId = 1) {
   try {
     return await request(`/v1/staff?tenantId=${tenantId}`);
-  } catch (err) {
+  } catch {
     return mockDomesticStaff.filter((s) => s.tenantId === Number(tenantId));
   }
 }
@@ -698,7 +724,7 @@ export async function createDomesticStaff(data) {
       method: "POST",
       body: JSON.stringify(data),
     });
-  } catch (err) {
+  } catch {
     const newStaff = {
       id: mockDomesticStaff.length + 1,
       tenantId: data.tenantId || 1,
@@ -714,7 +740,7 @@ export async function createDomesticStaff(data) {
 export async function toggleStaffAccess(id) {
   try {
     return await request(`/v1/staff/${id}/toggle`, { method: "PATCH" });
-  } catch (err) {
+  } catch {
     const s = mockDomesticStaff.find((item) => item.id === id);
     if (s) {
       s.isActive = !s.isActive;
@@ -728,7 +754,7 @@ export async function toggleStaffAccess(id) {
 export async function getAiSafetyLogs(tenantId = 1) {
   try {
     return await request(`/v1/ai/safety-logs?tenantId=${tenantId}`);
-  } catch (err) {
+  } catch {
     return [...mockSafetyLogs];
   }
 }

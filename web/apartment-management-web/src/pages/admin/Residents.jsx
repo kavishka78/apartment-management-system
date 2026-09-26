@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getResidents, getUnits, onboardResident } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import "./Residents.css";
@@ -32,7 +32,7 @@ export default function Residents() {
     familyMembersText: "",
   });
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [resList, unitList] = await Promise.all([
@@ -46,11 +46,15 @@ export default function Residents() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTenantId]);
 
   useEffect(() => {
+  const timer = setTimeout(() => {
     loadData();
-  }, [activeTenantId]);
+  }, 0);
+
+  return () => clearTimeout(timer);
+}, [loadData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
