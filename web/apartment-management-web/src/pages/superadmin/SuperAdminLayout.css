@@ -101,37 +101,88 @@
 }
 
 .sa-kpi-card {
+  position: relative;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
+
+.sa-kpi-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--sa-accent, #4f46e5);
+}
+
+.sa-kpi-card::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  right: -20%;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--sa-accent, #4f46e5);
+  opacity: 0.06;
+  pointer-events: none;
+}
+
+.sa-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--sa-accent, #cbd5e1);
+  box-shadow: 0 10px 22px -6px rgba(15, 23, 42, 0.12);
+}
+
+.sa-kpi-card--indigo { --sa-accent: #4f46e5; }
+.sa-kpi-card--violet { --sa-accent: #9333ea; }
+.sa-kpi-card--teal { --sa-accent: #0d9488; }
+.sa-kpi-card--amber { --sa-accent: #d97706; }
 
 .sa-kpi-label {
   font-size: 12px;
   font-weight: 600;
   color: #64748b;
-  margin: 0 0 8px;
+  margin: 0 0 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+.sa-kpi-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--sa-accent, #4f46e5) 14%, white);
+  color: var(--sa-accent, #4f46e5);
+  flex-shrink: 0;
+}
+
 .sa-kpi-value {
-  font-size: 26px;
+  font-size: 27px;
   font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.02em;
   margin: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .sa-kpi-subtext {
   font-size: 11px;
   color: #94a3b8;
-  margin: 4px 0 0;
+  margin: 6px 0 0;
+  position: relative;
+  z-index: 1;
 }
 
 /* ─── Buttons ────────────────────────────────────────────────────── */
