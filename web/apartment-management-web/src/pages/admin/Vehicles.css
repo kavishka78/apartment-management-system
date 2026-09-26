@@ -1,0 +1,27 @@
+.vehicles-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.plate-badge {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 700;
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+  border: 1px solid #0f172a;
+  display: inline-block;
+}
+
+.parking-slot-badge {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}

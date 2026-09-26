@@ -1,0 +1,49 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+.landing-page {
+  min-height: 100vh;
+  padding: 0 6vw;
+  color: #17332f;
+  background: #f4f0e8;
+  font-family: "DM Sans", sans-serif;
+}
+
+.landing-nav { display: flex; align-items: center; justify-content: space-between; padding: 28px 0; }
+.landing-brand, .landing-nav-link, .landing-button { text-decoration: none; }
+.landing-brand { display: inline-flex; align-items: center; gap: 10px; color: #17332f; font-weight: 700; }
+.landing-brand-mark { display: grid; place-items: center; width: 32px; height: 32px; color: #f4f0e8; background: #e35d3f; border-radius: 50%; font-family: "Space Grotesk", sans-serif; }
+.landing-nav-link { color: #17332f; font-size: 14px; font-weight: 600; }
+.landing-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr); align-items: center; gap: 8vw; max-width: 1280px; min-height: 650px; margin: 0 auto; }
+.landing-copy { max-width: 670px; }
+.landing-eyebrow { color: #e35d3f; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.landing-copy h1 { max-width: 700px; margin: 22px 0; font-family: "Space Grotesk", sans-serif; font-size: clamp(46px, 6vw, 84px); line-height: .98; letter-spacing: -.04em; }
+.landing-intro { max-width: 520px; color: #5e706b; font-size: 18px; line-height: 1.6; }
+.landing-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+.landing-button { display: inline-flex; align-items: center; gap: 18px; padding: 15px 20px; border-radius: 4px; font-size: 14px; font-weight: 700; }
+.landing-button-primary { color: #fffaf2; background: #17332f; }
+.landing-button-secondary { color: #17332f; border: 1px solid #b8c3bb; }
+.landing-preview { padding: 28px; color: #fffaf2; background: #214943; box-shadow: 22px 22px 0 #e4b66b; }
+.landing-preview-topline, .landing-preview-footer { display: flex; justify-content: space-between; color: #b6cbc1; font-size: 12px; }
+.landing-status { color: #dce9df; }
+.landing-status i { display: inline-block; width: 7px; height: 7px; margin-right: 5px; background: #e4b66b; border-radius: 50%; }
+.landing-preview-title { margin: 68px 0 26px; font-family: "Space Grotesk", sans-serif; font-size: 30px; }
+.landing-preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.landing-preview-grid div { padding: 14px 12px; background: rgba(255,255,255,.08); }
+.landing-preview-grid strong, .landing-preview-grid span { display: block; }
+.landing-preview-grid strong { font-family: "Space Grotesk", sans-serif; font-size: 24px; }
+.landing-preview-grid span { margin-top: 5px; color: #b6cbc1; font-size: 11px; }
+.landing-preview-chart { display: flex; align-items: end; gap: 10px; height: 150px; margin: 34px 0 12px; padding: 0 10px; border-bottom: 1px solid rgba(255,255,255,.2); }
+.landing-preview-chart span { flex: 1; background: #e35d3f; }
+.landing-preview-footer strong { color: #e4b66b; }
+.landing-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 1280px; margin: 0 auto; padding: 44px 0 72px; border-top: 1px solid #d4d5c9; }
+.landing-features article span { color: #e35d3f; font-size: 12px; font-weight: 700; }
+.landing-features h2 { margin: 12px 0 8px; font-family: "Space Grotesk", sans-serif; font-size: 20px; }
+.landing-features p { max-width: 270px; margin: 0; color: #687872; font-size: 14px; line-height: 1.6; }
+
+@media (max-width: 800px) {
+  .landing-page { padding: 0 24px; }
+  .landing-hero { grid-template-columns: 1fr; min-height: auto; gap: 64px; padding: 70px 0 100px; }
+  .landing-copy h1 { font-size: clamp(44px, 13vw, 68px); }
+  .landing-preview { box-shadow: 12px 12px 0 #e4b66b; }
+  .landing-features { grid-template-columns: 1fr; gap: 28px; }
+}

@@ -1,5 +1,9 @@
 using ApartmentManagement.Api.Data;
+using ApartmentManagement.Api.Services;
 using Microsoft.EntityFrameworkCore;
+
+// Enable Npgsql legacy timestamp behavior for seamless DateTime support
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,8 +20,18 @@ builder.Services.AddControllers()
             System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 
+// ── AI Triage service (calls Python FastAPI agent) ──────────────────────────
+builder.Services.AddHttpClient<IMaintenanceTriageService, MaintenanceTriageClient>(client =>
+{
+    var agentUrl = builder.Configuration["PythonAgentUrl"] ?? "http://localhost:8000";
+    client.BaseAddress = new Uri(agentUrl);
+    client.Timeout = TimeSpan.FromSeconds(60); // Gemini can be slow; allow up to 60 s
+});
+
+// ── SLA escalation background service ───────────────────────────────────────
+builder.Services.AddHostedService<SlaEscalationService>();
+
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -25,13 +39,35 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        // Allow any localhost port so Vite's dynamic port selection always works
+        policy.SetIsOriginAllowed(origin =>
+            {
+                var uri = new Uri(origin);
+                return uri.Host == "localhost" || uri.Host == "127.0.0.1";
+            })
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
 
 var app = builder.Build();
+
+// Ensure DB columns exist for new properties
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        dbContext.Database.ExecuteSqlRaw(@"
+            ALTER TABLE ""Facilities""
+            ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text;
+        ");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"DB Auto-Migration Notice: {ex.Message}");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

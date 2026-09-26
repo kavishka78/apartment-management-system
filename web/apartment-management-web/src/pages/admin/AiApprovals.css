@@ -1,0 +1,68 @@
+/* ─── AI Approvals ──────────────────────────────────────── */
+
+.wf-id {
+  font-weight: 700;
+  color: #6366f1;
+  font-size: 12px;
+}
+
+.wf-type {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #f5f3ff;
+  color: #7c3aed;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.wf-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Info Banner */
+.ai-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 28px;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border: 1px solid #ddd6fe;
+  border-radius: 14px;
+}
+
+.ai-info-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 12px;
+  color: #8b5cf6;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.12);
+}
+
+.ai-info-title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #4c1d95;
+}
+
+.ai-info-text {
+  margin: 0;
+  font-size: 13px;
+  color: #6d28d9;
+  line-height: 1.6;
+}
+
+.ai-info-text code {
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: "SF Mono", "Fira Code", monospace;
+}

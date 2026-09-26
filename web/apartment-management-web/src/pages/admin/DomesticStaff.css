@@ -1,0 +1,16 @@
+.staff-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pass-code-tag {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #0284c7;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px dashed #bae6fd;
+}
