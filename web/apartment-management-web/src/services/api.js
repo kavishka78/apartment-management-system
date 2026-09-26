@@ -1,13 +1,42 @@
 const API_BASE = "http://localhost:5073/api";
 
+const TOKEN_KEY = "ah_token";
+
+export function getAuthToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAuthToken(token) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // storage unavailable; the session lasts until reload
+  }
+}
+
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
+  const token = getAuthToken();
   const config = {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
   };
 
   const response = await fetch(url, config);
+
+  if (response.status === 401 && token && endpoint !== "/v1/auth/login") {
+    setAuthToken(null);
+    window.location.assign("/login");
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -196,309 +225,6 @@ let mockTenants = [
   }
 ];
 
-let mockUnits = [
-  {
-    id: 1,
-    tenantId: 1,
-    unitNumber: "A-101",
-    floorNumber: 1,
-    blockName: "Block A - Lotus Wing",
-    numberOfBedrooms: 2,
-    numberOfBathrooms: 2,
-    squareFeet: 1150,
-    monthlyRent: 125000,
-    status: "Occupied",
-    currentResidentName: "Kamal Perera",
-    currentResidentPhone: "+94 77 123 4567",
-    parkingSlot: "P-A101",
-  },
-  {
-    id: 2,
-    tenantId: 1,
-    unitNumber: "A-102",
-    floorNumber: 1,
-    blockName: "Block A - Lotus Wing",
-    numberOfBedrooms: 3,
-    numberOfBathrooms: 2,
-    squareFeet: 1450,
-    monthlyRent: 165000,
-    status: "Available",
-    currentResidentName: null,
-    currentResidentPhone: null,
-    parkingSlot: "P-A102",
-  },
-  {
-    id: 3,
-    tenantId: 1,
-    unitNumber: "B-201",
-    floorNumber: 2,
-    blockName: "Block B - Jasmine Wing",
-    numberOfBedrooms: 3,
-    numberOfBathrooms: 3,
-    squareFeet: 1600,
-    monthlyRent: 190000,
-    status: "Occupied",
-    currentResidentName: "Dr. Anoma Jayasinghe",
-    currentResidentPhone: "+94 71 889 2341",
-    parkingSlot: "P-B201",
-  },
-  {
-    id: 4,
-    tenantId: 1,
-    unitNumber: "B-202",
-    floorNumber: 2,
-    blockName: "Block B - Jasmine Wing",
-    numberOfBedrooms: 2,
-    numberOfBathrooms: 2,
-    squareFeet: 1200,
-    monthlyRent: 130000,
-    status: "UnderMaintenance",
-    currentResidentName: null,
-    currentResidentPhone: null,
-    parkingSlot: "P-B202",
-  },
-  {
-    id: 5,
-    tenantId: 1,
-    unitNumber: "C-301",
-    floorNumber: 3,
-    blockName: "Block C - Royal Penthouse",
-    numberOfBedrooms: 4,
-    numberOfBathrooms: 4,
-    squareFeet: 2400,
-    monthlyRent: 320000,
-    status: "Occupied",
-    currentResidentName: "Mahesh Gunasekara",
-    currentResidentPhone: "+94 77 555 8901",
-    parkingSlot: "P-C301",
-  },
-  {
-    id: 6,
-    tenantId: 1,
-    unitNumber: "C-302",
-    floorNumber: 3,
-    blockName: "Block C - Royal Penthouse",
-    numberOfBedrooms: 4,
-    numberOfBathrooms: 4,
-    squareFeet: 2400,
-    monthlyRent: 320000,
-    status: "Available",
-    currentResidentName: null,
-    currentResidentPhone: null,
-    parkingSlot: "P-C302",
-  }
-];
-
-let mockResidents = [
-  {
-    id: 1,
-    tenantId: 1,
-    fullName: "Kamal Perera",
-    email: "kamal.perera@gmail.com",
-    phoneNumber: "+94 77 123 4567",
-    nationalId: "198812345678",
-    unitNumber: "A-101",
-    unitId: 1,
-    role: "Resident",
-    status: "Active",
-    monthlyIncome: 450000,
-    emergencyContact: "Sunethra Perera (Spouse) - +94 77 123 4568",
-    householdMembers: [
-      { name: "Sunethra Perera", relation: "Spouse", age: 34 },
-      { name: "Dineth Perera", relation: "Son", age: 7 }
-    ],
-    vehiclesCount: 1,
-    staffCount: 1,
-    moveInDate: "2024-06-01",
-  },
-  {
-    id: 2,
-    tenantId: 1,
-    fullName: "Dr. Anoma Jayasinghe",
-    email: "anoma.j@asiri.lk",
-    phoneNumber: "+94 71 889 2341",
-    nationalId: "197545678912",
-    unitNumber: "B-201",
-    unitId: 3,
-    role: "Resident",
-    status: "Active",
-    monthlyIncome: 650000,
-    emergencyContact: "Rohan Jayasinghe (Brother) - +94 71 223 9988",
-    householdMembers: [
-      { name: "Niluka Jayasinghe", relation: "Daughter", age: 14 }
-    ],
-    vehiclesCount: 2,
-    staffCount: 1,
-    moveInDate: "2023-11-15",
-  },
-  {
-    id: 3,
-    tenantId: 1,
-    fullName: "Mahesh Gunasekara",
-    email: "mahesh@apextech.io",
-    phoneNumber: "+94 77 555 8901",
-    nationalId: "199178901234",
-    unitNumber: "C-301",
-    unitId: 5,
-    role: "Resident",
-    status: "Active",
-    monthlyIncome: 950000,
-    emergencyContact: "Saman Gunasekara (Father) - +94 77 444 1122",
-    householdMembers: [
-      { name: "Kavindi Gunasekara", relation: "Spouse", age: 31 },
-      { name: "Aria Gunasekara", relation: "Daughter", age: 3 }
-    ],
-    vehiclesCount: 2,
-    staffCount: 2,
-    moveInDate: "2025-01-10",
-  },
-  {
-    id: 4,
-    tenantId: 1,
-    fullName: "Sanjaya Wickramasinghe",
-    email: "sanjaya.w@outlook.com",
-    phoneNumber: "+94 76 901 3456",
-    nationalId: "199432109876",
-    unitNumber: "Pending Allocation",
-    unitId: null,
-    role: "Resident",
-    status: "PendingVerification",
-    monthlyIncome: 380000,
-    emergencyContact: "Chandana Wickramasinghe - +94 76 111 2222",
-    householdMembers: [],
-    vehiclesCount: 1,
-    staffCount: 0,
-    moveInDate: "2026-04-01",
-  }
-];
-
-let mockVehicles = [
-  {
-    id: 1,
-    tenantId: 1,
-    residentId: 1,
-    residentName: "Kamal Perera",
-    unitNumber: "A-101",
-    plateNumber: "CAB-4521",
-    vehicleType: "Car",
-    makeModel: "Toyota Prius 2018 (Silver)",
-    parkingSlot: "P-A101",
-    registeredAt: "2024-06-02",
-    status: "Approved",
-  },
-  {
-    id: 2,
-    tenantId: 1,
-    residentId: 2,
-    residentName: "Dr. Anoma Jayasinghe",
-    unitNumber: "B-201",
-    plateNumber: "WP-KQ-8890",
-    vehicleType: "SUV",
-    makeModel: "Honda CR-V (Black)",
-    parkingSlot: "P-B201",
-    registeredAt: "2023-11-16",
-    status: "Approved",
-  },
-  {
-    id: 3,
-    tenantId: 1,
-    residentId: 2,
-    residentName: "Dr. Anoma Jayasinghe",
-    unitNumber: "B-201",
-    plateNumber: "BI-3320",
-    vehicleType: "Motorcycle",
-    makeModel: "Yamaha FZ (Red)",
-    parkingSlot: "P-B201-B",
-    registeredAt: "2024-01-20",
-    status: "Approved",
-  },
-  {
-    id: 4,
-    tenantId: 1,
-    residentId: 3,
-    residentName: "Mahesh Gunasekara",
-    unitNumber: "C-301",
-    plateNumber: "CBG-1100",
-    vehicleType: "Car",
-    makeModel: "BMW 520d (Alpine White)",
-    parkingSlot: "P-C301",
-    registeredAt: "2025-01-11",
-    status: "Approved",
-  },
-  {
-    id: 5,
-    tenantId: 1,
-    residentId: 3,
-    residentName: "Mahesh Gunasekara",
-    unitNumber: "C-301",
-    plateNumber: "CAA-9912",
-    vehicleType: "Van",
-    makeModel: "Toyota Alphard (Pearl)",
-    parkingSlot: "P-C301-B",
-    registeredAt: "2025-01-12",
-    status: "Approved",
-  }
-];
-
-let mockDomesticStaff = [
-  {
-    id: 1,
-    tenantId: 1,
-    residentId: 1,
-    residentName: "Kamal Perera",
-    unitNumber: "A-101",
-    fullName: "Nalani Kumari",
-    staffType: "Housekeeper / Maid",
-    nicNumber: "197855667788",
-    contactPhone: "+94 77 908 1122",
-    accessPassCode: "PASS-N78-101",
-    workingHours: "08:00 AM - 05:00 PM (Mon-Fri)",
-    isActive: true,
-  },
-  {
-    id: 2,
-    tenantId: 1,
-    residentId: 2,
-    residentName: "Dr. Anoma Jayasinghe",
-    unitNumber: "B-201",
-    fullName: "Sarath Bandara",
-    staffType: "Chauffeur / Driver",
-    nicNumber: "198211223344",
-    contactPhone: "+94 71 556 7788",
-    accessPassCode: "PASS-S82-201",
-    workingHours: "07:00 AM - 07:00 PM (Daily)",
-    isActive: true,
-  },
-  {
-    id: 3,
-    tenantId: 1,
-    residentId: 3,
-    residentName: "Mahesh Gunasekara",
-    unitNumber: "C-301",
-    fullName: "Kusuma Silva",
-    staffType: "Chef / Cook",
-    nicNumber: "198033445566",
-    contactPhone: "+94 77 332 9900",
-    accessPassCode: "PASS-K80-301",
-    workingHours: "09:00 AM - 03:00 PM (Daily)",
-    isActive: true,
-  },
-  {
-    id: 4,
-    tenantId: 1,
-    residentId: 3,
-    residentName: "Mahesh Gunasekara",
-    unitNumber: "C-301",
-    fullName: "Priyantha Jayalath",
-    staffType: "Chauffeur / Driver",
-    nicNumber: "198944556677",
-    contactPhone: "+94 77 665 4321",
-    accessPassCode: "PASS-P89-301",
-    workingHours: "08:00 AM - 08:00 PM (Daily)",
-    isActive: true,
-  }
-];
-
 let mockSafetyLogs = [
   {
     id: "LOG-9921",
@@ -577,177 +303,68 @@ export async function createTenant(data) {
   }
 }
 
+// ─── Platform: auth, complexes, admins, subscriptions ─────────
+const post = (url, body = {}) => request(url, { method: "POST", body: JSON.stringify(body) });
+
+export const loginApi = (email, password) => post("/v1/auth/login", { email, password });
+export const googleLoginApi = (credential) => post("/v1/auth/google", { credential });
+export const getMeApi = () => request("/v1/auth/me");
+
+export const getComplexes = () => request("/v1/complexes");
+export const getComplexById = (id) => request(`/v1/complexes/${id}`);
+export const createComplexApi = (data) => post("/v1/complexes", data);
+export const updateComplexPackageApi = (id, data) =>
+  request(`/v1/complexes/${id}/package`, { method: "PUT", body: JSON.stringify(data) });
+export const renewComplexApi = (id, months) => post(`/v1/complexes/${id}/renew`, { months });
+export const deactivateComplexApi = (id) => post(`/v1/complexes/${id}/deactivate`);
+export const reactivateComplexApi = (id) => post(`/v1/complexes/${id}/reactivate`);
+export const getSubscriptionHistoryApi = () => request("/v1/subscription-history");
+
+export const getAdminsApi = () => request("/v1/admins");
+export const createAdminApi = (data) => post("/v1/admins", data);
+
 // ─── API Functions for Units ──────────────────────────────────
-export async function getUnits(tenantId = 1) {
-  try {
-    return await request(`/v1/tenants/${tenantId}/units`);
-  } catch {
-    return mockUnits.filter((u) => u.tenantId === Number(tenantId));
-  }
+export async function getUnits(tenantId) {
+  return request(`/v1/tenants/${tenantId}/units`);
 }
 
 export async function createUnit(data) {
-  try {
-    return await request("/v1/units", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const newUnit = {
-      id: mockUnits.length + 1,
-      tenantId: data.tenantId || 1,
-      ...data,
-      status: data.status || "Available",
-      currentResidentName: null,
-      currentResidentPhone: null,
-    };
-    mockUnits.push(newUnit);
-    return newUnit;
-  }
+  return request("/v1/units", { method: "POST", body: JSON.stringify(data) });
 }
 
 export async function updateUnit(id, data) {
-  try {
-    return await request(`/v1/units/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const idx = mockUnits.findIndex((u) => u.id === id);
-    if (idx !== -1) {
-      mockUnits[idx] = { ...mockUnits[idx], ...data };
-      return mockUnits[idx];
-    }
-    return data;
-  }
+  return request(`/v1/units/${id}`, { method: "PUT", body: JSON.stringify(data) });
 }
 
 // ─── API Functions for Residents ──────────────────────────────
-export async function getResidents(tenantId = 1) {
-  try {
-    return await request(`/v1/residents?tenantId=${tenantId}`);
-  } catch {
-    return mockResidents.filter((r) => r.tenantId === Number(tenantId));
-  }
+export async function getResidents(tenantId) {
+  return request(`/v1/residents?tenantId=${tenantId}`);
 }
 
 export async function onboardResident(data) {
-  try {
-    return await request("/v1/residents/onboard", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const newRes = {
-      id: mockResidents.length + 1,
-      tenantId: data.tenantId || 1,
-      ...data,
-      status: "Active",
-      householdMembers: data.householdMembers || [],
-      vehiclesCount: data.plateNumber ? 1 : 0,
-      staffCount: 0,
-      moveInDate: data.moveInDate || new Date().toISOString().split("T")[0],
-    };
-    mockResidents.unshift(newRes);
-
-    // If unit was selected, update unit status
-    if (data.unitId) {
-      const uIdx = mockUnits.findIndex((u) => u.id === Number(data.unitId));
-      if (uIdx !== -1) {
-        mockUnits[uIdx].status = "Occupied";
-        mockUnits[uIdx].currentResidentName = data.fullName;
-        mockUnits[uIdx].currentResidentPhone = data.phoneNumber;
-      }
-    }
-
-    // Auto-record vehicle if provided
-    if (data.plateNumber) {
-      mockVehicles.push({
-        id: mockVehicles.length + 1,
-        tenantId: data.tenantId || 1,
-        residentId: newRes.id,
-        residentName: newRes.fullName,
-        unitNumber: newRes.unitNumber || "Assigned",
-        plateNumber: data.plateNumber,
-        vehicleType: data.vehicleType || "Car",
-        makeModel: data.makeModel || "Standard",
-        parkingSlot: data.parkingSlot || "P-Unassigned",
-        registeredAt: new Date().toISOString().split("T")[0],
-        status: "Approved",
-      });
-    }
-
-    return newRes;
-  }
+  return request("/v1/residents/onboard", { method: "POST", body: JSON.stringify(data) });
 }
 
 // ─── API Functions for Vehicles ───────────────────────────────
-export async function getVehicles(tenantId = 1) {
-  try {
-    return await request(`/v1/vehicles?tenantId=${tenantId}`);
-  } catch {
-    return mockVehicles.filter((v) => v.tenantId === Number(tenantId));
-  }
+export async function getVehicles(tenantId) {
+  return request(`/v1/vehicles?tenantId=${tenantId}`);
 }
 
 export async function createVehicle(data) {
-  try {
-    return await request("/v1/vehicles", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const newVeh = {
-      id: mockVehicles.length + 1,
-      tenantId: data.tenantId || 1,
-      ...data,
-      registeredAt: new Date().toISOString().split("T")[0],
-      status: "Approved",
-    };
-    mockVehicles.push(newVeh);
-    return newVeh;
-  }
+  return request("/v1/vehicles", { method: "POST", body: JSON.stringify(data) });
 }
 
 // ─── API Functions for Domestic Staff ─────────────────────────
-export async function getDomesticStaff(tenantId = 1) {
-  try {
-    return await request(`/v1/staff?tenantId=${tenantId}`);
-  } catch {
-    return mockDomesticStaff.filter((s) => s.tenantId === Number(tenantId));
-  }
+export async function getDomesticStaff(tenantId) {
+  return request(`/v1/staff?tenantId=${tenantId}`);
 }
 
 export async function createDomesticStaff(data) {
-  try {
-    return await request("/v1/staff", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  } catch {
-    const newStaff = {
-      id: mockDomesticStaff.length + 1,
-      tenantId: data.tenantId || 1,
-      ...data,
-      accessPassCode: `PASS-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${data.unitNumber || "100"}`,
-      isActive: true,
-    };
-    mockDomesticStaff.unshift(newStaff);
-    return newStaff;
-  }
+  return request("/v1/staff", { method: "POST", body: JSON.stringify(data) });
 }
 
 export async function toggleStaffAccess(id) {
-  try {
-    return await request(`/v1/staff/${id}/toggle`, { method: "PATCH" });
-  } catch {
-    const s = mockDomesticStaff.find((item) => item.id === id);
-    if (s) {
-      s.isActive = !s.isActive;
-      return s;
-    }
-    return null;
-  }
+  return request(`/v1/staff/${id}/toggle`, { method: "PATCH" });
 }
 
 // ─── API Functions for AI Safety Logs ─────────────────────────
@@ -789,8 +406,5 @@ export async function getDashboardStats() {
     visitors: visitorsData,
     bookings: bookingsData,
     totalTenants: mockTenants.length,
-    totalUnits: mockUnits.length,
-    occupiedUnits: mockUnits.filter((u) => u.status === "Occupied").length,
-    activeResidents: mockResidents.filter((r) => r.status === "Active").length,
   };
 }

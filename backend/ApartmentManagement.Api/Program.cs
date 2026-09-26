@@ -1,6 +1,8 @@
 using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 // Enable Npgsql legacy timestamp behavior for seamless DateTime support
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -12,6 +14,25 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
 );
+
+builder.Services.AddSingleton<JwtTokenService>();
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = JwtTokenService.GetKey(builder.Configuration),
+            ClockSkew = TimeSpan.FromMinutes(1),
+        };
+    });
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -58,6 +79,17 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
+        dbContext.Database.Migrate();
+        RegistrySeeder.SeedPlatform(dbContext);
+        RegistrySeeder.Seed(dbContext);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"DB Migration/Seed Notice: {ex.Message}");
+    }
+
+    try
+    {
         dbContext.Database.ExecuteSqlRaw(@"
             ALTER TABLE ""Facilities""
             ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text;
@@ -79,6 +111,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors("ReactApp");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 var summaries = new[]
 {

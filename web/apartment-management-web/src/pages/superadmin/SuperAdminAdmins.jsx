@@ -15,7 +15,7 @@ export default function SuperAdminAdmins() {
     complexId: complexes[0]?.id || 1,
   });
 
-  const handleProvisionAdmin = (e) => {
+  const handleProvisionAdmin = async (e) => {
     e.preventDefault();
     try {
       const selectedComplex = complexes.find((t) => t.id === Number(formData.complexId));
@@ -23,7 +23,7 @@ export default function SuperAdminAdmins() {
         throw new Error("Please select an apartment complex.");
       }
 
-      const newAdmin = addComplexAdmin({
+      const newAdmin = await addComplexAdmin({
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
@@ -170,11 +170,10 @@ export default function SuperAdminAdmins() {
               </div>
 
               <div className="sa-form-group">
-                <label>Temporary Password *</label>
+                <label>Temporary Password (optional if using Google sign-in)</label>
                 <input
                   type="password"
-                  required
-                  placeholder="Set initial password"
+                  placeholder="Leave blank for Google-only access"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />

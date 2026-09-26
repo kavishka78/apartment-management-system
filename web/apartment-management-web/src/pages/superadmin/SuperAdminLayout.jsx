@@ -4,8 +4,9 @@ import { useAuth } from "../../context/AuthContext";
 import "./SuperAdminLayout.css";
 
 export default function SuperAdminLayout() {
-  const { currentUser, isSuperAdmin } = useAuth();
+  const { currentUser, authLoading, isSuperAdmin } = useAuth();
 
+  if (authLoading) return null;
   if (!currentUser) return <Navigate to="/login" replace />;
   if (!isSuperAdmin) return <Navigate to="/admin" replace />;
 

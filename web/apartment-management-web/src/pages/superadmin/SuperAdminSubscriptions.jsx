@@ -35,17 +35,21 @@ export default function SuperAdminSubscriptions() {
   const expiringCount = complexes.filter((c) => getSubscriptionStatus(c) === "Expiring").length;
   const inactiveCount = complexes.filter((c) => ["Expired", "Deactivated"].includes(getSubscriptionStatus(c))).length;
 
-  const confirmRenew = () => {
-    renewSubscription(renewing.id, renewMonths);
-    showToast(`${renewing.name} renewed for ${renewMonths} month(s).`);
-    setRenewing(null);
+  const run = async (action, successMessage, done) => {
+    try {
+      await action();
+      showToast(successMessage);
+      if (done) done();
+    } catch (err) {
+      showToast(err.message);
+    }
   };
 
-  const confirmChange = () => {
-    updateComplexPackage(changing.id, newPlan, SUBSCRIPTION_TIERS[newPlan].modules);
-    showToast(`${changing.name} moved to ${newPlan}.`);
-    setChanging(null);
-  };
+  const confirmRenew = () =>
+    run(() => renewSubscription(renewing.id, renewMonths), `${renewing.name} renewed for ${renewMonths} month(s).`, () => setRenewing(null));
+
+  const confirmChange = () =>
+    run(() => updateComplexPackage(changing.id, newPlan, SUBSCRIPTION_TIERS[newPlan].modules), `${changing.name} moved to ${newPlan}.`, () => setChanging(null));
 
   return (
     <div id="super-subscriptions-page">
@@ -125,11 +129,11 @@ export default function SuperAdminSubscriptions() {
                           Change Plan
                         </button>
                         {c.status === "Deactivated" ? (
-                          <button className="sa-btn sa-btn--primary sa-btn--sm" onClick={() => { reactivateComplex(c.id); showToast(`${c.name} reactivated.`); }}>
+                          <button className="sa-btn sa-btn--primary sa-btn--sm" onClick={() => run(() => reactivateComplex(c.id), `${c.name} reactivated.`)}>
                             Reactivate
                           </button>
                         ) : (
-                          <button className="sa-btn sa-btn--secondary sa-btn--sm" style={{ color: "#dc2626" }} onClick={() => { deactivateComplex(c.id); showToast(`${c.name} deactivated.`); }}>
+                          <button className="sa-btn sa-btn--secondary sa-btn--sm" style={{ color: "#dc2626" }} onClick={() => run(() => deactivateComplex(c.id), `${c.name} deactivated.`)}>
                             Deactivate
                           </button>
                         )}

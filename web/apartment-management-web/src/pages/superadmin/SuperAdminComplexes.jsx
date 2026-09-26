@@ -71,10 +71,10 @@ export default function SuperAdminComplexes() {
     }
   };
 
-  const handleCreateComplex = (e) => {
+  const handleCreateComplex = async (e) => {
     e.preventDefault();
     try {
-      const created = addComplex(onboardForm);
+      const created = await addComplex(onboardForm);
       setShowOnboardModal(false);
       setToast({ type: "success", message: `Complex '${created.name}' onboarded with ${onboardForm.enabledModules.length} enabled modules.` });
       setTimeout(() => setToast(null), 3500);
@@ -103,15 +103,19 @@ export default function SuperAdminComplexes() {
     });
   };
 
-  const handleSavePackageConfig = (e) => {
+  const handleSavePackageConfig = async (e) => {
     e.preventDefault();
     if (!editingComplex) return;
-    updateComplexPackage(editingComplex.id, packageForm.subscriptionPlan, packageForm.enabledModules);
-    setEditingComplex(null);
-    setToast({
-      type: "success",
-      message: `Package & module permissions updated for '${editingComplex.name}'!`,
-    });
+    try {
+      await updateComplexPackage(editingComplex.id, packageForm.subscriptionPlan, packageForm.enabledModules);
+      setToast({
+        type: "success",
+        message: `Package & module permissions updated for '${editingComplex.name}'!`,
+      });
+      setEditingComplex(null);
+    } catch (err) {
+      setToast({ type: "danger", message: err.message });
+    }
     setTimeout(() => setToast(null), 3500);
   };
 

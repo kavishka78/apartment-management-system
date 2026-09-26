@@ -26,8 +26,9 @@ function SubscriptionBlocked({ status, complex, onLogout }) {
 }
 
 export default function AdminLayout() {
-  const { currentUser, isSuperAdmin, currentComplex, subscriptionStatus, subscriptionActive, logout } = useAuth();
+  const { currentUser, authLoading, isSuperAdmin, currentComplex, subscriptionStatus, subscriptionActive, logout } = useAuth();
 
+  if (authLoading) return null;
   if (!currentUser) return <Navigate to="/login" replace />;
   if (isSuperAdmin) return <Navigate to="/super-admin" replace />;
 
