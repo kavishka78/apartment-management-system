@@ -272,37 +272,56 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
               // Header Card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF17212B),
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withOpacity(0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name.toUpperCase(),
-                      style: const TextStyle(
-                        color: Color(0xFFB8C2CC),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.1,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        name.toUpperCase(),
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Reserve Your Time Slot',
-                      style: const TextStyle(
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Reserve Time Slot',
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Capacity: $capacity spots per time slot | Auto-confirmed',
+                      'Capacity: $capacity spots per slot • Instantly confirmed',
                       style: const TextStyle(
-                        color: Color(0xFFD5DADF),
+                        color: Color(0xFF94A3B8),
                         fontSize: 13,
                       ),
                     ),
@@ -314,18 +333,30 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
 
               // Date Picker Field
               const Text(
-                'Select Booking Date',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                'Booking Date',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: Color(0xFF0F172A),
+                ),
               ),
               const SizedBox(height: 8),
               InkWell(
                 onTap: _selectDate,
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE8ECEF)),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0F172A).withOpacity(0.02),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -333,20 +364,22 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                       Text(
                         dateFormatted,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
+                          color: Color(0xFF0F172A),
                         ),
                       ),
                       const Icon(
                         Icons.calendar_today_rounded,
-                        color: Color(0xFF17212B),
+                        color: Color(0xFF2563EB),
+                        size: 20,
                       ),
                     ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // Time Pickers Row
               Row(
@@ -358,21 +391,28 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                         const Text(
                           'Start Time',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: () => _selectTime(true),
+                          borderRadius: BorderRadius.circular(12),
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(15),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFE8ECEF),
-                              ),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0F172A).withOpacity(0.02),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -380,14 +420,15 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                                 Text(
                                   _startTime.format(context),
                                   style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
                                   ),
                                 ),
                                 const Icon(
-                                  Icons.access_time_rounded,
-                                  size: 20,
-                                  color: Colors.grey,
+                                  Icons.schedule_rounded,
+                                  size: 19,
+                                  color: Color(0xFF64748B),
                                 ),
                               ],
                             ),
@@ -396,7 +437,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,21 +445,28 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                         const Text(
                           'End Time',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: () => _selectTime(false),
+                          borderRadius: BorderRadius.circular(12),
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(15),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFE8ECEF),
-                              ),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0F172A).withOpacity(0.02),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -426,14 +474,15 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                                 Text(
                                   _endTime.format(context),
                                   style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
                                   ),
                                 ),
                                 const Icon(
-                                  Icons.access_time_rounded,
-                                  size: 20,
-                                  color: Colors.grey,
+                                  Icons.schedule_rounded,
+                                  size: 19,
+                                  color: Color(0xFF64748B),
                                 ),
                               ],
                             ),
@@ -449,23 +498,29 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
 
               SizedBox(
                 width: double.infinity,
-                height: 52,
+                height: 50,
                 child: ElevatedButton(
                   onPressed: (_isSubmitting || !isActive) ? null : _submitBooking,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isActive ? const Color(0xFF17212B) : Colors.grey.shade300,
-                    foregroundColor: isActive ? Colors.white : Colors.grey.shade600,
+                    backgroundColor: isActive ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                    foregroundColor: isActive ? Colors.white : const Color(0xFF94A3B8),
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _isSubmitting
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
                       : Text(
-                          !isActive ? 'Facility Currently Inactive' : 'Instantly Book Spot',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                          !isActive ? 'Facility Currently Inactive' : 'Confirm Spot Booking',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: isActive ? Colors.white : const Color(0xFF94A3B8),
                           ),
                         ),
                 ),
@@ -550,81 +605,52 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                     final b = currentDayBookings[index];
                     final startFormatted = _formatTimeString(b['startTime']);
                     final endFormatted = _formatTimeString(b['endTime']);
-                    final status = b['status'] ?? 'Approved';
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE8ECEF)),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFDBEAFE)),
+                            ),
+                            child: const Icon(
+                              Icons.access_time_filled_rounded,
+                              color: Color(0xFF2563EB),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.indigo.shade50,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.access_time_filled_rounded,
-                                  color: Colors.indigo.shade700,
-                                  size: 20,
+                              Text(
+                                '$startFormatted – $endFormatted',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: Color(0xFF0F172A),
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '$startFormatted - $endFormatted',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Color(0xFF17212B),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Spot Reserved',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Spot Reserved',
+                                style: TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: status == 'Approved'
-                                  ? Colors.green.shade50
-                                  : Colors.orange.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: status == 'Approved'
-                                    ? Colors.green.shade200
-                                    : Colors.orange.shade200,
-                              ),
-                            ),
-                            child: Text(
-                              status,
-                              style: TextStyle(
-                                color: status == 'Approved'
-                                    ? Colors.green.shade800
-                                    : Colors.orange.shade800,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
                           ),
                         ],
                       ),
