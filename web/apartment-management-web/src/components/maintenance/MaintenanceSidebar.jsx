@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { MdArrowBack } from 'react-icons/md';
 import './MaintenanceSidebar.css';
 
-function MaintenanceSidebar({ activePage }) {
+function MaintenanceSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 

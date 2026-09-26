@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { FiSearch, FiFilter } from 'react-icons/fi';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import CustomDropdown from '../../components/CustomDropdown';
@@ -7,7 +7,6 @@ import '../payment/PaymentDashboard.css';
 import './Complaints.css';
 
 function Complaints() {
-  const navigate = useNavigate();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
 
