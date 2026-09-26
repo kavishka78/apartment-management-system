@@ -59,7 +59,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         dbContext.Database.ExecuteSqlRaw(@"
-            ALTER TABLE ""Facilities"" 
+            ALTER TABLE ""Facilities""
             ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text;
         ");
     }
