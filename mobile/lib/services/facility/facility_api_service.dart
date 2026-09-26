@@ -141,4 +141,30 @@ class FacilityApiService {
       return {'success': false, 'message': 'Cannot connect to server (Timeout or Network Error)'};
     }
   }
+
+  // CANCEL / DELETE A BOOKING
+  static Future<Map<String, dynamic>> cancelBooking(int bookingId) async {
+    try {
+      final response = await http
+          .delete(
+            Uri.parse('$baseUrl/bookings/$bookingId'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(timeoutDuration);
+
+      debugPrint('CANCEL BOOKING STATUS: ${response.statusCode}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'success': true, 'message': 'Booking cancelled successfully!'};
+      }
+
+      return {
+        'success': false,
+        'message': 'Failed to cancel booking (${response.statusCode})',
+      };
+    } catch (e) {
+      debugPrint('CANCEL BOOKING ERROR: $e');
+      return {'success': false, 'message': 'Cannot connect to server (Timeout or Network Error)'};
+    }
+  }
 }
