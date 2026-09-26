@@ -16,6 +16,12 @@ namespace ApartmentManagement.Api.Data
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Receipt> Receipts { get; set; }
 
+        // Maintenance Models
+        public DbSet<Maintenance> Maintenances { get; set; }
+        public DbSet<MaintenanceCategory> MaintenanceCategories { get; set; }
+        public DbSet<Technician> Technicians { get; set; }
+        public DbSet<MaintenanceHistory> MaintenanceHistories { get; set; }
+
         // Facility and Visitor Models
         public DbSet<Facility> Facilities { get; set; }
         public DbSet<FacilityBooking> FacilityBookings { get; set; }

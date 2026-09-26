@@ -7,6 +7,7 @@ export const PLATFORM_MODULES = [
   { key: "vehicles", label: "Vehicles & Parking Slots", icon: "car" },
   { key: "staff", label: "Domestic Staff Access Passes", icon: "badge" },
   { key: "facilities", label: "Facility Booking Engine", icon: "calendar" },
+  { key: "maintenance", label: "Maintenance & Complaints", icon: "wrench" },
   { key: "visitors", label: "Visitor Gate Checkpoint Logs", icon: "shield" },
   { key: "ai_safety", label: "Autonomous AI Safety Auditor", icon: "cpu" },
   { key: "payments", label: "Commerce, Invoicing & Billing", icon: "credit-card" },
@@ -29,7 +30,7 @@ export const SUBSCRIPTION_TIERS = {
     name: "Enterprise Suite",
     priceLkr: 145000,
     unitLimit: 500,
-    modules: ["units", "residents", "vehicles", "staff", "facilities", "visitors", "ai_safety", "payments"],
+    modules: ["units", "residents", "vehicles", "staff", "facilities", "maintenance", "visitors", "ai_safety", "payments"],
   },
 };
 
@@ -46,7 +47,7 @@ const INITIAL_COMPLEXES = [
     occupiedUnits: 38,
     status: "Active",
     createdAt: "2026-01-15",
-    enabledModules: ["units", "residents", "vehicles", "staff", "facilities", "visitors", "ai_safety", "payments"],
+    enabledModules: ["units", "residents", "vehicles", "staff", "facilities", "maintenance", "visitors", "ai_safety", "payments"],
   },
   {
     id: 2,

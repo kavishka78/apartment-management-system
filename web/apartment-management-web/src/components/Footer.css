@@ -1,0 +1,151 @@
+.website-footer {
+  width: 100%;
+  padding: 68px 8% 24px;
+  background: #17212b;
+  color: #fff;
+  font-family: "Montserrat", Arial, sans-serif;
+}
+
+.footer-content {
+  max-width: 1250px;
+  margin: 0 auto;
+  padding-bottom: 4px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1.1fr) minmax(360px, 0.9fr);
+  gap: 90px;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  gap: 11px;
+  color: #fff;
+  font-size: 21px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer-logo .logo-img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+.footer-logo .apartmenthub-logo {
+  width: 40px;
+  height: 40px;
+  color: #dce5da;
+}
+
+.footer-brand > p {
+  max-width: 410px;
+  margin: 22px 0 24px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.footer-socials {
+  display: flex;
+  gap: 9px;
+}
+
+.footer-socials a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 13px;
+  text-decoration: none;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+.footer-socials a:hover {
+  background: #dce5da;
+  color: #17212b;
+}
+
+.footer-links-area {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(145px, 1fr));
+  gap: 44px;
+  justify-content: end;
+}
+
+.footer-link-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+.footer-link-group h3 {
+  margin: 4px 0 8px;
+  color: #dce5da;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+}
+
+.footer-link-group a {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.25s ease;
+}
+
+.footer-link-group a:hover {
+  color: #dce5da;
+}
+
+@media (max-width: 720px) {
+  .website-footer {
+    padding: 52px 6% 22px;
+  }
+
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 42px;
+    padding-bottom: 4px;
+  }
+
+  .footer-links-area {
+    justify-content: start;
+  }
+
+}
+
+@media (max-width: 420px) {
+  .website-footer {
+    padding: 44px 5% 20px;
+  }
+
+  .footer-content {
+    gap: 34px;
+  }
+
+  .footer-logo {
+    font-size: 19px;
+  }
+
+  .footer-logo .apartmenthub-logo {
+    width: 36px;
+    height: 36px;
+  }
+
+  .footer-brand > p {
+    margin: 18px 0 20px;
+    font-size: 12px;
+  }
+
+  .footer-links-area {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}

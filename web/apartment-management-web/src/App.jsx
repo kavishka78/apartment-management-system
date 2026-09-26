@@ -32,6 +32,15 @@ import Vehicles from "./pages/admin/Vehicles";
 import DomesticStaff from "./pages/admin/DomesticStaff";
 import AiSafetyAuditor from "./pages/admin/AiSafetyAuditor";
 
+// ─── Maintenance & Complaint Management Pages ─────────────
+import MaintenanceDashboard from "./pages/maintenance/MaintenanceDashboard";
+import Complaints from "./pages/maintenance/Complaints";
+import MaintenanceDetails from "./pages/maintenance/MaintenanceDetails";
+import TechniciansList from "./pages/maintenance/TechniciansList";
+import WorkOrders from "./pages/maintenance/WorkOrders";
+import SlaRisk from "./pages/maintenance/SlaRisk";
+import MaintenanceReports from "./pages/maintenance/MaintenanceReports";
+
 function App() {
   return (
     <AuthProvider>
@@ -71,6 +80,15 @@ function App() {
           <Route path="/payments/list" element={<Payments />} />
           <Route path="/payments/overdue" element={<OverdueAccounts />} />
           <Route path="/payments/reports" element={<CollectionReports />} />
+
+          {/* Maintenance & Complaint Management Module (Own Layout) */}
+          <Route path="/maintenance" element={<MaintenanceDashboard />} />
+          <Route path="/maintenance/complaints" element={<Complaints />} />
+          <Route path="/maintenance/complaints/:id" element={<MaintenanceDetails />} />
+          <Route path="/maintenance/technicians" element={<TechniciansList />} />
+          <Route path="/maintenance/work-orders" element={<WorkOrders />} />
+          <Route path="/maintenance/sla-risk" element={<SlaRisk />} />
+          <Route path="/maintenance/reports" element={<MaintenanceReports />} />
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/admin" replace />} />

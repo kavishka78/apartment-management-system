@@ -3,6 +3,7 @@ using System;
 using ApartmentManagement.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ApartmentManagement.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260924171838_AddTechnicianPhoto")]
+    partial class AddTechnicianPhoto
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,91 +24,6 @@ namespace ApartmentManagement.Api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("ApartmentManagement.Api.Models.Facility", b =>
-                {
-                    b.Property<int>("FacilityId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("FacilityId"));
-
-                    b.Property<int>("Capacity")
-                        .HasColumnType("integer");
-
-                    b.Property<TimeSpan>("CloseTime")
-                        .HasColumnType("interval");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("DeactivationReason")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<string>("FacilityDescription")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("FacilityName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<TimeSpan>("OpenTime")
-                        .HasColumnType("interval");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.HasKey("FacilityId");
-
-                    b.ToTable("Facilities");
-                });
-
-            modelBuilder.Entity("ApartmentManagement.Api.Models.FacilityBooking", b =>
-                {
-                    b.Property<int>("BookingId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("BookingId"));
-
-                    b.Property<DateTime>("BookingDate")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<TimeSpan>("EndTime")
-                        .HasColumnType("interval");
-
-                    b.Property<int>("FacilityId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ResidentId")
-                        .HasColumnType("integer");
-
-                    b.Property<TimeSpan>("StartTime")
-                        .HasColumnType("interval");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.HasKey("BookingId");
-
-                    b.HasIndex("FacilityId");
-
-                    b.ToTable("FacilityBookings");
-                });
 
             modelBuilder.Entity("ApartmentManagement.Api.Models.Invoice", b =>
                 {
@@ -119,13 +37,13 @@ namespace ApartmentManagement.Api.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("BillingMonth")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("DueDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
@@ -289,43 +207,6 @@ namespace ApartmentManagement.Api.Migrations
                     b.ToTable("MaintenanceHistories");
                 });
 
-            modelBuilder.Entity("ApartmentManagement.Api.Models.ParkingSlot", b =>
-                {
-                    b.Property<int>("SlotId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("SlotId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<int?>("CurrentVisitorPassId")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsAvailable")
-                        .HasColumnType("boolean");
-
-                    b.Property<int?>("ResidentId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SlotNumber")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("SlotType")
-                        .IsRequired()
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.HasKey("SlotId");
-
-                    b.ToTable("ParkingSlots");
-                });
-
             modelBuilder.Entity("ApartmentManagement.Api.Models.Payment", b =>
                 {
                     b.Property<int>("Id")
@@ -344,7 +225,7 @@ namespace ApartmentManagement.Api.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("PaidAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
@@ -374,7 +255,7 @@ namespace ApartmentManagement.Api.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("IssuedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("PaymentId")
                         .HasColumnType("integer");
@@ -399,21 +280,12 @@ namespace ApartmentManagement.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AccessPassCode")
-                        .HasColumnType("text");
-
                     b.Property<string>("ContactInformation")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsAccessGranted")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("NicNumber")
                         .HasColumnType("text");
 
                     b.Property<string>("PhotoBase64")
@@ -427,82 +299,9 @@ namespace ApartmentManagement.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("WorkingHours")
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
                     b.ToTable("Technicians");
-                });
-
-            modelBuilder.Entity("ApartmentManagement.Api.Models.VisitorPass", b =>
-                {
-                    b.Property<int>("PassId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PassId"));
-
-                    b.Property<string>("AccessCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<int?>("AssignedParkingSlotSlotId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("CheckInTime")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime?>("CheckOutTime")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime>("ExpectedArrival")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasMaxLength(15)
-                        .HasColumnType("character varying(15)");
-
-                    b.Property<int>("ResidentId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("VehicleNumber")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("VisitorName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("PassId");
-
-                    b.HasIndex("AssignedParkingSlotSlotId");
-
-                    b.ToTable("VisitorPasses");
-                });
-
-            modelBuilder.Entity("ApartmentManagement.Api.Models.FacilityBooking", b =>
-                {
-                    b.HasOne("ApartmentManagement.Api.Models.Facility", "Facility")
-                        .WithMany("Bookings")
-                        .HasForeignKey("FacilityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Facility");
                 });
 
             modelBuilder.Entity("ApartmentManagement.Api.Models.InvoiceItem", b =>
@@ -564,20 +363,6 @@ namespace ApartmentManagement.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Payment");
-                });
-
-            modelBuilder.Entity("ApartmentManagement.Api.Models.VisitorPass", b =>
-                {
-                    b.HasOne("ApartmentManagement.Api.Models.ParkingSlot", "AssignedParkingSlot")
-                        .WithMany()
-                        .HasForeignKey("AssignedParkingSlotSlotId");
-
-                    b.Navigation("AssignedParkingSlot");
-                });
-
-            modelBuilder.Entity("ApartmentManagement.Api.Models.Facility", b =>
-                {
-                    b.Navigation("Bookings");
                 });
 
             modelBuilder.Entity("ApartmentManagement.Api.Models.Invoice", b =>
