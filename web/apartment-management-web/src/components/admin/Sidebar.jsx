@@ -4,7 +4,7 @@ import "./Sidebar.css";
 
 
 export default function Sidebar() {
-  const { currentUser, currentComplex, isModuleEnabled } = useAuth();
+  const { currentUser, currentComplex, isModuleEnabled, logout } = useAuth();
 
   return (
     <aside className="admin-sidebar" id="admin-sidebar">
@@ -202,6 +202,7 @@ export default function Sidebar() {
           <div>
             <p className="sidebar-user-name">{currentUser.name}</p>
             <p className="sidebar-user-role">Building Administrator</p>
+            <button onClick={logout} style={{ background: "none", border: "none", padding: 0, fontSize: "11px", color: "#4f46e5", cursor: "pointer" }}>Sign out</button>
           </div>
         </div>
       </div>

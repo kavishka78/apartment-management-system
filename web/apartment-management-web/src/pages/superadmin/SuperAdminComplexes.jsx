@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { PLATFORM_MODULES, SUBSCRIPTION_TIERS } from "../../context/authConstants.js";
+import { PLATFORM_MODULES, SUBSCRIPTION_TIERS, RENEWAL_PERIODS, getSubscriptionStatus } from "../../context/authConstants.js";
 import "./SuperAdminLayout.css";
+
+const STATUS_CHIP = { Active: "sa-chip--green", Expiring: "sa-chip--amber", Expired: "sa-chip--slate", Deactivated: "sa-chip--slate" };
 
 export default function SuperAdminComplexes() {
   const { complexes, complexAdmins, addComplex, updateComplexPackage } = useAuth();
@@ -18,6 +20,7 @@ export default function SuperAdminComplexes() {
     contactPhone: "",
     subscriptionPlan: "Enterprise Suite",
     totalUnits: 48,
+    termMonths: 12,
     enabledModules: SUBSCRIPTION_TIERS["Enterprise Suite"].modules,
   });
 
@@ -83,6 +86,7 @@ export default function SuperAdminComplexes() {
         contactPhone: "",
         subscriptionPlan: "Enterprise Suite",
         totalUnits: 48,
+        termMonths: 12,
         enabledModules: SUBSCRIPTION_TIERS["Enterprise Suite"].modules,
       });
     } catch (err) {
@@ -195,8 +199,8 @@ export default function SuperAdminComplexes() {
                       </span>
                     </td>
                     <td>
-                      <span className="sa-chip sa-chip--green">
-                        {c.status}
+                      <span className={`sa-chip ${STATUS_CHIP[getSubscriptionStatus(c)]}`}>
+                        {getSubscriptionStatus(c)}
                       </span>
                     </td>
                     <td>
@@ -300,6 +304,18 @@ export default function SuperAdminComplexes() {
                     <option key={tierKey} value={tierKey}>
                       {tierKey} (LKR {SUBSCRIPTION_TIERS[tierKey].priceLkr.toLocaleString()} / mo)
                     </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="sa-form-group">
+                <label>Subscription Term *</label>
+                <select
+                  value={onboardForm.termMonths}
+                  onChange={(e) => setOnboardForm({ ...onboardForm, termMonths: Number(e.target.value) })}
+                >
+                  {RENEWAL_PERIODS.map((p) => (
+                    <option key={p.months} value={p.months}>{p.label}</option>
                   ))}
                 </select>
               </div>

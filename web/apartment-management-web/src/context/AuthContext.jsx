@@ -1,5 +1,11 @@
-import { createContext, useContext, useState } from "react";
-import { SUBSCRIPTION_TIERS } from "./authConstants.js";
+import { createContext, useContext, useState, useEffect } from "react";
+import {
+  SUBSCRIPTION_TIERS,
+  addMonthsIso,
+  getSubscriptionStatus,
+  isSubscriptionUsable,
+  todayIso,
+} from "./authConstants.js";
 
 const INITIAL_COMPLEXES = [
   {
@@ -14,6 +20,8 @@ const INITIAL_COMPLEXES = [
     occupiedUnits: 38,
     status: "Active",
     createdAt: "2026-01-15",
+    subscriptionStart: "2026-09-01",
+    subscriptionEnd: "2027-09-01",
     enabledModules: ["units", "residents", "vehicles", "staff", "facilities", "maintenance", "visitors", "ai_safety", "payments"],
   },
   {
@@ -28,6 +36,8 @@ const INITIAL_COMPLEXES = [
     occupiedUnits: 25,
     status: "Active",
     createdAt: "2026-02-10",
+    subscriptionStart: "2026-04-10",
+    subscriptionEnd: "2026-10-10",
     enabledModules: ["units", "residents", "vehicles", "staff", "facilities", "payments"],
   },
   {
@@ -42,188 +52,263 @@ const INITIAL_COMPLEXES = [
     occupiedUnits: 45,
     status: "Active",
     createdAt: "2026-03-01",
+    subscriptionStart: "2026-03-01",
+    subscriptionEnd: "2027-03-01",
     enabledModules: ["units", "residents", "payments"],
   },
 ];
 
-const INITIAL_USERS = [
+const INITIAL_ACCOUNTS = [
   {
     id: "user-super-1",
     name: "Alexander Vance",
     email: "owner@apartmenthub.io",
+    password: "owner123",
     role: "SuperAdmin",
-    roleLabel: "Platform Owner",
     tenantId: null,
-    complexName: "Global SaaS Platform",
     avatar: "AV",
   },
   {
-    id: "user-admin-1",
+    id: "admin-101",
     name: "Nimal Fernando",
     email: "nimal.f@lotusgrand.lk",
+    password: "admin123",
     role: "ApartmentAdmin",
-    roleLabel: "Building Manager",
     tenantId: 1,
-    complexName: "Lotus Grand Residencies",
-    complexCode: "LGR-01",
     avatar: "NF",
   },
   {
-    id: "user-admin-2",
+    id: "admin-102",
     name: "Saman Kumara",
     email: "saman.k@cinnamonbreeze.lk",
+    password: "admin123",
     role: "ApartmentAdmin",
-    roleLabel: "Building Manager",
     tenantId: 2,
-    complexName: "Cinnamon Breeze Condominiums",
-    complexCode: "CBC-02",
     avatar: "SK",
   },
   {
-    id: "user-admin-3",
+    id: "admin-103",
     name: "Dilini Senanayake",
     email: "dilini.s@pearloceanic.com",
+    password: "admin123",
     role: "ApartmentAdmin",
-    roleLabel: "Building Manager",
     tenantId: 3,
-    complexName: "Pearl Oceanic Luxury Suites",
-    complexCode: "POL-03",
     avatar: "DS",
   },
 ];
 
+const INITIAL_ADMINS = [
+  { id: "admin-101", name: "Nimal Fernando", email: "nimal.f@lotusgrand.lk", phone: "+94 77 234 5678", complexId: 1, complexName: "Lotus Grand Residencies", role: "ApartmentAdmin", status: "Active", assignedAt: "2026-01-16" },
+  { id: "admin-102", name: "Saman Kumara", email: "saman.k@cinnamonbreeze.lk", phone: "+94 71 888 4433", complexId: 2, complexName: "Cinnamon Breeze Condominiums", role: "ApartmentAdmin", status: "Active", assignedAt: "2026-02-12" },
+  { id: "admin-103", name: "Dilini Senanayake", email: "dilini.s@pearloceanic.com", phone: "+94 77 665 1199", complexId: 3, complexName: "Pearl Oceanic Luxury Suites", role: "ApartmentAdmin", status: "Active", assignedAt: "2026-03-02" },
+];
+
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(INITIAL_USERS[0]);
-  const [complexes, setComplexes] = useState(INITIAL_COMPLEXES);
-  const [complexAdmins, setComplexAdmins] = useState([
-    {
-      id: "admin-101",
-      name: "Nimal Fernando",
-      email: "nimal.f@lotusgrand.lk",
-      phone: "+94 77 234 5678",
-      complexId: 1,
-      complexName: "Lotus Grand Residencies",
-      role: "ApartmentAdmin",
-      status: "Active",
-      assignedAt: "2026-01-16",
-    },
-    {
-      id: "admin-102",
-      name: "Saman Kumara",
-      email: "saman.k@cinnamonbreeze.lk",
-      phone: "+94 71 888 4433",
-      complexId: 2,
-      complexName: "Cinnamon Breeze Condominiums",
-      role: "ApartmentAdmin",
-      status: "Active",
-      assignedAt: "2026-02-12",
-    },
-    {
-      id: "admin-103",
-      name: "Dilini Senanayake",
-      email: "dilini.s@pearloceanic.com",
-      phone: "+94 77 665 1199",
-      complexId: 3,
-      complexName: "Pearl Oceanic Luxury Suites",
-      role: "ApartmentAdmin",
-      status: "Active",
-      assignedAt: "2026-03-02",
-    },
-  ]);
-
-  const switchUser = (userId) => {
-    const found = INITIAL_USERS.find((u) => u.id === userId);
-    if (found) {
-      setCurrentUser(found);
+function usePersistedState(key, initial) {
+  const [value, setValue] = useState(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : initial;
+    } catch {
+      return initial;
     }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // storage unavailable; state stays in memory only
+    }
+  }, [key, value]);
+
+  return [value, setValue];
+}
+
+export function AuthProvider({ children }) {
+  const [sessionUserId, setSessionUserId] = usePersistedState("ah_v2_session", null);
+  const [accounts, setAccounts] = usePersistedState("ah_v2_accounts", INITIAL_ACCOUNTS);
+  const [complexes, setComplexes] = usePersistedState("ah_v2_complexes", INITIAL_COMPLEXES);
+  const [complexAdmins, setComplexAdmins] = usePersistedState("ah_v2_admins", INITIAL_ADMINS);
+  const [subscriptionHistory, setSubscriptionHistory] = usePersistedState("ah_v2_sub_history", []);
+
+  const account = accounts.find((a) => a.id === sessionUserId) || null;
+  const currentUser = account
+    ? {
+        id: account.id,
+        name: account.name,
+        email: account.email,
+        role: account.role,
+        tenantId: account.tenantId,
+        avatar: account.avatar,
+      }
+    : null;
+
+  const login = (email, password) => {
+    const found = accounts.find(
+      (a) => a.email.toLowerCase() === email.trim().toLowerCase() && a.password === password
+    );
+    if (!found) return { ok: false, error: "Invalid email or password." };
+    setSessionUserId(found.id);
+    return { ok: true, role: found.role };
+  };
+
+  const logout = () => setSessionUserId(null);
+
+  const logHistory = (complex, action, detail) => {
+    setSubscriptionHistory((prev) => [
+      {
+        id: `h-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        complexId: complex.id,
+        complexName: complex.name,
+        action,
+        detail,
+        by: currentUser?.name || "System",
+        at: new Date().toISOString(),
+      },
+      ...prev,
+    ]);
   };
 
   const addComplex = (complexData) => {
     const tier = SUBSCRIPTION_TIERS[complexData.subscriptionPlan] || SUBSCRIPTION_TIERS["Enterprise Suite"];
+    const months = Number(complexData.termMonths) || 12;
+    const start = todayIso();
     const newComplex = {
-      id: complexes.length + 1,
       ...complexData,
+      id: complexes.reduce((max, c) => Math.max(max, c.id), 0) + 1,
       totalUnits: parseInt(complexData.totalUnits, 10) || 24,
       occupiedUnits: 0,
       status: "Active",
-      createdAt: new Date().toISOString().split("T")[0],
+      createdAt: start,
+      subscriptionStart: start,
+      subscriptionEnd: addMonthsIso(start, months),
       enabledModules: complexData.enabledModules || tier.modules,
     };
+    delete newComplex.termMonths;
     setComplexes((prev) => [newComplex, ...prev]);
+    logHistory(newComplex, "Onboarded", `${newComplex.subscriptionPlan}, ${months} month term`);
     return newComplex;
   };
 
   const updateComplexPackage = (complexId, subscriptionPlan, enabledModules) => {
+    const target = complexes.find((c) => c.id === complexId);
+    if (!target) return;
+    const modules = enabledModules || SUBSCRIPTION_TIERS[subscriptionPlan]?.modules || target.enabledModules;
+    if (subscriptionPlan !== target.subscriptionPlan) {
+      const rank = (p) => SUBSCRIPTION_TIERS[p]?.priceLkr || 0;
+      const kind = rank(subscriptionPlan) >= rank(target.subscriptionPlan) ? "Upgraded" : "Downgraded";
+      logHistory(target, kind, `${target.subscriptionPlan} → ${subscriptionPlan}`);
+    } else {
+      logHistory(target, "Modules changed", `${modules.length} modules enabled`);
+    }
     setComplexes((prev) =>
-      prev.map((c) => {
-        if (c.id === complexId) {
-          return {
-            ...c,
-            subscriptionPlan,
-            enabledModules: enabledModules || SUBSCRIPTION_TIERS[subscriptionPlan]?.modules || c.enabledModules,
-          };
-        }
-        return c;
-      })
+      prev.map((c) => (c.id === complexId ? { ...c, subscriptionPlan, enabledModules: modules } : c))
     );
   };
 
+  const renewSubscription = (complexId, months) => {
+    const target = complexes.find((c) => c.id === complexId);
+    if (!target) return;
+    const today = todayIso();
+    // Renew from the current end date if still running, otherwise from today
+    const base = target.subscriptionEnd && target.subscriptionEnd > today ? target.subscriptionEnd : today;
+    const newEnd = addMonthsIso(base, months);
+    setComplexes((prev) =>
+      prev.map((c) =>
+        c.id === complexId
+          ? { ...c, status: "Active", subscriptionStart: base === today ? today : c.subscriptionStart, subscriptionEnd: newEnd }
+          : c
+      )
+    );
+    logHistory(target, "Renewed", `+${months} month(s), valid until ${newEnd}`);
+  };
+
+  const deactivateComplex = (complexId) => {
+    const target = complexes.find((c) => c.id === complexId);
+    if (!target) return;
+    setComplexes((prev) => prev.map((c) => (c.id === complexId ? { ...c, status: "Deactivated" } : c)));
+    logHistory(target, "Deactivated", "Admin access suspended");
+  };
+
+  const reactivateComplex = (complexId) => {
+    const target = complexes.find((c) => c.id === complexId);
+    if (!target) return;
+    setComplexes((prev) => prev.map((c) => (c.id === complexId ? { ...c, status: "Active" } : c)));
+    logHistory(target, "Reactivated", "Admin access restored");
+  };
+
   const addComplexAdmin = (adminData) => {
+    const email = adminData.email.trim().toLowerCase();
+    if (accounts.some((a) => a.email.toLowerCase() === email)) {
+      throw new Error("An account with this email already exists.");
+    }
+    const id = `admin-${Date.now()}`;
+    const { password, ...profile } = adminData;
     const newAdmin = {
-      id: `admin-${Date.now()}`,
-      ...adminData,
+      id,
+      ...profile,
+      email,
       role: "ApartmentAdmin",
       status: "Active",
-      assignedAt: new Date().toISOString().split("T")[0],
+      assignedAt: todayIso(),
     };
     setComplexAdmins((prev) => [newAdmin, ...prev]);
-
-    INITIAL_USERS.push({
-      id: newAdmin.id,
-      name: newAdmin.name,
-      email: newAdmin.email,
-      role: "ApartmentAdmin",
-      roleLabel: `Building Manager (${newAdmin.complexName})`,
-      tenantId: newAdmin.complexId,
-      complexName: newAdmin.complexName,
-      avatar: newAdmin.name.slice(0, 2).toUpperCase(),
-    });
-
+    setAccounts((prev) => [
+      ...prev,
+      {
+        id,
+        name: newAdmin.name,
+        email,
+        password,
+        role: "ApartmentAdmin",
+        tenantId: newAdmin.complexId,
+        avatar: newAdmin.name.slice(0, 2).toUpperCase(),
+      },
+    ]);
     return newAdmin;
   };
 
-  // Find active complex info
-  const currentComplex = complexes.find((c) => c.id === currentUser.tenantId) || complexes[0];
+  const isSuperAdmin = currentUser?.role === "SuperAdmin";
+  const isApartmentAdmin = currentUser?.role === "ApartmentAdmin";
 
-  // Helper to check if a module is allowed for the active apartment admin
+  const currentComplex = isApartmentAdmin
+    ? complexes.find((c) => c.id === currentUser.tenantId) || null
+    : null;
+
+  const subscriptionStatus = isApartmentAdmin ? getSubscriptionStatus(currentComplex) : "Active";
+  const subscriptionActive = isSuperAdmin || (isApartmentAdmin && isSubscriptionUsable(currentComplex));
+
   const isModuleEnabled = (moduleKey) => {
-    if (currentUser.role === "SuperAdmin") return true;
-    if (!currentComplex || !currentComplex.enabledModules) return false;
+    if (isSuperAdmin) return true;
+    if (!subscriptionActive || !currentComplex?.enabledModules) return false;
     return currentComplex.enabledModules.includes(moduleKey);
   };
-
-  const isSuperAdmin = currentUser.role === "SuperAdmin";
-  const isApartmentAdmin = currentUser.role === "ApartmentAdmin";
 
   return (
     <AuthContext.Provider
       value={{
         currentUser,
-        availableUsers: INITIAL_USERS,
         complexes,
         currentComplex,
         complexAdmins,
+        subscriptionHistory,
         isSuperAdmin,
         isApartmentAdmin,
-        activeTenantId: currentUser.tenantId || 1,
-        activeComplexName: isSuperAdmin ? "Global Platform" : currentComplex.name,
-        activePackage: isSuperAdmin ? "SuperAdmin" : currentComplex.subscriptionPlan,
+        activeTenantId: currentUser?.tenantId ?? null,
+        activeComplexName: isSuperAdmin ? "Global Platform" : currentComplex?.name || "",
+        activePackage: isSuperAdmin ? "SuperAdmin" : currentComplex?.subscriptionPlan,
+        subscriptionStatus,
+        subscriptionActive,
         isModuleEnabled,
-        switchUser,
+        login,
+        logout,
         addComplex,
         updateComplexPackage,
+        renewSubscription,
+        deactivateComplex,
+        reactivateComplex,
         addComplexAdmin,
       }}
     >

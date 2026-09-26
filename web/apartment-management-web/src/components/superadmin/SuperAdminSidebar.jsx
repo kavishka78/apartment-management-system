@@ -51,7 +51,7 @@ const SUPER_NAV_ITEMS = [
 ];
 
 export default function SuperAdminSidebar() {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
 
   return (
     <aside className="super-sidebar" id="super-sidebar">
@@ -105,6 +105,7 @@ export default function SuperAdminSidebar() {
           <div>
             <div style={{ fontSize: "12px", fontWeight: 600, color: "#0f172a" }}>{currentUser.name}</div>
             <div style={{ fontSize: "10px", color: "#64748b" }}>Super Administrator</div>
+            <button onClick={logout} style={{ background: "none", border: "none", padding: 0, fontSize: "10px", color: "#4f46e5", cursor: "pointer" }}>Sign out</button>
           </div>
         </div>
       </div>

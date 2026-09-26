@@ -2,7 +2,7 @@ import { useAuth } from "../../context/AuthContext";
 import "./Header.css";
 
 export default function Header({ title, subtitle, children }) {
-  const { currentUser, availableUsers, switchUser, currentComplex, isSuperAdmin } = useAuth();
+  const { currentUser, logout, currentComplex, isSuperAdmin } = useAuth();
 
   return (
     <header className="admin-header" id="admin-header">
@@ -29,29 +29,13 @@ export default function Header({ title, subtitle, children }) {
           </span>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-            <span style={{ fontSize: "10px", color: "#64748b", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-              ACTIVE USER:
-            </span>
-            <select
-              value={currentUser.id}
-              onChange={(e) => switchUser(e.target.value)}
-              style={{
-                padding: "4px 8px",
-                fontSize: "12px",
-                fontWeight: 600,
-                borderRadius: "6px",
-                border: "1px solid #cbd5e1",
-                background: "#ffffff",
-                color: "#0f172a",
-                cursor: "pointer",
-              }}
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "#0f172a" }}>{currentUser?.name}</span>
+            <button
+              onClick={logout}
+              style={{ background: "none", border: "none", padding: 0, fontSize: "11px", color: "#4f46e5", cursor: "pointer", textAlign: "left" }}
             >
-              {availableUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name} ({u.role === "SuperAdmin" ? "Super Admin" : u.complexName})
-                </option>
-              ))}
-            </select>
+              Sign out
+            </button>
           </div>
         </div>
       </div>

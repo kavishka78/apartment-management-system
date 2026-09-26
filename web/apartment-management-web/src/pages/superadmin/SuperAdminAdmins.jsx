@@ -27,6 +27,7 @@ export default function SuperAdminAdmins() {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
+        password: formData.password,
         complexId: selectedComplex.id,
         complexName: selectedComplex.name,
       });
