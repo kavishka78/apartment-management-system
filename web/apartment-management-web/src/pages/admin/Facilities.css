@@ -136,6 +136,32 @@
 }
 
 /* ─── Table Badges & Data Cells ───────────────────────────────── */
+.facility-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.facility-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #2563eb;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+tr:hover .facility-icon-badge {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
 .facility-name {
   font-weight: 600;
   color: #0f172a;

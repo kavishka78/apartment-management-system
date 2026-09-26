@@ -18,6 +18,67 @@ const EMPTY_FORM = {
   isActive: true,
 };
 
+// Helper to map facility name to an appropriate SVG icon
+function getFacilityIcon(name = "") {
+  const n = name.toLowerCase();
+  if (n.includes("pool") || n.includes("swim")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M3 19c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M14 6.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM17.5 11l-3-3m0 0l-3 3m3-3v4" />
+      </svg>
+    );
+  }
+  if (n.includes("gym") || n.includes("fitness") || n.includes("workout")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 0a2.25 2.25 0 01-2.25-2.25v-1.5C1.5 7.01 2.51 6 3.75 6h.75M3.75 12a2.25 2.25 0 00-2.25 2.25v1.5c0 1.24 1.01 2.25 2.25 2.25h.75m16.5-6a2.25 2.25 0 012.25-2.25v-1.5c0-1.24-1.01-2.25-2.25-2.25h-.75m2.25 6a2.25 2.25 0 002.25 2.25v1.5c0 1.24-1.01 2.25-2.25 2.25h-.75M6.75 6v12m10.5-12v12" />
+      </svg>
+    );
+  }
+  if (n.includes("tennis") || n.includes("court") || n.includes("badminton") || n.includes("squash") || n.includes("basketball")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 0112.728 0M18.364 18.364a9 9 0 01-12.728 0" />
+      </svg>
+    );
+  }
+  if (n.includes("hall") || n.includes("party") || n.includes("club") || n.includes("event") || n.includes("lounge")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+    );
+  }
+  if (n.includes("bbq") || n.includes("grill") || n.includes("din") || n.includes("kitchen")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v3m-4-2v2m8-2v2M4 11h16m-1 0a7 7 0 01-14 0m2 0v6a2 2 0 002 2h6a2 2 0 002-2v-6" />
+      </svg>
+    );
+  }
+  if (n.includes("park") || n.includes("garden") || n.includes("playground") || n.includes("play")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zm0 0v-8m-4 4l4-4 4 4" />
+      </svg>
+    );
+  }
+  if (n.includes("sauna") || n.includes("spa") || n.includes("steam")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v4m-4-2v3m8-3v3M4 14a8 8 0 0016 0H4z" />
+      </svg>
+    );
+  }
+  // Default building/amenity icon
+  return (
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.75a.75.75 0 00-.75-.75H4.5a.75.75 0 00-.75.75V21h15.75z" />
+    </svg>
+  );
+}
+
 export default function Facilities() {
   const [facilities, setFacilities] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -401,10 +462,15 @@ export default function Facilities() {
                     return (
                       <tr key={f.id}>
                         <td>
-                          <div>
-                            <span className="facility-name">{f.name}</span>
-                            <div className="td-desc" style={{ marginTop: "2px" }}>
-                              {f.description}
+                          <div className="facility-cell">
+                            <span className="facility-icon-badge">
+                              {getFacilityIcon(f.name)}
+                            </span>
+                            <div>
+                              <span className="facility-name">{f.name}</span>
+                              <div className="td-desc" style={{ marginTop: "2px" }}>
+                                {f.description}
+                              </div>
                             </div>
                           </div>
                         </td>
