@@ -17,9 +17,22 @@ def get_facilities() -> list:
         print(f"Error fetching facilities: {e}")
         return []
 
-def check_facility_availability(facility_name: str, requested_date: str) -> dict:
-    """Allow-listed tool to check if a facility exists and calculate availability/capacity."""
-    print(f"TOOL: Checking '{facility_name}' availability for {requested_date}")
+def get_parking_slots() -> list:
+    """Fetch all parking slots from backend API."""
+    try:
+        response = requests.get(f"{BACKEND_API_URL}/parkingslots", verify=False)
+        if response.status_code == 200:
+            return response.json()
+        return []
+    except Exception as e:
+        print(f"Error fetching parking slots: {e}")
+        return []
+
+def check_facility_and_parking_availability(facility_name: str, requested_date: str, visitor_vehicles_count: int = 0) -> dict:
+    """
+    Allow-listed tool to check both facility existence/capacity and visitor parking slot availability.
+    """
+    print(f"TOOL: Checking facility '{facility_name}' & {visitor_vehicles_count} parking slots for {requested_date}")
     
     try:
         # 1. Fetch facilities list to resolve facility name, capacity, and ID
@@ -51,14 +64,28 @@ def check_facility_availability(facility_name: str, requested_date: str) -> dict
             if b.get("bookingDate", "").startswith(requested_date) and b.get("status") != "Rejected"
         ]
         
+        facility_capacity_remaining = max(0, total_capacity - len(date_bookings))
+
+        # 3. Check Parking Slots Availability
+        parking_slots = get_parking_slots()
+        visitor_slots = [
+            s for s in parking_slots 
+            if s.get("slotType") == "Visitor" or s.get("slotType") == "Unassigned" or s.get("isOccupied") == False
+        ]
+        available_parking_count = len(visitor_slots)
+        
         return {
             "facilityId": facility_id,
             "facilityName": target_facility.get("name"),
             "totalCapacity": total_capacity,
             "existingBookingsCount": len(date_bookings),
-            "capacityRemaining": max(0, total_capacity - len(date_bookings)),
+            "capacityRemaining": facility_capacity_remaining,
             "openTime": target_facility.get("openTime"),
-            "closeTime": target_facility.get("closeTime")
+            "closeTime": target_facility.get("closeTime"),
+            "totalAvailableVisitorParking": available_parking_count,
+            "requestedVisitorVehicles": visitor_vehicles_count,
+            "parkingAvailable": available_parking_count >= visitor_vehicles_count,
+            "availableSlotNumbers": [s.get("slotNumber") for s in visitor_slots[:visitor_vehicles_count]]
         }
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": str(e)}

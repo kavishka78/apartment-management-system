@@ -13,6 +13,10 @@ export default function AiApprovals() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
+  const [simulating, setSimulating] = useState(false);
+  const [simPrompt, setSimPrompt] = useState(
+    "I want to host my birthday party at the Clubhouse this Saturday from 4 PM to 8 PM for 20 guests and need 4 visitor parking slots."
+  );
 
   const fetchData = useCallback(() => {
     return getPendingWorkflows()
@@ -52,11 +56,41 @@ export default function AiApprovals() {
     }
   }
 
+  async function handleSimulateRequest(e) {
+    e.preventDefault();
+    if (!simPrompt.trim()) return;
+    setSimulating(true);
+
+    try {
+      const res = await fetch("http://localhost:5073/api/workflows/plan-facility-parking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          objective: simPrompt,
+          residentId: 1,
+          residentName: "Kamal Perera (A-101)",
+        }),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || "Failed to trigger AI workflow.");
+      }
+
+      setSimPrompt("I want to host my birthday party at the Clubhouse this Saturday from 4 PM to 8 PM for 20 guests and need 4 visitor parking slots.");
+      await load();
+    } catch (err) {
+      alert(`Simulation Error: ${err.message}`);
+    } finally {
+      setSimulating(false);
+    }
+  }
+
   return (
     <div id="ai-approvals-page">
       <Header
         title="Agentic AI Approvals"
-        subtitle="Review and action pending AI-generated workflow requests."
+        subtitle="Review and action high-impact multi-agent workflow requests."
       >
         <button className="admin-btn admin-btn--secondary" onClick={load} id="btn-refresh-workflows">
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -66,13 +100,39 @@ export default function AiApprovals() {
         </button>
       </Header>
 
+      {/* Simulator Section */}
+      <div className="admin-card" style={{ padding: "1.25rem", marginBottom: "1.5rem" }}>
+        <h3 style={{ fontSize: "1rem", fontWeight: "600", marginBottom: "0.5rem" }}>
+          🚀 Test Resident Request (Mobile Simulation)
+        </h3>
+        <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.75rem" }}>
+          Submit a natural language objective for facility booking & visitor parking allocation. The 4-agent pipeline will execute planning, entity extraction, backend tool checks, and business rule validation.
+        </p>
+        <form onSubmit={handleSimulateRequest} style={{ display: "flex", gap: "0.75rem" }}>
+          <input
+            type="text"
+            className="admin-form-input"
+            style={{ flex: 1 }}
+            value={simPrompt}
+            onChange={(e) => setSimPrompt(e.target.value)}
+            placeholder="e.g. Reserve Clubhouse for 20 guests and 4 parking slots this Saturday..."
+          />
+          <button
+            type="submit"
+            className="admin-btn admin-btn--primary"
+            disabled={simulating}
+          >
+            {simulating ? "Agents Processing..." : "Submit AI Workflow Request"}
+          </button>
+        </form>
+      </div>
+
       {error && (
         <div className="overview-error-banner">
           ⚠️ {error}
         </div>
       )}
 
-      {/* Info banner when endpoint isn't built yet */}
       {!loading && !error && workflows.length === 0 && (
         <div className="ai-info-banner">
           <div className="ai-info-icon">
@@ -83,9 +143,7 @@ export default function AiApprovals() {
           <div>
             <h3 className="ai-info-title">No Pending Workflows</h3>
             <p className="ai-info-text">
-              AI workflow requests will appear here once the <code>/api/workflows</code> endpoint is active.
-              This page is pre-wired to <strong>GET /api/workflows?status=pending</strong> and will
-              automatically display data when the backend module is ready.
+              Use the simulator above to submit an AI request. Pending requests will appear here for manager review and single-click approval.
             </p>
           </div>
         </div>
@@ -102,58 +160,87 @@ export default function AiApprovals() {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Type</th>
-                  <th>Description</th>
-                  <th>Submitted</th>
-                  <th>Status</th>
+                  <th>Resident</th>
+                  <th>Objective & Agent Plan</th>
+                  <th>Proposal Summary</th>
+                  <th>Validation Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {workflows.map((wf) => (
-                  <tr key={wf.id}>
-                    <td>
-                      <span className="wf-id">#{wf.id}</span>
-                    </td>
-                    <td>
-                      <span className="wf-type">{wf.type || wf.workflowType || "—"}</span>
-                    </td>
-                    <td className="td-desc">
-                      {wf.description || wf.details || "—"}
-                    </td>
-                    <td>{formatDate(wf.createdAt || wf.submittedAt)}</td>
-                    <td>
-                      <span className="badge badge--warning">
-                        {wf.status || "Pending"}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="wf-actions">
-                        <button
-                          className="admin-btn admin-btn--success admin-btn--sm"
-                          disabled={actionLoading === wf.id}
-                          onClick={() => handleAction(wf.id, "approve")}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          className="admin-btn admin-btn--danger admin-btn--sm"
-                          disabled={actionLoading === wf.id}
-                          onClick={() => handleAction(wf.id, "reject")}
-                        >
-                          Reject
-                        </button>
-                        <button
-                          className="admin-btn admin-btn--warning admin-btn--sm"
-                          disabled={actionLoading === wf.id}
-                          onClick={() => handleAction(wf.id, "revise")}
-                        >
-                          Revise
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {workflows.map((wf) => {
+                  const proposal = parseJson(wf.proposalJson);
+                  const plan = parseJson(wf.planJson);
+                  const extracted = parseJson(wf.extractedDataJson);
+
+                  return (
+                    <tr key={wf.id}>
+                      <td>
+                        <span className="wf-id">#{wf.id}</span>
+                        <div style={{ fontSize: "0.75rem", color: "#888" }}>{formatDate(wf.createdAt)}</div>
+                      </td>
+                      <td>
+                        <strong>{wf.residentName || "Resident"}</strong>
+                        <div style={{ fontSize: "0.75rem", color: "#666" }}>Resident ID: #{wf.residentId}</div>
+                      </td>
+                      <td className="td-desc" style={{ maxWidth: "320px" }}>
+                        <div style={{ fontWeight: "600", marginBottom: "0.25rem" }}>"{wf.objective}"</div>
+                        {Array.isArray(plan) && plan.length > 0 && (
+                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.25rem" }}>
+                            <strong>Agent Plan:</strong>
+                            <ol style={{ paddingLeft: "1.2rem", margin: "0.2rem 0" }}>
+                              {plan.map((step, idx) => (
+                                <li key={idx}>{step}</li>
+                              ))}
+                            </ol>
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        {proposal && proposal.facilityName ? (
+                          <div style={{ fontSize: "0.85rem" }}>
+                            <div>🏢 <strong>Facility:</strong> {proposal.facilityName}</div>
+                            <div>📅 <strong>Date:</strong> {proposal.date} ({proposal.startTime} - {proposal.endTime})</div>
+                            <div>👥 <strong>Guests:</strong> {proposal.guests}</div>
+                            <div>🚗 <strong>Visitor Vehicles:</strong> {proposal.visitorVehicles} slots</div>
+                          </div>
+                        ) : (
+                          <span style={{ color: "#999" }}>—</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`badge ${wf.requiresApproval ? "badge--warning" : "badge--success"}`}>
+                          {wf.validationStatus || wf.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="wf-actions">
+                          <button
+                            className="admin-btn admin-btn--success admin-btn--sm"
+                            disabled={actionLoading === wf.id}
+                            onClick={() => handleAction(wf.id, "approve")}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="admin-btn admin-btn--danger admin-btn--sm"
+                            disabled={actionLoading === wf.id}
+                            onClick={() => handleAction(wf.id, "reject")}
+                          >
+                            Reject
+                          </button>
+                          <button
+                            className="admin-btn admin-btn--warning admin-btn--sm"
+                            disabled={actionLoading === wf.id}
+                            onClick={() => handleAction(wf.id, "revise")}
+                          >
+                            Revise
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -163,11 +250,21 @@ export default function AiApprovals() {
   );
 }
 
+function parseJson(str) {
+  try {
+    return str ? JSON.parse(str) : null;
+  } catch {
+    return null;
+  }
+}
+
 function formatDate(str) {
   if (!str) return "—";
   return new Date(str).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }

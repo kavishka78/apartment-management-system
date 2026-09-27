@@ -1,36 +1,34 @@
 from datetime import datetime
 from pydantic import BaseModel, Field
-# from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from state import FacilityWorkflowState
-from tools import check_facility_availability
+from tools import check_facility_and_parking_availability
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Initialize the LLM Temperature = 0 
-#llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+# Initialize the LLM (Temperature = 0 for deterministic outputs)
 llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", temperature=0)
 
-
 class PlanOutput(BaseModel):
-    plan: list[str] = Field(description="A step-by-step list of internal actions needed to fulfill the request.")
+    plan: list[str] = Field(description="A step by step list of internal actions needed to fulfill the integrated facility reservation and visitor parking request.")
 
 class ExtractionOutput(BaseModel):
-    facility: str = Field(description="Name of the facility requested (e.g., Clubhouse, Pool, Gym).")
+    facility: str = Field(description="Name of the facility requested (e.g., Clubhouse, Swimming Pool, Gym, Party Hall).")
     date: str = Field(description="The date requested, formatted as YYYY-MM-DD.")
-    guests: int = Field(description="Number of guests attending. Default is 1.")
+    start_time: str = Field(default="16:00:00", description="Start time requested in HH:MM:SS format.")
+    end_time: str = Field(default="20:00:00", description="End time requested in HH:MM:SS format.")
+    guests: int = Field(default=1, description="Number of guests attending.")
+    visitor_vehicles: int = Field(default=0, description="Number of visitor vehicles requiring parking allocation.")
 
-
-# Planner Agent
-
+# 1. Planner Agent
 def planner_node(state: FacilityWorkflowState):
-    print("AGENT 1 (Planner): Asking LLM to create a plan...")
+    print("AGENT 1 (Planner): Generating multi-step execution plan...")
     
     prompt = (
-        f"You are an AI planner for an apartment complex. "
-        f"Create a high-level internal plan to process this resident request: '{state['objective']}'. "
-        f"The plan should include extracting requirements, checking facility databases, and validating rules."
+        f"You are an AI planner for an apartment management complex. "
+        f"Create a high level 4 step internal execution plan for processing an integrated facility booking and visitor parking request: '{state['objective']}'. "
+        f"Steps should include entity extraction, backend availability verification for facility and parking, business rule validation, and human approval determination."
     )
     
     structured_llm = llm.with_structured_output(PlanOutput)
@@ -39,70 +37,91 @@ def planner_node(state: FacilityWorkflowState):
     state["plan"] = result.plan
     return state
 
-
-# Domain Analysis Agent
-
+# 2. Domain Analysis Agent
 def domain_analysis_node(state: FacilityWorkflowState):
-    print("AGENT 2 (Analyzer): Asking LLM to extract dates and entities...")
+    print("AGENT 2 (Domain Analyzer): Extracting event details, dates, and vehicle counts...")
     today_str = datetime.now().strftime("%Y-%m-%d")
     
     prompt = (
-        f"Extract the specific facility name, requested date, and guest count "
-        f"from this user request: '{state['objective']}'. "
-        f"Assume today is {today_str} if relative dates (like 'tomorrow' or 'next Friday') are used."
+        f"Extract the requested facility name, requested date (assume today is {today_str} if relative terms like 'tomorrow' or 'this Saturday' are used), "
+        f"start_time, end_time, guest count, and visitor vehicle count from this request: '{state['objective']}'."
     )
     
     structured_llm = llm.with_structured_output(ExtractionOutput)
     result = structured_llm.invoke(prompt)
     
     state["extracted_data"] = result.model_dump()
-    print(f"   -> Extracted: {state['extracted_data']}")
+    print(f"   -> Extracted Data: {state['extracted_data']}")
     return state
 
-
-# 3. Action / Tool Agent
-
+# 3. Action Agent (Controlled Tool Execution)
 def action_node(state: FacilityWorkflowState):
-    print("AGENT 3 (Action): Executing C# APIs with LLM data...")
+    print("AGENT 3 (Action Agent): Calling allow listed tools for facility & parking checks...")
     data = state["extracted_data"]
     
-    # Safely execute the allow-listed tool[cite: 2]
-    facility_result = check_facility_availability(data["facility"], data["date"])
+    check_result = check_facility_and_parking_availability(
+        facility_name=data["facility"],
+        requested_date=data["date"],
+        visitor_vehicles_count=data.get("visitor_vehicles", 0)
+    )
     
     state["tool_results"] = {
-        "facility_check": facility_result
+        "facility_and_parking_check": check_result
     }
     return state
 
-
-# 4. Validation  Agent
-
+# 4. Validation & Safety Agent
 def validation_node(state: FacilityWorkflowState):
-    print("AGENT 4 (Validator): Applying strict business rules...")
+    print("AGENT 4 (Validator): Applying strict deterministic business & security rules...")
     
-    guests = state["extracted_data"].get("guests", 1)
-    facility_response = state["tool_results"]["facility_check"]
+    data = state["extracted_data"]
+    guests = data.get("guests", 1)
+    visitor_vehicles = data.get("visitor_vehicles", 0)
+    check_res = state["tool_results"]["facility_and_parking_check"]
     
-    # Handle API errors 
-    if "error" in facility_response:
-        state["validation_status"] = "Failed: Facility API Error"
+    if "error" in check_res:
+        state["validation_status"] = f"Failed: {check_res['error']}"
         state["requires_approval"] = False
         return state
 
-    capacity_remaining = facility_response.get("capacityRemaining", 0)
+    capacity_remaining = check_res.get("capacityRemaining", 0)
+    parking_available = check_res.get("parkingAvailable", True)
+    total_available_parking = check_res.get("totalAvailableVisitorParking", 0)
 
-    # Deterministic Business Logic Rule
+    # Rule Check 1: Facility Capacity
     if capacity_remaining < guests:
-        state["validation_status"] = f"Rejected: Need space for {guests}, but only {capacity_remaining} available."
+        state["validation_status"] = f"Rejected: Facility capacity exceeded. Needed for {guests} guests, but only {capacity_remaining} spots available."
         state["requires_approval"] = False
+        return state
+
+    # Rule Check 2: Parking Slot Availability
+    if not parking_available:
+        state["validation_status"] = f"Rejected: Insufficient visitor parking. Needed {visitor_vehicles} slots, but only {total_available_parking} available."
+        state["requires_approval"] = False
+        return state
+
+    # Rule Check 3: Deterministic High-Impact Threshold Trigger (High-Risk Policy)
+    # Large events (>15 guests OR >3 visitor vehicles) MUST pause for Manager Approval.
+    is_high_impact = (guests > 15) or (visitor_vehicles > 3)
+
+    if is_high_impact:
+        state["validation_status"] = f"Valid Proposal Created - High Impact Event (>15 guests or >3 vehicles). Manager Approval Required."
+        state["requires_approval"] = True
     else:
-        state["validation_status"] = "Valid Proposal Created"
-        state["requires_approval"] = True # Pause high-impact action for human approval
-        state["final_proposal"] = {
-            "facility": state["extracted_data"]["facility"],
-            "date": state["extracted_data"]["date"],
-            "guests": guests,
-            "status": "Awaiting Manager Approval"
-        }
-        
+        state["validation_status"] = "Valid Proposal Created - Standard Event (Auto-Eligible)."
+        state["requires_approval"] = True  # Pause for human confirmation per assignment workflow
+
+    state["final_proposal"] = {
+        "facilityId": check_res.get("facilityId"),
+        "facilityName": check_res.get("facilityName"),
+        "date": data.get("date"),
+        "startTime": data.get("start_time", "16:00:00"),
+        "endTime": data.get("end_time", "20:00:00"),
+        "guests": guests,
+        "visitorVehicles": visitor_vehicles,
+        "assignedParkingSlots": check_res.get("availableSlotNumbers", []),
+        "isHighImpact": is_high_impact,
+        "status": "Awaiting Manager Approval"
+    }
+
     return state

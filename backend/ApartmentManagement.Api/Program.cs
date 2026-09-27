@@ -48,6 +48,12 @@ builder.Services.AddHttpClient<IMaintenanceTriageService, MaintenanceTriageClien
     client.BaseAddress = new Uri(agentUrl);
     client.Timeout = TimeSpan.FromSeconds(60); // Gemini can be slow; allow up to 60 s
 });
+builder.Services.AddHttpClient<FacilityAgentClient>(client =>
+{
+    var agentUrl = builder.Configuration["PythonAgentUrl"] ?? "http://localhost:8000";
+    client.BaseAddress = new Uri(agentUrl);
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
 
 // ── SLA escalation background service ───────────────────────────────────────
 builder.Services.AddHostedService<SlaEscalationService>();
