@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../../services/facility/facility_api_service.dart';
 import 'book_facility_screen.dart';
 import 'my_bookings_screen.dart';
+import 'ai_facility_assistant_screen.dart';
 
 class FacilitiesListScreen extends StatefulWidget {
   const FacilitiesListScreen({super.key});
@@ -89,7 +91,10 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
               // Header Card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 22,
+                ),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
@@ -112,7 +117,10 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
@@ -136,7 +144,11 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                               ),
                             );
                           },
-                          icon: const Icon(Icons.bookmark_outline_rounded, size: 15, color: Colors.white),
+                          icon: const Icon(
+                            Icons.bookmark_outline_rounded,
+                            size: 15,
+                            color: Colors.white,
+                          ),
                           label: const Text(
                             'My Bookings',
                             style: TextStyle(
@@ -147,7 +159,10 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                           ),
                           style: TextButton.styleFrom(
                             backgroundColor: Colors.white.withOpacity(0.12),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -177,6 +192,84 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Resident AI Assistant Banner
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AiFacilityAssistantScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4F46E5).withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Resident Agentic AI Assistant',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Book facility & parking in 1 sentence using AI agents!',
+                              style: TextStyle(
+                                color: Color(0xFFE0E7FF),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -235,7 +328,9 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                   itemBuilder: (context, index) {
                     final facility = _facilities[index];
                     final facilityId = facility['id'] ?? facility['facilityId'];
-                    final totalBookings = _bookings.where((b) => b['facilityId'] == facilityId).length;
+                    final totalBookings = _bookings
+                        .where((b) => b['facilityId'] == facilityId)
+                        .length;
                     return _buildFacilityCard(context, facility, totalBookings);
                   },
                 ),
@@ -246,12 +341,18 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
     );
   }
 
-  Widget _buildFacilityCard(BuildContext context, dynamic facility, int totalBookings) {
+  Widget _buildFacilityCard(
+    BuildContext context,
+    dynamic facility,
+    int totalBookings,
+  ) {
     final name = facility['name'] ?? 'Facility';
     final description = facility['description'] ?? 'No description';
     final capacity = facility['capacity'] ?? 0;
-    final openTime = facility['openTime']?.toString().substring(0, 5) ?? '08:00';
-    final closeTime = facility['closeTime']?.toString().substring(0, 5) ?? '22:00';
+    final openTime =
+        facility['openTime']?.toString().substring(0, 5) ?? '08:00';
+    final closeTime =
+        facility['closeTime']?.toString().substring(0, 5) ?? '22:00';
     final bool isActive = facility['isActive'] ?? true;
     final String? deactivationReason = facility['deactivationReason'];
 
@@ -285,15 +386,21 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: isActive ? const Color(0xFFEFF6FF) : const Color(0xFFFEF2F2),
+                    color: isActive
+                        ? const Color(0xFFEFF6FF)
+                        : const Color(0xFFFEF2F2),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isActive ? const Color(0xFFDBEAFE) : const Color(0xFFFEE2E2),
+                      color: isActive
+                          ? const Color(0xFFDBEAFE)
+                          : const Color(0xFFFEE2E2),
                     ),
                   ),
                   child: Icon(
                     _getFacilityIcon(name),
-                    color: isActive ? const Color(0xFF2563EB) : const Color(0xFFDC2626),
+                    color: isActive
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFFDC2626),
                     size: 22,
                   ),
                 ),
@@ -311,18 +418,27 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: isActive ? const Color(0xFF0F172A) : const Color(0xFF991B1B),
+                                color: isActive
+                                    ? const Color(0xFF0F172A)
+                                    : const Color(0xFF991B1B),
                                 letterSpacing: -0.2,
                               ),
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
-                              color: isActive ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+                              color: isActive
+                                  ? const Color(0xFFF0FDF4)
+                                  : const Color(0xFFFEF2F2),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: isActive ? const Color(0xFFBBF7D0) : const Color(0xFFFECACA),
+                                color: isActive
+                                    ? const Color(0xFFBBF7D0)
+                                    : const Color(0xFFFECACA),
                               ),
                             ),
                             child: Row(
@@ -333,7 +449,9 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                                   height: 6,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: isActive ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                                    color: isActive
+                                        ? const Color(0xFF16A34A)
+                                        : const Color(0xFFDC2626),
                                   ),
                                 ),
                                 const SizedBox(width: 5),
@@ -342,7 +460,9 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: isActive ? const Color(0xFF15803D) : const Color(0xFF991B1B),
+                                    color: isActive
+                                        ? const Color(0xFF15803D)
+                                        : const Color(0xFF991B1B),
                                   ),
                                 ),
                               ],
@@ -380,11 +500,16 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline_rounded, color: Color(0xFFDC2626), size: 16),
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    color: Color(0xFFDC2626),
+                    size: 16,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      (deactivationReason != null && deactivationReason.trim().isNotEmpty)
+                      (deactivationReason != null &&
+                              deactivationReason.trim().isNotEmpty)
                           ? deactivationReason
                           : 'Temporarily closed for maintenance.',
                       style: const TextStyle(
@@ -415,7 +540,11 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.schedule_rounded, size: 15, color: Color(0xFF64748B)),
+                      const Icon(
+                        Icons.schedule_rounded,
+                        size: 15,
+                        color: Color(0xFF64748B),
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         '$openTime – $closeTime',
@@ -429,7 +558,11 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.people_outline_rounded, size: 15, color: Color(0xFF64748B)),
+                      const Icon(
+                        Icons.people_outline_rounded,
+                        size: 15,
+                        color: Color(0xFF64748B),
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Capacity: $capacity',
@@ -472,8 +605,12 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isActive ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                        foregroundColor: isActive ? Colors.white : const Color(0xFF94A3B8),
+                        backgroundColor: isActive
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFFF1F5F9),
+                        foregroundColor: isActive
+                            ? Colors.white
+                            : const Color(0xFF94A3B8),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -484,7 +621,9 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
-                          color: isActive ? Colors.white : const Color(0xFF94A3B8),
+                          color: isActive
+                              ? Colors.white
+                              : const Color(0xFF94A3B8),
                         ),
                       ),
                     ),
@@ -500,13 +639,28 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
 
   IconData _getFacilityIcon(String name) {
     final lower = name.toLowerCase();
-    if (lower.contains('pool') || lower.contains('swim')) return Icons.pool_rounded;
-    if (lower.contains('gym') || lower.contains('fitness') || lower.contains('workout')) return Icons.fitness_center_rounded;
-    if (lower.contains('tennis') || lower.contains('court') || lower.contains('badminton') || lower.contains('squash')) return Icons.sports_tennis_rounded;
-    if (lower.contains('hall') || lower.contains('party') || lower.contains('club') || lower.contains('event')) return Icons.celebration_rounded;
-    if (lower.contains('bbq') || lower.contains('grill')) return Icons.outdoor_grill_rounded;
-    if (lower.contains('park') || lower.contains('garden')) return Icons.park_rounded;
-    if (lower.contains('sauna') || lower.contains('spa')) return Icons.hot_tub_rounded;
+    if (lower.contains('pool') || lower.contains('swim'))
+      return Icons.pool_rounded;
+    if (lower.contains('gym') ||
+        lower.contains('fitness') ||
+        lower.contains('workout'))
+      return Icons.fitness_center_rounded;
+    if (lower.contains('tennis') ||
+        lower.contains('court') ||
+        lower.contains('badminton') ||
+        lower.contains('squash'))
+      return Icons.sports_tennis_rounded;
+    if (lower.contains('hall') ||
+        lower.contains('party') ||
+        lower.contains('club') ||
+        lower.contains('event'))
+      return Icons.celebration_rounded;
+    if (lower.contains('bbq') || lower.contains('grill'))
+      return Icons.outdoor_grill_rounded;
+    if (lower.contains('park') || lower.contains('garden'))
+      return Icons.park_rounded;
+    if (lower.contains('sauna') || lower.contains('spa'))
+      return Icons.hot_tub_rounded;
     return Icons.domain_rounded;
   }
 }

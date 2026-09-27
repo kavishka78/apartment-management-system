@@ -49,6 +49,12 @@ builder.Services.AddHttpClient<IMaintenanceTriageService, MaintenanceTriageClien
     client.BaseAddress = new Uri(agentUrl);
     client.Timeout = TimeSpan.FromSeconds(60); // Gemini can be slow; allow up to 60 s
 });
+builder.Services.AddHttpClient<FacilityAgentClient>(client =>
+{
+    var agentUrl = builder.Configuration["PythonAgentUrl"] ?? "http://localhost:8000";
+    client.BaseAddress = new Uri(agentUrl);
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
 
 // ── SLA escalation background service ───────────────────────────────────────
 builder.Services.AddHostedService<SlaEscalationService>();
@@ -95,6 +101,31 @@ using (var scope = app.Services.CreateScope())
         dbContext.Database.ExecuteSqlRaw(@"
             ALTER TABLE ""Facilities""
             ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text;
+
+            ALTER TABLE ""FacilityBookings""
+            ADD COLUMN IF NOT EXISTS ""BookedCapacity"" integer NOT NULL DEFAULT 1;
+
+            CREATE TABLE IF NOT EXISTS ""FacilityAgentWorkflows"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""WorkflowId"" text NOT NULL,
+                ""ResidentId"" integer NOT NULL DEFAULT 1,
+                ""ResidentName"" text NOT NULL DEFAULT 'Resident',
+                ""Objective"" text NOT NULL,
+                ""AgentType"" text NOT NULL DEFAULT 'FacilityAndParkingAgent',
+                ""PlanJson"" text NOT NULL DEFAULT '',
+                ""ExtractedDataJson"" text NOT NULL DEFAULT '',
+                ""ToolResultsJson"" text NOT NULL DEFAULT '',
+                ""ProposalJson"" text NOT NULL DEFAULT '',
+                ""ValidationStatus"" text NOT NULL DEFAULT 'Pending',
+                ""RequiresApproval"" boolean NOT NULL DEFAULT true,
+                ""Status"" text NOT NULL DEFAULT 'PendingApproval',
+                ""CreatedAt"" timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                ""ActionedAt"" timestamp without time zone NULL,
+                ""ActionedBy"" text NULL,
+                ""ManagerNotes"" text NULL
+            );
+
+            UPDATE ""FacilityAgentWorkflows"" SET ""Status"" = 'PendingApproval' WHERE ""Status"" = 'AutoApproved';
         ");
     }
     catch (Exception ex)

@@ -25,6 +25,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
     minute: TimeOfDay.now().minute,
   );
   bool _isSubmitting = false;
+  int _bookedCapacity = 1;
 
   List<dynamic> _facilityBookings = [];
   bool _isLoadingBookings = true;
@@ -132,7 +133,9 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
     if (!isActive) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('This facility is currently inactive and cannot be booked.'),
+          content: Text(
+            'This facility is currently inactive and cannot be booked.',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -184,10 +187,11 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
 
     final result = await FacilityApiService.createBooking(
       facilityId: facilityId,
-      residentId: 101, // Mock resident ID
+      residentId: 1, // Valid resident ID (Kamal Perera)
       bookingDate: _selectedDate,
       startTime: _formatTimeOfDay(_startTime),
       endTime: _formatTimeOfDay(_endTime),
+      bookedCapacity: _bookedCapacity,
     );
 
     if (mounted) {
@@ -223,6 +227,14 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
     final dateFormatted =
         '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
     final currentDayBookings = _dayBookings;
+    final currentDayTotalCapacity = currentDayBookings.fold<int>(
+      0,
+      (sum, b) =>
+          sum +
+          ((b['bookedCapacity'] != null && b['bookedCapacity'] is int && (b['bookedCapacity'] as int) > 0)
+              ? (b['bookedCapacity'] as int)
+              : 1),
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F8),
@@ -255,7 +267,8 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          (deactivationReason != null && deactivationReason.trim().isNotEmpty)
+                          (deactivationReason != null &&
+                                  deactivationReason.trim().isNotEmpty)
                               ? 'Facility Inactive: $deactivationReason'
                               : 'This facility is currently inactive and unavailable for bookings.',
                           style: TextStyle(
@@ -292,7 +305,10 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -405,10 +421,13 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF0F172A).withOpacity(0.02),
+                                  color: const Color(0xFF0F172A)
+                                      .withOpacity(0.02),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -459,10 +478,13 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF0F172A).withOpacity(0.02),
+                                  color: const Color(0xFF0F172A)
+                                      .withOpacity(0.02),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -493,6 +515,149 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 18),
+
+              // Booked Capacity / Guests Selector
+              const Text(
+                'Number of Spots',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withOpacity(0.02),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$_bookedCapacity ${_bookedCapacity == 1 ? 'Spot Reserved' : 'Spots Reserved'}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Max facility capacity: $capacity spots',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        InkWell(
+                          onTap: _bookedCapacity > 1
+                              ? () => setState(() => _bookedCapacity--)
+                              : null,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: _bookedCapacity > 1
+                                  ? const Color(0xFFF1F5F9)
+                                  : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _bookedCapacity > 1
+                                    ? const Color(0xFFCBD5E1)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '–',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: _bookedCapacity > 1
+                                      ? const Color(0xFF0F172A)
+                                      : const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '$_bookedCapacity',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        InkWell(
+                          onTap:
+                              (capacity > 0 && _bookedCapacity < capacity) ||
+                                  capacity == 0
+                              ? () => setState(() => _bookedCapacity++)
+                              : null,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color:
+                                  (capacity == 0 || _bookedCapacity < capacity)
+                                  ? const Color(0xFF0F172A)
+                                  : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color:
+                                    (capacity == 0 ||
+                                        _bookedCapacity < capacity)
+                                    ? const Color(0xFF0F172A)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '+',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      (capacity == 0 ||
+                                          _bookedCapacity < capacity)
+                                      ? Colors.white
+                                      : const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
 
               const SizedBox(height: 24),
 
@@ -500,10 +665,16 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: (_isSubmitting || !isActive) ? null : _submitBooking,
+                  onPressed: (_isSubmitting || !isActive)
+                      ? null
+                      : _submitBooking,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isActive ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                    foregroundColor: isActive ? Colors.white : const Color(0xFF94A3B8),
+                    backgroundColor: isActive
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF1F5F9),
+                    foregroundColor: isActive
+                        ? Colors.white
+                        : const Color(0xFF94A3B8),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -513,14 +684,21 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         )
                       : Text(
-                          !isActive ? 'Facility Currently Inactive' : 'Confirm Spot Booking',
+                          !isActive
+                              ? 'Facility Currently Inactive'
+                              : 'Confirm Spot Booking',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: isActive ? Colors.white : const Color(0xFF94A3B8),
+                            color: isActive
+                                ? Colors.white
+                                : const Color(0xFF94A3B8),
                           ),
                         ),
                 ),
@@ -542,7 +720,9 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: currentDayBookings.isNotEmpty
                           ? Colors.blue.shade50
@@ -550,7 +730,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${currentDayBookings.length} Booked',
+                      '$currentDayTotalCapacity ${currentDayTotalCapacity == 1 ? 'Spot Reserved' : 'Spots Reserved'}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -581,7 +761,10 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.check_circle_outline, color: Color(0xFF059669)),
+                      Icon(
+                        Icons.check_circle_outline,
+                        color: Color(0xFF059669),
+                      ),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -606,9 +789,16 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                     final startFormatted = _formatTimeString(b['startTime']);
                     final endFormatted = _formatTimeString(b['endTime']);
 
+                    final bookedCap = (b['bookedCapacity'] != null && b['bookedCapacity'] is int && (b['bookedCapacity'] as int) > 0)
+                        ? (b['bookedCapacity'] as int)
+                        : 1;
+
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -621,7 +811,9 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFEFF6FF),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFDBEAFE)),
+                              border: Border.all(
+                                color: const Color(0xFFDBEAFE),
+                              ),
                             ),
                             child: const Icon(
                               Icons.access_time_filled_rounded,
@@ -642,9 +834,9 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              const Text(
-                                'Spot Reserved',
-                                style: TextStyle(
+                              Text(
+                                '$bookedCap ${bookedCap == 1 ? 'Spot Reserved' : 'Spots Reserved'}',
+                                style: const TextStyle(
                                   color: Color(0xFF64748B),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,

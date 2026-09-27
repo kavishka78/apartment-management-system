@@ -37,6 +37,7 @@ namespace ApartmentManagement.Api.Controllers
                         BookingDate = b.BookingDate,
                         StartTime = b.StartTime,
                         EndTime = b.EndTime,
+                        BookedCapacity = b.BookedCapacity > 0 ? b.BookedCapacity : 1,
                         Status = b.Status.ToString()
                     }).ToListAsync();
 
@@ -69,6 +70,7 @@ namespace ApartmentManagement.Api.Controllers
                         BookingDate = b.BookingDate,
                         StartTime = b.StartTime,
                         EndTime = b.EndTime,
+                        BookedCapacity = b.BookedCapacity > 0 ? b.BookedCapacity : 1,
                         Status = b.Status.ToString()
                     }).ToListAsync();
 
@@ -111,27 +113,41 @@ namespace ApartmentManagement.Api.Controllers
                     return BadRequest("Cannot book a facility for a past date or time.");
                 }
 
-                // Check Capacity & Existing Bookings Count
-                var activeBookingsCount = await _context.FacilityBookings.CountAsync(b =>
-                    b.FacilityId == dto.FacilityId &&
-                    b.BookingDate.Date == bookingDateUtc &&
-                    b.Status != BookingStatus.Rejected &&
-                    ((dto.StartTime < b.EndTime) && (dto.EndTime > b.StartTime))
-                );
+                // Check Capacity & Sum of Existing Booked Capacity for Overlapping Time Slot
+                var overlappingBookings = await _context.FacilityBookings
+                    .Where(b => b.FacilityId == dto.FacilityId &&
+                                b.BookingDate.Date == bookingDateUtc &&
+                                b.Status != BookingStatus.Rejected &&
+                                ((dto.StartTime < b.EndTime) && (dto.EndTime > b.StartTime)))
+                    .ToListAsync();
 
-                if (activeBookingsCount >= facility.Capacity)
+                int alreadyBookedCapacity = overlappingBookings.Sum(b => b.BookedCapacity > 0 ? b.BookedCapacity : 1);
+                int requestedCapacity = dto.BookedCapacity > 0 ? dto.BookedCapacity : 1;
+                int remainingCapacity = Math.Max(0, facility.Capacity - alreadyBookedCapacity);
+
+                if (alreadyBookedCapacity + requestedCapacity > facility.Capacity)
                 {
-                    return Conflict($"Facility capacity limit reached ({activeBookingsCount}/{facility.Capacity} spots taken) for the selected time slot.");
+                    return Conflict($"Booking request for {requestedCapacity} {(requestedCapacity == 1 ? "spot" : "spots")} exceeds remaining facility capacity ({remainingCapacity} {(remainingCapacity == 1 ? "spot" : "spots")} available for this time slot).");
+                }
+
+                // Validate Resident Exists or fallback to valid resident in DB
+                var residentExists = await _context.Residents.AnyAsync(r => r.Id == dto.ResidentId);
+                int validResidentId = dto.ResidentId;
+                if (!residentExists)
+                {
+                    var firstResident = await _context.Residents.FirstOrDefaultAsync();
+                    validResidentId = firstResident?.Id ?? 1;
                 }
 
                 // Auto-Confirm Booking
                 var booking = new FacilityBooking
                 {
                     FacilityId = dto.FacilityId,
-                    ResidentId = dto.ResidentId,
+                    ResidentId = validResidentId,
                     BookingDate = bookingDateUtc,
                     StartTime = dto.StartTime,
                     EndTime = dto.EndTime,
+                    BookedCapacity = dto.BookedCapacity > 0 ? dto.BookedCapacity : 1,
                     Status = BookingStatus.Approved
                 };
 

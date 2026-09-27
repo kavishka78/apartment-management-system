@@ -159,6 +159,10 @@ export async function deleteParkingSlot(id) {
 }
 
 // ─── Workflows (AI Approvals) ────────────────────────────────
+export async function getAllWorkflows() {
+  return request("/workflows");
+}
+
 export async function getPendingWorkflows() {
   return request("/workflows?status=pending");
 }

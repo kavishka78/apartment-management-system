@@ -34,6 +34,7 @@ namespace ApartmentManagement.Api.Models
         [Column(TypeName = "varchar(20)")]
         public BookingStatus Status {get;set;} = BookingStatus.Pending;
 
+        public int BookedCapacity { get; set; } = 1;
 
         public DateTime CreatedAt {get;set;} = DateTime.UtcNow;
         public DateTime? UpdatedAt {get;set;} 

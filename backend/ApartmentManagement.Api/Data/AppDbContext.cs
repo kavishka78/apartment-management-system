@@ -30,6 +30,7 @@ namespace ApartmentManagement.Api.Data
         public DbSet<FacilityBooking> FacilityBookings { get; set; }
         public DbSet<VisitorPass> VisitorPasses { get; set; }
         public DbSet<ParkingSlot> ParkingSlots { get; set; }
+        public DbSet<FacilityAgentWorkflow> FacilityAgentWorkflows { get; set; }
 
         // Tenant / Resident Registry Models
         public DbSet<Unit> Units { get; set; }
