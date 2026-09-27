@@ -227,6 +227,14 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
     final dateFormatted =
         '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
     final currentDayBookings = _dayBookings;
+    final currentDayTotalCapacity = currentDayBookings.fold<int>(
+      0,
+      (sum, b) =>
+          sum +
+          ((b['bookedCapacity'] != null && b['bookedCapacity'] is int && (b['bookedCapacity'] as int) > 0)
+              ? (b['bookedCapacity'] as int)
+              : 1),
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F8),
@@ -722,7 +730,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${currentDayBookings.length} Booked',
+                      '$currentDayTotalCapacity ${currentDayTotalCapacity == 1 ? 'Spot Reserved' : 'Spots Reserved'}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -781,6 +789,10 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                     final startFormatted = _formatTimeString(b['startTime']);
                     final endFormatted = _formatTimeString(b['endTime']);
 
+                    final bookedCap = (b['bookedCapacity'] != null && b['bookedCapacity'] is int && (b['bookedCapacity'] as int) > 0)
+                        ? (b['bookedCapacity'] as int)
+                        : 1;
+
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.symmetric(
@@ -822,9 +834,9 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              const Text(
-                                'Spot Reserved',
-                                style: TextStyle(
+                              Text(
+                                '$bookedCap ${bookedCap == 1 ? 'Spot Reserved' : 'Spots Reserved'}',
+                                style: const TextStyle(
                                   color: Color(0xFF64748B),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
