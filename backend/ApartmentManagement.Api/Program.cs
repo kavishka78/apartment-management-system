@@ -82,6 +82,7 @@ using (var scope = app.Services.CreateScope())
         dbContext.Database.Migrate();
         RegistrySeeder.SeedPlatform(dbContext);
         RegistrySeeder.Seed(dbContext);
+        FacilitySeeder.Seed(dbContext);
     }
     catch (Exception ex)
     {
