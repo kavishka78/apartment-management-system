@@ -81,58 +81,6 @@ namespace ApartmentManagement.Api.Controllers
             }
         }
 
-        // Get All Bookings Details (Optionally filter by Facility)
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookings([FromQuery] int? facilityId = null)
-        {
-            var query = _context.FacilityBookings
-                .Include(b => b.Facility)
-                .AsQueryable();
-
-            if (facilityId.HasValue)
-            {
-                query = query.Where(b => b.FacilityId == facilityId.Value);
-            }
-
-            var bookings = await query
-                .Select(b => new BookingResponseDto
-                {
-                    Id = b.BookingId,
-                    FacilityId = b.FacilityId,
-                    FacilityName = b.Facility != null ? b.Facility.FacilityName : string.Empty,
-                    ResidentId = b.ResidentId,
-                    BookingDate = b.BookingDate,
-                    StartTime = b.StartTime,
-                    EndTime = b.EndTime,
-                    Status = b.Status.ToString()
-                })
-                .ToListAsync();
-
-            return Ok(bookings);
-        }
-
-        // Get All Bookings Details for a Specific Facility
-        [HttpGet("facility/{facilityId}")]
-        public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookingsForFacility(int facilityId)
-        {
-            var bookings = await _context.FacilityBookings
-                .Include(b => b.Facility)
-                .Where(b => b.FacilityId == facilityId)
-                .Select(b => new BookingResponseDto
-                {
-                    Id = b.BookingId,
-                    FacilityId = b.FacilityId,
-                    FacilityName = b.Facility != null ? b.Facility.FacilityName : string.Empty,
-                    ResidentId = b.ResidentId,
-                    BookingDate = b.BookingDate,
-                    StartTime = b.StartTime,
-                    EndTime = b.EndTime,
-                    Status = b.Status.ToString()
-                })
-                .ToListAsync();
-
-            return Ok(bookings);
-        }
 
         // Create a Booking For A Facility
         [HttpPost]
