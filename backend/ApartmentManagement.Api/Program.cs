@@ -101,6 +101,9 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""Facilities""
             ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text;
 
+            ALTER TABLE ""FacilityBookings""
+            ADD COLUMN IF NOT EXISTS ""BookedCapacity"" integer NOT NULL DEFAULT 1;
+
             CREATE TABLE IF NOT EXISTS ""AgentWorkflows"" (
                 ""Id"" SERIAL PRIMARY KEY,
                 ""WorkflowId"" text NOT NULL,

@@ -86,7 +86,12 @@ def check_facility_and_parking_availability(facility_name: str, requested_date: 
             if b.get("bookingDate", "").startswith(requested_date) and b.get("status") != "Rejected"
         ]
         
-        facility_capacity_remaining = max(0, total_capacity - len(date_bookings))
+        total_booked_capacity = sum(
+            (b.get("bookedCapacity") if (b.get("bookedCapacity") and b.get("bookedCapacity") > 0) else 1)
+            for b in date_bookings
+        )
+        
+        facility_capacity_remaining = max(0, total_capacity - total_booked_capacity)
 
         # Check real Database Parking Slots
         parking_slots = get_parking_slots()

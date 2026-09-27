@@ -96,6 +96,7 @@ class FacilityApiService {
     required DateTime bookingDate,
     required String startTime,
     required String endTime,
+    int bookedCapacity = 1,
   }) async {
     try {
       final response = await http
@@ -108,6 +109,7 @@ class FacilityApiService {
               'bookingDate': bookingDate.toIso8601String(),
               'startTime': startTime,
               'endTime': endTime,
+              'bookedCapacity': bookedCapacity,
             }),
           )
           .timeout(timeoutDuration);
@@ -122,8 +124,16 @@ class FacilityApiService {
       if (response.body.isNotEmpty) {
         try {
           final decoded = jsonDecode(response.body);
-          if (decoded is Map && decoded['title'] != null) {
-            errorMsg = decoded['title'];
+          if (decoded is Map) {
+            if (decoded['message'] != null) {
+              errorMsg = decoded['message'].toString();
+            } else if (decoded['Message'] != null) {
+              errorMsg = decoded['Message'].toString();
+            } else if (decoded['title'] != null) {
+              errorMsg = decoded['title'].toString();
+            } else {
+              errorMsg = response.body;
+            }
           } else if (response.body.startsWith('"')) {
             errorMsg = response.body.replaceAll('"', '');
           } else {

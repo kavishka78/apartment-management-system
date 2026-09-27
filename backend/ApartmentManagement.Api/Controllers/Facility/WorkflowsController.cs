@@ -199,6 +199,29 @@ namespace ApartmentManagement.Api.Controllers
             TimeSpan startTime = TimeSpan.Parse(startTimeStr);
             TimeSpan endTime = TimeSpan.Parse(endTimeStr);
 
+            int guests = root.TryGetProperty("guests", out var gProp) ? gProp.GetInt32() : 1;
+            int requestedCapacity = guests > 0 ? guests : 1;
+
+            // Check facility capacity in database before approving workflow booking
+            var facility = await _context.Facilities.FindAsync(facilityId);
+            if (facility != null)
+            {
+                var overlappingBookings = await _context.FacilityBookings
+                    .Where(b => b.FacilityId == facilityId &&
+                                b.BookingDate.Date == bookingDate.Date &&
+                                b.Status != BookingStatus.Rejected &&
+                                ((startTime < b.EndTime) && (endTime > b.StartTime)))
+                    .ToListAsync();
+
+                int alreadyBookedCapacity = overlappingBookings.Sum(b => b.BookedCapacity > 0 ? b.BookedCapacity : 1);
+                int remainingCapacity = Math.Max(0, facility.Capacity - alreadyBookedCapacity);
+
+                if (alreadyBookedCapacity + requestedCapacity > facility.Capacity)
+                {
+                    throw new InvalidOperationException($"Booking failed: Exceeds facility capacity. Facility '{facility.FacilityName}' has {remainingCapacity} spots remaining for this time slot (Requested: {requestedCapacity} spots).");
+                }
+            }
+
             // 1. Create Facility Booking
             var booking = new FacilityBooking
             {
@@ -207,6 +230,7 @@ namespace ApartmentManagement.Api.Controllers
                 BookingDate = bookingDate,
                 StartTime = startTime,
                 EndTime = endTime,
+                BookedCapacity = requestedCapacity,
                 Status = BookingStatus.Approved
             };
             _context.FacilityBookings.Add(booking);

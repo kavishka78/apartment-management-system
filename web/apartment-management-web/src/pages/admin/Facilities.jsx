@@ -186,14 +186,15 @@ export default function Facilities() {
     const facilityBookings = filteredBookings.filter(
       (b) => b.facilityId === facilityId
     );
-    const totalAllTime = bookings.filter(
-      (b) => b.facilityId === facilityId && b.status !== "Rejected"
-    ).length;
+    const totalBookedCapacity = facilityBookings.reduce(
+      (sum, b) => sum + (b.bookedCapacity || 1),
+      0
+    );
 
     return {
       count: facilityBookings.length,
       bookings: facilityBookings,
-      totalAllTime,
+      totalBookedCapacity,
     };
   };
 
@@ -489,8 +490,8 @@ export default function Facilities() {
                             >
                               {bookingCount} {bookingCount === 1 ? "Booking" : "Bookings"}
                             </span>
-                            <span style={{ fontSize: "11px", color: "#64748b" }}>
-                              All-Time Total: {stats.totalAllTime}
+                            <span style={{ fontSize: "11.5px", fontWeight: "600", color: "#334155" }}>
+                              Booked Capacity: {stats.totalBookedCapacity} {stats.totalBookedCapacity === 1 ? "Spot" : "Spots"} ({filterRange === "today" ? "Today" : filterRange === "week" ? "This Week" : filterRange === "month" ? "This Month" : "Total"})
                             </span>
                           </div>
                         </td>
@@ -772,12 +773,13 @@ export default function Facilities() {
                     <th>Resident ID</th>
                     <th>Date</th>
                     <th>Time Slot</th>
+                    <th>Booked Capacity</th>
                   </tr>
                 </thead>
                 <tbody>
                   {viewFacilityBookings.length === 0 ? (
                     <tr>
-                      <td colSpan="4" style={{ textAlign: "center", padding: "28px 0", color: "#94a3b8" }}>
+                      <td colSpan="5" style={{ textAlign: "center", padding: "28px 0", color: "#94a3b8" }}>
                         No bookings recorded for this facility.
                       </td>
                     </tr>
@@ -789,6 +791,11 @@ export default function Facilities() {
                         <td>{new Date(b.bookingDate).toLocaleDateString()}</td>
                         <td>
                           {b.startTime?.substring(0, 5)} – {b.endTime?.substring(0, 5)}
+                        </td>
+                        <td>
+                          <span className="capacity-badge" style={{ background: "#f1f5f9", color: "#334155", border: "1px solid #e2e8f0", fontWeight: "600", padding: "4px 10px", borderRadius: "6px" }}>
+                            Capacity: {b.bookedCapacity || 1} {(b.bookedCapacity || 1) === 1 ? "Spot" : "Spots"}
+                          </span>
                         </td>
                       </tr>
                     ))
