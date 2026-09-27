@@ -12,6 +12,8 @@ import 'services/auth/auth_service.dart';
 /// Moved out of main.dart so SplashScreen can route to it independently.
 /// The Profile tab is currently a placeholder — Part 2 will replace it
 /// with the full Resident Profile Hub screen.
+import 'screens/profile/profile_home_screen.dart';
+
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -27,12 +29,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     FacilitiesListScreen(),
     VisitorParkingScreen(),
     PaymentHomeScreen(),
-    // TODO Part 2: Replace with ProfileHomeScreen()
-    PlaceholderScreen(
-      title: 'Profile',
-      icon: Icons.person_outline_rounded,
-      message: 'Resident profile will be available here.',
-    ),
+    ProfileHomeScreen(),
   ];
 
   void _changePage(int index) {
