@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Header from "../../components/admin/Header";
-import { getPendingWorkflows } from "../../services/api";
+import { getAllWorkflows } from "../../services/api";
 import "./AiApprovals.css";
 
 export default function AiApprovals() {
@@ -9,21 +9,9 @@ export default function AiApprovals() {
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(() => {
-    return getPendingWorkflows()
-      .then(async (data) => {
-        let list = Array.isArray(data) ? data : [];
-        if (list.length === 0) {
-          try {
-            const allRes = await fetch("http://localhost:5073/api/workflows");
-            if (allRes.ok) {
-              const allData = await allRes.json();
-              if (Array.isArray(allData)) list = allData;
-            }
-          } catch (e) {
-            console.error("Error fetching workflow logs:", e);
-          }
-        }
-        setWorkflows(list);
+    return getAllWorkflows()
+      .then((data) => {
+        setWorkflows(Array.isArray(data) ? data : []);
       })
       .catch((err) => {
         setError(err.message);
@@ -92,9 +80,8 @@ export default function AiApprovals() {
                 <th style={{ width: "90px" }}>ID & Date</th>
                 <th style={{ width: "130px" }}>Resident</th>
                 <th style={{ width: "35%" }}>Resident Objective & 4-Agent Plan</th>
-                <th style={{ width: "26%" }}>Staged Proposal Details</th>
-                <th style={{ width: "16%" }}>Rule Validation</th>
-                <th style={{ width: "130px" }}>Booking Status</th>
+                <th style={{ width: "28%" }}>Proposal / AI Response Details</th>
+                <th style={{ width: "20%" }}>Rule Validation & Status</th>
               </tr>
             </thead>
             <tbody>
@@ -109,7 +96,8 @@ export default function AiApprovals() {
                   valStatusText.toLowerCase().includes("insufficient") ||
                   valStatusText.toLowerCase().includes("not found");
 
-                const badgeInfo = getValidationBadgeInfo(valStatusText, wf.status);
+                const isInquiry = proposal?.isInquiry || wf.status === "InquiryAnswered";
+                const badgeInfo = getValidationBadgeInfo(valStatusText, wf.status, isInquiry);
 
                 return (
                   <tr key={wf.id}>
@@ -144,24 +132,29 @@ export default function AiApprovals() {
                       </div>
                     </td>
 
-                    {/* Proposal Details */}
+                    {/* Proposal / AI Response Details */}
                     <td>
-                      {proposal && proposal.facilityName && !isFailed ? (
+                      {isInquiry ? (
+                        <div className="wf-proposal-card" style={{ borderLeft: "3px solid #3b82f6", background: "#f0f9ff" }}>
+                          <div style={{ fontWeight: "700", color: "#1e40af", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
+                            ℹ️ Information Answer
+                          </div>
+                          <div style={{ fontSize: "0.8rem", color: "#1e3a8a", lineHeight: "1.35" }}>
+                            {proposal?.answer || valStatusText}
+                          </div>
+                        </div>
+                      ) : proposal && proposal.facilityName && !isFailed ? (
                         <div className="wf-proposal-card">
                           <div className="wf-proposal-item">
-
                             <span><strong>Facility:</strong> {proposal.facilityName}</span>
                           </div>
                           <div className="wf-proposal-item">
-
                             <span><strong>Date & Time:</strong> {proposal.date} ({proposal.startTime} - {proposal.endTime})</span>
                           </div>
                           <div className="wf-proposal-item">
-
                             <span><strong>Guests:</strong> {proposal.guests}</span>
                           </div>
                           <div className="wf-proposal-item">
-
                             <span><strong>Parking Slots:</strong> {proposal.visitorVehicles} ({proposal.assignedParkingSlots?.join(", ") || "Auto-Allocated"})</span>
                           </div>
                           {proposal.isHighImpact && (
@@ -178,27 +171,25 @@ export default function AiApprovals() {
                       )}
                     </td>
 
-                    {/* Validation */}
+                    {/* Rule Validation & Status */}
                     <td>
-                      <div className={`val-badge ${badgeInfo.badgeClass}`}>
+                      <div className={`val-badge ${badgeInfo.badgeClass}`} style={{ marginBottom: "0.4rem" }}>
                         <span>{badgeInfo.icon}</span>
                         <span>{badgeInfo.label}</span>
                       </div>
-                    </td>
-
-                    {/* Status Pill (Read Only Audit View) */}
-                    <td>
                       <div>
                         {wf.status === "AutoApproved" ? (
                           <span className="status-pill status-pill--approved">Auto-Booked</span>
                         ) : wf.status === "Approved" ? (
                           <span className="status-pill status-pill--approved">Resident Confirmed</span>
+                        ) : wf.status === "InquiryAnswered" ? (
+                          <span className="status-pill" style={{ background: "#e0f2fe", color: "#0369a1" }}>Inquiry Answered</span>
                         ) : wf.status === "Rejected" ? (
                           <span className="status-pill status-pill--rejected">Declined</span>
                         ) : isFailed ? (
                           <span className="status-pill status-pill--rejected">Halted (Failed)</span>
                         ) : (
-                          <span className="status-pill status-pill--revision">Awaiting Resident</span>
+                          <span className="status-pill status-pill--revision">Confirmation Pending</span>
                         )}
                       </div>
                     </td>
@@ -213,12 +204,15 @@ export default function AiApprovals() {
   );
 }
 
-function getValidationBadgeInfo(validationStatus, status) {
+function getValidationBadgeInfo(validationStatus, status, isInquiry) {
+  if (isInquiry || status === "InquiryAnswered") {
+    return { badgeClass: "val-badge--info", label: "Information Answered (No Booking)" };
+  }
   if (status === "AutoApproved") {
     return { badgeClass: "val-badge--success", label: "Auto-Approved & Booked" };
   }
   if (status === "Approved") {
-    return { badgeClass: "val-badge--success", label: "Resident Confirmed & Staged" };
+    return { badgeClass: "val-badge--success", label: "Resident Confirmed & Booked" };
   }
   if (status === "Rejected") {
     return { badgeClass: "val-badge--danger", label: "Declined" };
