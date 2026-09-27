@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "414056943213",
+    "project_id": "apartment-hub-861ec",
+    "storage_bucket": "apartment-hub-861ec.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:414056943213:android:7fc31c7d0e4012b8947964",
+        "android_client_info": {
+          "package_name": "com.example.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "414056943213-3pd3450umj94cu8l0sicv1orgmjpo3pk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCx157p8NZblz0pa-fP1NSIWbzYIYzXNRg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "414056943213-3pd3450umj94cu8l0sicv1orgmjpo3pk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
