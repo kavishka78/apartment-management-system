@@ -54,7 +54,10 @@ namespace ApartmentManagement.Api.Controllers
                 var toolResultsElement = agentResult.GetProperty("tool_results");
                 var proposalElement = agentResult.GetProperty("proposal");
 
-                // 2. Persist Workflow State into PostgreSQL Database for Auditability & Approval
+                bool isFailed = validationStatus.StartsWith("Failed", StringComparison.OrdinalIgnoreCase) || 
+                                validationStatus.StartsWith("Rejected", StringComparison.OrdinalIgnoreCase);
+
+                // 2. Persist Workflow State into PostgreSQL Database for Auditability & Execution
                 var workflow = new AgentWorkflow
                 {
                     WorkflowId = workflowId,
@@ -67,17 +70,28 @@ namespace ApartmentManagement.Api.Controllers
                     ToolResultsJson = toolResultsElement.GetRawText(),
                     ProposalJson = proposalElement.ValueKind != JsonValueKind.Null ? proposalElement.GetRawText() : "{}",
                     ValidationStatus = validationStatus,
-                    RequiresApproval = true,
-                    Status = "PendingApproval",
+                    RequiresApproval = requiresApproval,
+                    Status = (!requiresApproval && !isFailed) ? "AutoApproved" : (isFailed ? "Failed" : "PendingApproval"),
                     CreatedAt = DateTime.UtcNow
                 };
 
                 _context.AgentWorkflows.Add(workflow);
+
+                // 3. If Standard Event (Auto-Approved) & Not Failed -> Instantly Execute Database Insertion!
+                if (!requiresApproval && !isFailed)
+                {
+                    await ExecuteWorkflowBookingInternal(workflow);
+                    workflow.ActionedAt = DateTime.UtcNow;
+                    workflow.ActionedBy = "AI Agent (Auto-Confirmed)";
+                }
+
                 await _context.SaveChangesAsync();
 
                 return StatusCode(201, new
                 {
-                    Message = "Workflow paused for Human Manager Approval.",
+                    Message = (!requiresApproval && !isFailed) 
+                        ? "Standard Request Auto-Approved and Booked in Database."
+                        : "High-Impact Workflow Paused for Approval.",
                     Workflow = workflow
                 });
             }
@@ -100,7 +114,7 @@ namespace ApartmentManagement.Api.Controllers
                 {
                     if (status.Equals("pending", StringComparison.OrdinalIgnoreCase))
                     {
-                        query = query.Where(w => w.Status == "PendingApproval" || w.Status == "Pending" || w.Status == "AutoApproved");
+                        query = query.Where(w => w.Status == "PendingApproval" || w.Status == "Pending");
                     }
                     else
                     {
@@ -136,66 +150,14 @@ namespace ApartmentManagement.Api.Controllers
                 var workflow = await _context.AgentWorkflows.FindAsync(id);
                 if (workflow == null) return NotFound("Workflow not found.");
 
-                if (workflow.Status == "Approved")
+                if (workflow.Status == "Approved" || workflow.Status == "AutoApproved")
                     return BadRequest("Workflow is already approved.");
 
-                // Parse the AI Proposal JSON to execute the actual database insertion
-                using var doc = JsonDocument.Parse(workflow.ProposalJson);
-                var root = doc.RootElement;
+                await ExecuteWorkflowBookingInternal(workflow);
 
-                int facilityId = root.TryGetProperty("facilityId", out var fidProp) ? fidProp.GetInt32() : 3;
-                string dateStr = root.TryGetProperty("date", out var dProp) && dProp.GetString() != null ? dProp.GetString()! : DateTime.UtcNow.ToString("yyyy-MM-dd");
-                string startTimeStr = root.TryGetProperty("startTime", out var stProp) && stProp.GetString() != null ? stProp.GetString()! : "16:00:00";
-                string endTimeStr = root.TryGetProperty("endTime", out var etProp) && etProp.GetString() != null ? etProp.GetString()! : "20:00:00";
-                int visitorVehicles = root.TryGetProperty("visitorVehicles", out var vvProp) ? vvProp.GetInt32() : 0;
-
-                DateTime bookingDate = DateTime.SpecifyKind(DateTime.Parse(dateStr), DateTimeKind.Utc);
-                TimeSpan startTime = TimeSpan.Parse(startTimeStr);
-                TimeSpan endTime = TimeSpan.Parse(endTimeStr);
-
-                // 1. Execute High-Impact Action A: Create Facility Booking
-                var booking = new FacilityBooking
-                {
-                    FacilityId = facilityId,
-                    ResidentId = workflow.ResidentId,
-                    BookingDate = bookingDate,
-                    StartTime = startTime,
-                    EndTime = endTime,
-                    Status = BookingStatus.Approved
-                };
-                _context.FacilityBookings.Add(booking);
-
-                // 2. Execute High-Impact Action B: Allocate Visitor Parking & Issue Passes
-                if (visitorVehicles > 0)
-                {
-                    var availableSlots = await _context.ParkingSlots
-                        .Where(s => s.SlotType == ParkingSlotType.Visitor || s.IsAvailable)
-                        .Take(visitorVehicles)
-                        .ToListAsync();
-
-                    int slotIndex = 0;
-                    for (int i = 0; i < visitorVehicles; i++)
-                    {
-                        var assignedSlot = slotIndex < availableSlots.Count ? availableSlots[slotIndex++] : null;
-                        var pass = new VisitorPass
-                        {
-                            ResidentId = workflow.ResidentId,
-                            VisitorName = $"Event Guest #{i + 1} ({workflow.ResidentName})",
-                            PhoneNumber = "0770000000",
-                            VehicleNumber = $"WP V-PASS-{Random.Shared.Next(1000, 9999)}",
-                            ExpectedArrival = bookingDate.Add(startTime),
-                            AccessCode = $"AC-{Random.Shared.Next(100000, 999999)}",
-                            AssignedParkingSlot = assignedSlot,
-                            Status = PassStatus.Active
-                        };
-                        _context.VisitorPasses.Add(pass);
-                    }
-                }
-
-                // 3. Mark Workflow as Approved
                 workflow.Status = "Approved";
                 workflow.ActionedAt = DateTime.UtcNow;
-                workflow.ActionedBy = "Admin Manager";
+                workflow.ActionedBy = "Resident / Manager";
 
                 await _context.SaveChangesAsync();
 
@@ -212,6 +174,72 @@ namespace ApartmentManagement.Api.Controllers
             }
         }
 
+        // Helper Method to Execute Facility Booking & Visitor Parking Slot Update in PostgreSQL DB
+        private async Task ExecuteWorkflowBookingInternal(AgentWorkflow workflow)
+        {
+            if (string.IsNullOrWhiteSpace(workflow.ProposalJson) || workflow.ProposalJson == "{}")
+                return;
+
+            using var doc = JsonDocument.Parse(workflow.ProposalJson);
+            var root = doc.RootElement;
+
+            int facilityId = root.TryGetProperty("facilityId", out var fidProp) ? fidProp.GetInt32() : 3;
+            string dateStr = root.TryGetProperty("date", out var dProp) && dProp.GetString() != null ? dProp.GetString()! : DateTime.UtcNow.ToString("yyyy-MM-dd");
+            string startTimeStr = root.TryGetProperty("startTime", out var stProp) && stProp.GetString() != null ? stProp.GetString()! : "16:00:00";
+            string endTimeStr = root.TryGetProperty("endTime", out var etProp) && etProp.GetString() != null ? etProp.GetString()! : "20:00:00";
+            int visitorVehicles = root.TryGetProperty("visitorVehicles", out var vvProp) ? vvProp.GetInt32() : 0;
+
+            DateTime bookingDate = DateTime.SpecifyKind(DateTime.Parse(dateStr), DateTimeKind.Utc);
+            TimeSpan startTime = TimeSpan.Parse(startTimeStr);
+            TimeSpan endTime = TimeSpan.Parse(endTimeStr);
+
+            // 1. Create Facility Booking
+            var booking = new FacilityBooking
+            {
+                FacilityId = facilityId,
+                ResidentId = workflow.ResidentId,
+                BookingDate = bookingDate,
+                StartTime = startTime,
+                EndTime = endTime,
+                Status = BookingStatus.Approved
+            };
+            _context.FacilityBookings.Add(booking);
+
+            // 2. Allocate Visitor Parking & UPDATE PARKING SLOT STATUS to Unavailable (IsAvailable = false, IsOccupied = true)
+            if (visitorVehicles > 0)
+            {
+                var availableSlots = await _context.ParkingSlots
+                    .Where(s => s.SlotType == ParkingSlotType.Visitor && s.IsAvailable)
+                    .Take(visitorVehicles)
+                    .ToListAsync();
+
+                int slotIndex = 0;
+                for (int i = 0; i < visitorVehicles; i++)
+                {
+                    ParkingSlot? assignedSlot = null;
+                    if (slotIndex < availableSlots.Count)
+                    {
+                        assignedSlot = availableSlots[slotIndex++];
+                        assignedSlot.IsAvailable = false;
+                        _context.ParkingSlots.Update(assignedSlot);
+                    }
+
+                    var pass = new VisitorPass
+                    {
+                        ResidentId = workflow.ResidentId,
+                        VisitorName = $"Event Guest #{i + 1} ({workflow.ResidentName})",
+                        PhoneNumber = "0770000000",
+                        VehicleNumber = $"WP V-PASS-{Random.Shared.Next(1000, 9999)}",
+                        ExpectedArrival = bookingDate.Add(startTime),
+                        AccessCode = $"AC-{Random.Shared.Next(100000, 999999)}",
+                        AssignedParkingSlot = assignedSlot,
+                        Status = PassStatus.Active
+                    };
+                    _context.VisitorPasses.Add(pass);
+                }
+            }
+        }
+
         // PUT: /api/workflows/{id}/reject
         [HttpPut("{id}/reject")]
         public async Task<IActionResult> RejectWorkflow(int id)
@@ -221,7 +249,7 @@ namespace ApartmentManagement.Api.Controllers
 
             workflow.Status = "Rejected";
             workflow.ActionedAt = DateTime.UtcNow;
-            workflow.ActionedBy = "Admin Manager";
+            workflow.ActionedBy = "Resident / Manager";
 
             await _context.SaveChangesAsync();
             return Ok(new { Message = "Workflow rejected successfully.", Workflow = workflow });
@@ -236,7 +264,7 @@ namespace ApartmentManagement.Api.Controllers
 
             workflow.Status = "RequiresRevision";
             workflow.ActionedAt = DateTime.UtcNow;
-            workflow.ActionedBy = "Admin Manager";
+            workflow.ActionedBy = "Resident / Manager";
             if (body != null && body.ContainsKey("notes"))
             {
                 workflow.ManagerNotes = body["notes"];

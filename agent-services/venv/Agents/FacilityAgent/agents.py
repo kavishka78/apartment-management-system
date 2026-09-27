@@ -101,15 +101,15 @@ def validation_node(state: FacilityWorkflowState):
         return state
 
     # Rule Check 3: Deterministic High-Impact Threshold Trigger (High-Risk Policy)
-    # Large events (>15 guests OR >3 visitor vehicles) MUST pause for Manager Approval.
-    is_high_impact = (guests > 15) or (visitor_vehicles > 3)
+    # Large events (>10 guests OR >2 visitor vehicles) MUST pause for Resident/Human Approval.
+    is_high_impact = (guests > 10) or (visitor_vehicles > 2)
 
     if is_high_impact:
-        state["validation_status"] = f"Valid Proposal Created - High Impact Event (>15 guests or >3 vehicles). Manager Approval Required."
+        state["validation_status"] = f"Valid Proposal Created - High Impact Event (>10 guests or >2 vehicles). Resident Approval Required."
         state["requires_approval"] = True
     else:
-        state["validation_status"] = "Valid Proposal Created - Standard Event (Auto-Eligible)."
-        state["requires_approval"] = True  # Pause for human confirmation per assignment workflow
+        state["validation_status"] = "Valid Proposal Created - Standard Event (Auto-Approved & Booked)."
+        state["requires_approval"] = False
 
     state["final_proposal"] = {
         "facilityId": check_res.get("facilityId"),
@@ -121,7 +121,7 @@ def validation_node(state: FacilityWorkflowState):
         "visitorVehicles": visitor_vehicles,
         "assignedParkingSlots": check_res.get("availableSlotNumbers", []),
         "isHighImpact": is_high_impact,
-        "status": "Awaiting Manager Approval"
+        "status": "Awaiting Resident Approval" if is_high_impact else "Auto-Approved"
     }
 
     return state

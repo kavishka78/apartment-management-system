@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class FacilityApiService {
-  // Use 10.0.2.2 for Android Emulator, localhost for iOS/Web
+  // Use 10.0.2.2 for Android Emulator, localhost for iOS/Web/Desktop
   static const String baseUrl = 'http://10.0.2.2:5073/api';
   static const Duration timeoutDuration = Duration(seconds: 10);
 
@@ -94,8 +94,8 @@ class FacilityApiService {
     required int facilityId,
     required int residentId,
     required DateTime bookingDate,
-    required String startTime, // Format "HH:mm:ss"
-    required String endTime, // Format "HH:mm:ss"
+    required String startTime,
+    required String endTime,
   }) async {
     try {
       final response = await http
@@ -113,7 +113,6 @@ class FacilityApiService {
           .timeout(timeoutDuration);
 
       debugPrint('CREATE BOOKING STATUS: ${response.statusCode}');
-      debugPrint('CREATE BOOKING RESPONSE: ${response.body}');
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return {'success': true, 'message': 'Booking request submitted!'};
@@ -152,8 +151,6 @@ class FacilityApiService {
           )
           .timeout(timeoutDuration);
 
-      debugPrint('CANCEL BOOKING STATUS: ${response.statusCode}');
-
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return {'success': true, 'message': 'Booking cancelled successfully!'};
       }
@@ -163,8 +160,56 @@ class FacilityApiService {
         'message': 'Failed to cancel booking (${response.statusCode})',
       };
     } catch (e) {
-      debugPrint('CANCEL BOOKING ERROR: $e');
       return {'success': false, 'message': 'Cannot connect to server (Timeout or Network Error)'};
+    }
+  }
+
+  // PLAN AGENTIC WORKFLOW (Resident Mobile AI)
+  static Future<Map<String, dynamic>> planAgenticWorkflow({
+    required String objective,
+    int residentId = 1,
+    String residentName = 'Kamal Perera (A-101)',
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/workflows/plan-facility-parking'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'objective': objective,
+              'residentId': residentId,
+              'residentName': residentName,
+            }),
+          )
+          .timeout(const Duration(seconds: 35));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        return {'success': true, 'data': decoded};
+      }
+      return {'success': false, 'message': 'Failed to execute AI workflow (${response.statusCode})'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  // APPROVE AGENTIC WORKFLOW (Resident High-Impact Confirmation)
+  static Future<Map<String, dynamic>> approveAgenticWorkflow(int workflowId) async {
+    try {
+      final response = await http
+          .put(
+            Uri.parse('$baseUrl/workflows/$workflowId/approve'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        return {'success': true, 'data': decoded};
+      }
+      return {'success': false, 'message': 'Failed to approve workflow'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
     }
   }
 }
