@@ -74,6 +74,45 @@ namespace ApartmentManagement.Api.Data
                 new DomesticStaff { TenantId = 1, ResidentId = mahesh.Id, ResidentName = mahesh.FullName, UnitNumber = "C-301", FullName = "Kusuma Silva", StaffType = "Chef / Cook", NicNumber = "198033445566", ContactPhone = "+94 77 332 9900", AccessPassCode = "PASS-K80-301", WorkingHours = "09:00 AM - 03:00 PM (Daily)" },
                 new DomesticStaff { TenantId = 1, ResidentId = mahesh.Id, ResidentName = mahesh.FullName, UnitNumber = "C-301", FullName = "Priyantha Jayalath", StaffType = "Chauffeur / Driver", NicNumber = "198944556677", ContactPhone = "+94 77 665 4321", AccessPassCode = "PASS-P89-301", WorkingHours = "08:00 AM - 08:00 PM (Daily)" });
             db.SaveChanges();
+
+            // Seed Facilities
+            if (!db.Facilities.Any())
+            {
+                var pool = new Facility { FacilityName = "Rooftop Swimming Pool", FacilityDescription = "Infinity pool with panoramic city views and sun loungers.", Capacity = 20, OpenTime = new TimeSpan(6, 0, 0), CloseTime = new TimeSpan(22, 0, 0), IsActive = true };
+                var gym = new Facility { FacilityName = "Fitness Center & Gym", FacilityDescription = "State-of-the-art cardio equipment, free weights, and personal trainers.", Capacity = 15, OpenTime = new TimeSpan(5, 30, 0), CloseTime = new TimeSpan(23, 0, 0), IsActive = true };
+                var hall = new Facility { FacilityName = "Grand Banquet & Party Hall", FacilityDescription = "Air-conditioned multi-purpose event hall with sound system and kitchen facility.", Capacity = 100, OpenTime = new TimeSpan(8, 0, 0), CloseTime = new TimeSpan(23, 0, 0), IsActive = true };
+                var tennis = new Facility { FacilityName = "Tennis & Squash Court", FacilityDescription = "Professional outdoor floodlit tennis court.", Capacity = 4, OpenTime = new TimeSpan(6, 0, 0), CloseTime = new TimeSpan(21, 0, 0), IsActive = true };
+                db.Facilities.AddRange(pool, gym, hall, tennis);
+                db.SaveChanges();
+
+                // Seed Bookings (Tied to real Residents: Kamal, Dr. Anoma, Mahesh)
+                db.FacilityBookings.AddRange(
+                    new FacilityBooking { FacilityId = pool.FacilityId, ResidentId = kamal.Id, BookingDate = DateTime.UtcNow.Date.AddDays(1), StartTime = new TimeSpan(7, 0, 0), EndTime = new TimeSpan(9, 0, 0), Status = BookingStatus.Approved },
+                    new FacilityBooking { FacilityId = gym.FacilityId, ResidentId = anoma.Id, BookingDate = DateTime.UtcNow.Date.AddDays(1), StartTime = new TimeSpan(6, 30, 0), EndTime = new TimeSpan(8, 0, 0), Status = BookingStatus.Approved },
+                    new FacilityBooking { FacilityId = hall.FacilityId, ResidentId = mahesh.Id, BookingDate = DateTime.UtcNow.Date.AddDays(3), StartTime = new TimeSpan(18, 0, 0), EndTime = new TimeSpan(22, 0, 0), Status = BookingStatus.Pending }
+                );
+                db.SaveChanges();
+            }
+
+            // Seed Parking Slots & Visitor Passes
+            if (!db.ParkingSlots.Any())
+            {
+                var p1 = new ParkingSlot { SlotNumber = "V-01", SlotType = ParkingSlotType.Visitor, IsAvailable = false, ResidentId = kamal.Id };
+                var p2 = new ParkingSlot { SlotNumber = "V-02", SlotType = ParkingSlotType.Visitor, IsAvailable = true };
+                var p3 = new ParkingSlot { SlotNumber = "V-03", SlotType = ParkingSlotType.Visitor, IsAvailable = true };
+                var p4 = new ParkingSlot { SlotNumber = "R-101", SlotType = ParkingSlotType.Resident, IsAvailable = false, ResidentId = kamal.Id };
+                var p5 = new ParkingSlot { SlotNumber = "R-201", SlotType = ParkingSlotType.Resident, IsAvailable = false, ResidentId = anoma.Id };
+                db.ParkingSlots.AddRange(p1, p2, p3, p4, p5);
+                db.SaveChanges();
+
+                // Seed Visitor Passes mapped to Residents
+                db.VisitorPasses.AddRange(
+                    new VisitorPass { ResidentId = kamal.Id, VisitorName = "Sunil Shantha", PhoneNumber = "+94 77 334 1122", VehicleNumber = "WP CAR-5544", AccessCode = "VP-98231", Status = PassStatus.CheckedIn, ExpectedArrival = DateTime.UtcNow.AddHours(-1), CheckInTime = DateTime.UtcNow.AddMinutes(-45) },
+                    new VisitorPass { ResidentId = anoma.Id, VisitorName = "Dr. Priyantha Silva", PhoneNumber = "+94 71 223 8899", VehicleNumber = "WP CAD-1200", AccessCode = "VP-44129", Status = PassStatus.Active, ExpectedArrival = DateTime.UtcNow.AddHours(2) },
+                    new VisitorPass { ResidentId = mahesh.Id, VisitorName = "Kavinda De Silva", PhoneNumber = "+94 76 554 9900", VehicleNumber = "WP CBH-8901", AccessCode = "VP-77182", Status = PassStatus.Pending, ExpectedArrival = DateTime.UtcNow.AddDays(1) }
+                );
+                db.SaveChanges();
+            }
         }
     }
 }
