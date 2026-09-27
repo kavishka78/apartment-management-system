@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ApartmentManagement.Api.Models
 {
-    public class AgentWorkflow
+    public class FacilityAgentWorkflow
     {
         [Key]
         public int Id { get; set; }

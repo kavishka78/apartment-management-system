@@ -104,7 +104,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""FacilityBookings""
             ADD COLUMN IF NOT EXISTS ""BookedCapacity"" integer NOT NULL DEFAULT 1;
 
-            CREATE TABLE IF NOT EXISTS ""AgentWorkflows"" (
+            CREATE TABLE IF NOT EXISTS ""FacilityAgentWorkflows"" (
                 ""Id"" SERIAL PRIMARY KEY,
                 ""WorkflowId"" text NOT NULL,
                 ""ResidentId"" integer NOT NULL DEFAULT 1,
@@ -124,7 +124,7 @@ using (var scope = app.Services.CreateScope())
                 ""ManagerNotes"" text NULL
             );
 
-            UPDATE ""AgentWorkflows"" SET ""Status"" = 'PendingApproval' WHERE ""Status"" = 'AutoApproved';
+            UPDATE ""FacilityAgentWorkflows"" SET ""Status"" = 'PendingApproval' WHERE ""Status"" = 'AutoApproved';
         ");
     }
     catch (Exception ex)

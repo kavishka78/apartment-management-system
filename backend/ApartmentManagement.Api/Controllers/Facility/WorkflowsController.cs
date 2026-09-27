@@ -62,7 +62,7 @@ namespace ApartmentManagement.Api.Controllers
                                 validationStatus.StartsWith("Rejected", StringComparison.OrdinalIgnoreCase);
 
                 // 2. Persist Workflow State into PostgreSQL Database for Auditability & Execution
-                var workflow = new AgentWorkflow
+                var workflow = new FacilityAgentWorkflow
                 {
                     WorkflowId = workflowId,
                     ResidentId = dto.ResidentId,
@@ -79,7 +79,7 @@ namespace ApartmentManagement.Api.Controllers
                     CreatedAt = DateTime.UtcNow
                 };
 
-                _context.AgentWorkflows.Add(workflow);
+                _context.FacilityAgentWorkflows.Add(workflow);
 
                 // 3. If Standard Reservation (Auto-Approved & NOT an Inquiry) -> Execute DB Booking!
                 if (!isInquiry && !requiresApproval && !isFailed)
@@ -114,7 +114,7 @@ namespace ApartmentManagement.Api.Controllers
         {
             try
             {
-                var query = _context.AgentWorkflows.AsQueryable();
+                var query = _context.FacilityAgentWorkflows.AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(status))
                 {
@@ -142,7 +142,7 @@ namespace ApartmentManagement.Api.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetWorkflowById(int id)
         {
-            var workflow = await _context.AgentWorkflows.FindAsync(id);
+            var workflow = await _context.FacilityAgentWorkflows.FindAsync(id);
             if (workflow == null) return NotFound("Workflow not found.");
             return Ok(workflow);
         }
@@ -153,7 +153,7 @@ namespace ApartmentManagement.Api.Controllers
         {
             try
             {
-                var workflow = await _context.AgentWorkflows.FindAsync(id);
+                var workflow = await _context.FacilityAgentWorkflows.FindAsync(id);
                 if (workflow == null) return NotFound("Workflow not found.");
 
                 if (workflow.Status == "Approved" || workflow.Status == "AutoApproved")
@@ -181,7 +181,7 @@ namespace ApartmentManagement.Api.Controllers
         }
 
         // Helper Method to Execute Facility Booking & Visitor Parking Slot Update in PostgreSQL DB
-        private async Task ExecuteWorkflowBookingInternal(AgentWorkflow workflow)
+        private async Task ExecuteWorkflowBookingInternal(FacilityAgentWorkflow workflow)
         {
             if (string.IsNullOrWhiteSpace(workflow.ProposalJson) || workflow.ProposalJson == "{}")
                 return;
@@ -274,7 +274,7 @@ namespace ApartmentManagement.Api.Controllers
         [HttpPut("{id}/reject")]
         public async Task<IActionResult> RejectWorkflow(int id)
         {
-            var workflow = await _context.AgentWorkflows.FindAsync(id);
+            var workflow = await _context.FacilityAgentWorkflows.FindAsync(id);
             if (workflow == null) return NotFound("Workflow not found.");
 
             workflow.Status = "Rejected";
@@ -289,7 +289,7 @@ namespace ApartmentManagement.Api.Controllers
         [HttpPut("{id}/revise")]
         public async Task<IActionResult> ReviseWorkflow(int id, [FromBody] Dictionary<string, string> body)
         {
-            var workflow = await _context.AgentWorkflows.FindAsync(id);
+            var workflow = await _context.FacilityAgentWorkflows.FindAsync(id);
             if (workflow == null) return NotFound("Workflow not found.");
 
             workflow.Status = "RequiresRevision";
