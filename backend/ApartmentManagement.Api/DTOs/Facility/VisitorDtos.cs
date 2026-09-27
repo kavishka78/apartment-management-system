@@ -24,7 +24,11 @@ namespace ApartmentManagement.Api.DTOs
     public class VisitorPassResponseDto
     {
         public int Id { get; set; }
+        public int ResidentId { get; set; }
+        public string? ResidentName { get; set; }
+        public string? UnitNumber { get; set; }
         public string VisitorName { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
         public string? VehicleNumber { get; set; }
         public DateTime ExpectedArrival { get; set; }
         public string AccessCode { get; set; } = string.Empty;

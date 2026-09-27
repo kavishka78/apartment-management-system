@@ -91,7 +91,7 @@ namespace ApartmentManagement.Api.Controllers
                 var facility = new Facility
                 {
                     FacilityName = dto.Name,
-                    FacilityDescription = dto.Description,
+                    FacilityDescription = dto.Description ?? string.Empty,
                     Capacity = dto.Capacity,
                     OpenTime = dto.OpenTime,
                     CloseTime = dto.CloseTime,

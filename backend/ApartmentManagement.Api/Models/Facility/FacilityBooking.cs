@@ -18,6 +18,9 @@ namespace ApartmentManagement.Api.Models
         [Required]
         public int ResidentId {get;set;}
 
+        [ForeignKey("ResidentId")]
+        public Resident? Resident { get; set; }
+
         [Required]
         public DateTime BookingDate {get;set;}
 

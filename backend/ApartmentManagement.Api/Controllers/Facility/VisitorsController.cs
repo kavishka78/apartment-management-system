@@ -26,12 +26,17 @@ namespace ApartmentManagement.Api.Controllers
             try
             {
                 var passes = await _context.VisitorPasses
+                    .Include(v => v.Resident)
                     .Include(v => v.AssignedParkingSlot)
                     .OrderByDescending(v => v.PassId)
                     .Select(v => new VisitorPassResponseDto
                     {
                         Id = v.PassId,
+                        ResidentId = v.ResidentId,
+                        ResidentName = v.Resident != null ? v.Resident.FullName : "Unknown",
+                        UnitNumber = v.Resident != null ? v.Resident.UnitNumber : null,
                         VisitorName = v.VisitorName,
+                        PhoneNumber = v.PhoneNumber,
                         VehicleNumber = v.VehicleNumber,
                         ExpectedArrival = v.ExpectedArrival,
                         AccessCode = v.AccessCode,
@@ -59,13 +64,18 @@ namespace ApartmentManagement.Api.Controllers
             try
             {
                 var activePasses = await _context.VisitorPasses
+                    .Include(v => v.Resident)
                     .Include(v => v.AssignedParkingSlot)
                     .Where(v => v.Status == PassStatus.CheckedIn || v.Status == PassStatus.Pending || v.Status == PassStatus.Active)
                     .OrderByDescending(v => v.PassId)
                     .Select(v => new VisitorPassResponseDto
                     {
                         Id = v.PassId,
+                        ResidentId = v.ResidentId,
+                        ResidentName = v.Resident != null ? v.Resident.FullName : "Unknown",
+                        UnitNumber = v.Resident != null ? v.Resident.UnitNumber : null,
                         VisitorName = v.VisitorName,
+                        PhoneNumber = v.PhoneNumber,
                         VehicleNumber = v.VehicleNumber,
                         ExpectedArrival = v.ExpectedArrival,
                         AccessCode = v.AccessCode,

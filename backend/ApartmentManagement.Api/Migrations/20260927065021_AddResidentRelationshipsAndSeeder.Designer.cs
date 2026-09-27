@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using ApartmentManagement.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ApartmentManagement.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260927065021_AddResidentRelationshipsAndSeeder")]
+    partial class AddResidentRelationshipsAndSeeder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,130 +25,6 @@ namespace ApartmentManagement.Api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("ApartmentManagement.Api.Models.AgentWorkflow", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ApprovalNote")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ApprovalStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset?>("ApprovalTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ApprovalUser")
-                        .HasColumnType("text");
-
-                    b.Property<string>("CompletedSteps")
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CurrentStep")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Errors")
-                        .HasColumnType("text");
-
-                    b.Property<string>("FinalOutcome")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsSafeFailure")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("MaintenanceId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Objective")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Plan")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ToolResults")
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ValidationResults")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MaintenanceId");
-
-                    b.ToTable("AgentWorkflows");
-                });
-
-            modelBuilder.Entity("ApartmentManagement.Api.Models.AgentWorkflowStep", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("AgentRole")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("AgentWorkflowId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DurationMilliseconds")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("InputSummary")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OutputSummary")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Sequence")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ToolName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ValidationResult")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AgentWorkflowId");
-
-                    b.ToTable("AgentWorkflowSteps");
-                });
 
             modelBuilder.Entity("ApartmentManagement.Api.Models.Complex", b =>
                 {
@@ -585,36 +464,6 @@ namespace ApartmentManagement.Api.Migrations
                     b.ToTable("MaintenanceHistories");
                 });
 
-            modelBuilder.Entity("ApartmentManagement.Api.Models.Notification", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("ResidentId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Notifications");
-                });
-
             modelBuilder.Entity("ApartmentManagement.Api.Models.ParkingSlot", b =>
                 {
                     b.Property<int>("SlotId")
@@ -850,10 +699,6 @@ namespace ApartmentManagement.Api.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("ContactInformation")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -1123,28 +968,6 @@ namespace ApartmentManagement.Api.Migrations
                     b.ToTable("VisitorPasses");
                 });
 
-            modelBuilder.Entity("ApartmentManagement.Api.Models.AgentWorkflow", b =>
-                {
-                    b.HasOne("ApartmentManagement.Api.Models.Maintenance", "Maintenance")
-                        .WithMany()
-                        .HasForeignKey("MaintenanceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Maintenance");
-                });
-
-            modelBuilder.Entity("ApartmentManagement.Api.Models.AgentWorkflowStep", b =>
-                {
-                    b.HasOne("ApartmentManagement.Api.Models.AgentWorkflow", "Workflow")
-                        .WithMany("Steps")
-                        .HasForeignKey("AgentWorkflowId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Workflow");
-                });
-
             modelBuilder.Entity("ApartmentManagement.Api.Models.FacilityBooking", b =>
                 {
                     b.HasOne("ApartmentManagement.Api.Models.Facility", "Facility")
@@ -1258,11 +1081,6 @@ namespace ApartmentManagement.Api.Migrations
                     b.Navigation("AssignedParkingSlot");
 
                     b.Navigation("Resident");
-                });
-
-            modelBuilder.Entity("ApartmentManagement.Api.Models.AgentWorkflow", b =>
-                {
-                    b.Navigation("Steps");
                 });
 
             modelBuilder.Entity("ApartmentManagement.Api.Models.Facility", b =>
