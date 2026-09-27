@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSave, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck, MdEmail } from 'react-icons/md';
+import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSave, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
 import './Complaints.css';
@@ -366,7 +366,7 @@ function TechniciansList() {
                         
                         {/* Access Pass Code */}
                         <td style={{ opacity: t.status === 'Offline' ? 0.5 : 1 }}>
-                          {t.accessPassCode ? <span className="pass-code-tag">🔑 {t.accessPassCode}</span> : '-'}
+                          {t.accessPassCode ? <span className="pass-code-tag">ðŸ”‘ {t.accessPassCode}</span> : '-'}
                         </td>
                         
                         {/* Working Hours */}
@@ -421,7 +421,7 @@ function TechniciansList() {
           )}
         </section>
 
-        {/* ── Photo Lightbox ── */}
+        {/* â”€â”€ Photo Lightbox â”€â”€ */}
         {lightbox && (
           <div
             onClick={() => setLightbox(null)}
@@ -437,7 +437,7 @@ function TechniciansList() {
           </div>
         )}
 
-        {/* ── Form Modal ── */}
+        {/* â”€â”€ Form Modal â”€â”€ */}
         {showModal && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
             <div className="custom-modal-scroll" style={{ background: '#fff', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>

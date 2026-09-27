@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAuthToken } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdAssignmentInd, MdClose, MdComment, MdArrowBack } from 'react-icons/md';
+import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
 import './MaintenanceDetails.css';
@@ -36,7 +36,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
         console.error(err);
         setLoading(false);
       });
-  }, [id]);
+  }, [id, fetchWithAuth]);
 
   useEffect(() => {
     fetchTicket();
@@ -317,7 +317,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                             {aiRecommendation.agentSteps.map((step, idx) => (
                               <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', color: '#2d3748', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                                 <div style={{ minWidth: '24px', height: '24px', borderRadius: '50%', background: step.status === 'Blocked' ? '#fee2e2' : '#d4edda', color: step.status === 'Blocked' ? '#991b1b' : '#155724', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
-                                  {step.status === 'Blocked' ? 'ï¿½' : '?'}
+                                  {step.status === 'Blocked' ? 'Ã¯Â¿Â½' : '?'}
                                 </div>
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontWeight: '600', color: '#4a5568', marginBottom: '2px' }}>{step.agentRole} <span style={{ fontWeight: 'normal', color: '#718096', fontSize: '12px' }}>({step.durationMilliseconds}ms)</span></div>
@@ -337,7 +337,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {aiRecommendation.plan.map((step, idx) => (
                               <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#2d3748' }}>
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#d4edda', color: '#155724', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>âœ“</div>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#d4edda', color: '#155724', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>Ã¢Å“â€œ</div>
                                 {step}
                               </div>
                             ))}

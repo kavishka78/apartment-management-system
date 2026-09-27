@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -64,15 +64,7 @@ function TechnicianDashboard() {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (currentUser?.role !== 'Technician') {
-            navigate('/login');
-            return;
-        }
-        fetchJobs();
-    }, [currentUser, navigate]);
-
-    async function fetchJobs() {
+    const fetchJobs = useCallback(async () => {
         try {
             const res = await fetch('http://localhost:5073/api/maintenance');
             if (!res.ok) throw new Error('Failed to fetch');
@@ -94,7 +86,17 @@ function TechnicianDashboard() {
             console.error('Error fetching jobs:', error);
             setLoading(false);
         }
-    };
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (currentUser?.role !== 'Technician') {
+            navigate('/login');
+            return;
+        }
+        
+        fetchJobs();
+    }, [currentUser, navigate, fetchJobs]);
+
 
     const handleStartWork = async (id) => {
         try {
@@ -105,8 +107,10 @@ function TechnicianDashboard() {
                     'Content-Type': 'application/json'
                 }
             });
-            fetchJobs();
-        } catch (error) {
+            
+        fetchJobs();
+        } catch (err) {
+            console.error(err);
             alert('Error starting work');
         }
     };
@@ -130,8 +134,10 @@ function TechnicianDashboard() {
                     repairCost: cost
                 })
             });
-            fetchJobs();
-        } catch (error) {
+            
+        fetchJobs();
+        } catch (err) {
+            console.error(err);
             alert('Error resolving ticket');
         }
     };
