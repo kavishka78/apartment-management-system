@@ -54,6 +54,10 @@ namespace ApartmentManagement.Api.Controllers
                 var toolResultsElement = agentResult.GetProperty("tool_results");
                 var proposalElement = agentResult.GetProperty("proposal");
 
+                bool isInquiry = proposalElement.ValueKind != JsonValueKind.Null && 
+                                 proposalElement.TryGetProperty("isInquiry", out var inqProp) && 
+                                 inqProp.GetBoolean();
+
                 bool isFailed = validationStatus.StartsWith("Failed", StringComparison.OrdinalIgnoreCase) || 
                                 validationStatus.StartsWith("Rejected", StringComparison.OrdinalIgnoreCase);
 
@@ -70,15 +74,15 @@ namespace ApartmentManagement.Api.Controllers
                     ToolResultsJson = toolResultsElement.GetRawText(),
                     ProposalJson = proposalElement.ValueKind != JsonValueKind.Null ? proposalElement.GetRawText() : "{}",
                     ValidationStatus = validationStatus,
-                    RequiresApproval = requiresApproval,
-                    Status = (!requiresApproval && !isFailed) ? "AutoApproved" : (isFailed ? "Failed" : "PendingApproval"),
+                    RequiresApproval = isInquiry ? false : requiresApproval,
+                    Status = isInquiry ? "InquiryAnswered" : ((!requiresApproval && !isFailed) ? "AutoApproved" : (isFailed ? "Failed" : "PendingApproval")),
                     CreatedAt = DateTime.UtcNow
                 };
 
                 _context.AgentWorkflows.Add(workflow);
 
-                // 3. If Standard Event (Auto-Approved) & Not Failed -> Instantly Execute Database Insertion!
-                if (!requiresApproval && !isFailed)
+                // 3. If Standard Reservation (Auto-Approved & NOT an Inquiry) -> Execute DB Booking!
+                if (!isInquiry && !requiresApproval && !isFailed)
                 {
                     await ExecuteWorkflowBookingInternal(workflow);
                     workflow.ActionedAt = DateTime.UtcNow;
@@ -89,9 +93,11 @@ namespace ApartmentManagement.Api.Controllers
 
                 return StatusCode(201, new
                 {
-                    Message = (!requiresApproval && !isFailed) 
-                        ? "Standard Request Auto-Approved and Booked in Database."
-                        : "High-Impact Workflow Paused for Approval.",
+                    Message = isInquiry
+                        ? "Inquiry Answered by AI Agent."
+                        : ((!requiresApproval && !isFailed) 
+                            ? "Standard Request Auto-Approved and Booked in Database."
+                            : "High-Impact Workflow Paused for Approval."),
                     Workflow = workflow
                 });
             }

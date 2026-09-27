@@ -14,6 +14,7 @@ class PlanOutput(BaseModel):
     plan: list[str] = Field(description="A step by step list of internal actions needed to fulfill the integrated facility reservation and visitor parking request.")
 
 class ExtractionOutput(BaseModel):
+    is_inquiry: bool = Field(default=False, description="True if the user is asking an information/capacity query (e.g. 'How much capacity available...', 'Is gym open?'), False if requesting a booking/reservation.")
     facility: str = Field(description="Name of the facility requested (e.g., Clubhouse, Swimming Pool, Gym, Party Hall).")
     date: str = Field(description="The date requested, formatted as YYYY-MM-DD.")
     start_time: str = Field(default="16:00:00", description="Start time requested in HH:MM:SS format.")
@@ -27,7 +28,7 @@ def planner_node(state: FacilityWorkflowState):
     
     prompt = (
         f"You are an AI planner for an apartment management complex. "
-        f"Create a high level 4 step internal execution plan for processing an integrated facility booking and visitor parking request: '{state['objective']}'. "
+        f"Create a high level 4 step internal execution plan for processing a resident request (booking or inquiry): '{state['objective']}'. "
         f"Steps should include entity extraction, backend availability verification for facility and parking, business rule validation, and human approval determination."
     )
     
@@ -43,8 +44,10 @@ def domain_analysis_node(state: FacilityWorkflowState):
     today_str = datetime.now().strftime("%Y-%m-%d")
     
     prompt = (
-        f"Extract the requested facility name, requested date (assume today is {today_str} if relative terms like 'tomorrow' or 'this Saturday' are used), "
-        f"start_time, end_time, guest count, and visitor vehicle count from this request: '{state['objective']}'."
+        f"Analyze this request: '{state['objective']}'. "
+        f"Determine if it is an information/capacity inquiry (is_inquiry = True) or a booking request (is_inquiry = False). "
+        f"Extract requested facility name, requested date (assume today is {today_str} if relative terms like 'today', 'tomorrow' are used), "
+        f"start_time, end_time, guest count, and visitor vehicle count."
     )
     
     structured_llm = llm.with_structured_output(ExtractionOutput)
@@ -88,6 +91,22 @@ def validation_node(state: FacilityWorkflowState):
     parking_available = check_res.get("parkingAvailable", True)
     total_available_parking = check_res.get("totalAvailableVisitorParking", 0)
 
+    # Check if request is an Inquiry Question (NOT a booking)
+    if data.get("is_inquiry", False):
+        answer_text = f"Inquiry Answer: {check_res.get('facilityName')} has {capacity_remaining} spots available for {data.get('date')} with {total_available_parking} visitor parking slots available."
+        state["validation_status"] = answer_text
+        state["requires_approval"] = False
+        state["final_proposal"] = {
+            "isInquiry": True,
+            "facilityName": check_res.get("facilityName"),
+            "date": data.get("date"),
+            "capacityRemaining": capacity_remaining,
+            "totalAvailableVisitorParking": total_available_parking,
+            "answer": answer_text,
+            "status": "Inquiry Answered"
+        }
+        return state
+
     # Rule Check 1: Facility Capacity
     if capacity_remaining < guests:
         state["validation_status"] = f"Rejected: Facility capacity exceeded. Needed for {guests} guests, but only {capacity_remaining} spots available."
@@ -112,6 +131,7 @@ def validation_node(state: FacilityWorkflowState):
         state["requires_approval"] = False
 
     state["final_proposal"] = {
+        "isInquiry": False,
         "facilityId": check_res.get("facilityId"),
         "facilityName": check_res.get("facilityName"),
         "date": data.get("date"),

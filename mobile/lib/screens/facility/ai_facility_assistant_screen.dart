@@ -48,7 +48,23 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
           final bool requiresApproval =
               _workflowData?['requiresApproval'] ?? true;
           final String status = _workflowData?['status'] ?? '';
-          if (!requiresApproval || status == 'AutoApproved') {
+
+          Map<String, dynamic>? proposal;
+          try {
+            if (_workflowData?['proposalJson'] != null) {
+              proposal = jsonDecode(_workflowData!['proposalJson']);
+            }
+          } catch (_) {}
+
+          final bool isInquiry =
+              proposal?['isInquiry'] == true || status == 'InquiryAnswered';
+
+          if (isInquiry) {
+            _successMessage =
+                proposal?['answer'] ??
+                _workflowData?['validationStatus'] ??
+                'Inquiry Answered by AI Agent.';
+          } else if (!requiresApproval || status == 'AutoApproved') {
             _successMessage = "Standard Request Auto-Approved! Facility spot and visitor parking allocated in database.";
           }
         } else {
@@ -111,6 +127,8 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
         validationStatus.startsWith("Rejected");
     final bool isApproved =
         currentStatus == 'Approved' || currentStatus == 'AutoApproved';
+    final bool isInquiry =
+        proposal?['isInquiry'] == true || currentStatus == 'InquiryAnswered';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -140,27 +158,13 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "Smart Facility & Parking Assistant",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 6),
-                  // Text(
-                  //   "State your request. Our Agent AI system will handle extraction, availability check, rules, and instant booking!",
-                  //   style: TextStyle(
-                  //     color: Color(0xFFE0E7FF),
-                  //     fontSize: 13,
-                  //     height: 1.35,
-                  //   ),
-                  // ),
-                ],
+              child: const Text(
+                "Smart Facility & Parking Assistant",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
 
@@ -398,136 +402,180 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
 
               const SizedBox(height: 14),
 
-              // AI Proposal Summary & Resident Approval Box
+              // AI Proposal Summary or Inquiry Answer Box
               if (proposal != null && !isFailed) ...[
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: requiresApproval && !isApproved
-                          ? const Color(0xFFFDE68A)
-                          : const Color(0xFFE2E8F0),
+                if (isInquiry)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFBFDBFE)),
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "AI Staged Proposal",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "Facility: ${proposal['facilityName'] ?? '—'}",
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF334155),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Date & Time: ${proposal['date']} (${proposal['startTime']} - ${proposal['endTime']})",
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF334155),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Guests: ${proposal['guests']} Attendees",
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF334155),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Parking Passes: ${proposal['visitorVehicles']} Slots (${(proposal['assignedParkingSlots'] as List?)?.join(', ') ?? 'Auto'})",
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF334155),
-                        ),
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      if (requiresApproval &&
-                          !isApproved &&
-                          workflowId != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFFBEB),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFFDE68A)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Information Answer",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Color(0xFF1E40AF),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Resident High-Impact Confirmation Required",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12.5,
-                                  color: Color(0xFFB45309),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                "This request exceeds 10 guests or 2 visitor vehicles. Please confirm to execute your booking.",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF92400E),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 40,
-                                child: ElevatedButton(
-                                  onPressed: _isApproving
-                                      ? null
-                                      : () => _approveHighImpactRequest(
-                                          workflowId!,
-                                        ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF10B981),
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  child: _isApproving
-                                      ? const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Text(
-                                          "Approve & Confirm AI Booking",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                ),
-                              ),
-                            ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          proposal['answer'] ?? validationStatus,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF1E3A8A),
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          "Note: No facility booking was created for this inquiry question.",
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: Color(0xFF3B82F6),
+                            fontStyle: FontStyle.italic,
                           ),
                         ),
                       ],
-                    ],
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: requiresApproval && !isApproved
+                            ? const Color(0xFFFDE68A)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "AI Staged Proposal",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "Facility: ${proposal['facilityName'] ?? '—'}",
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Date & Time: ${proposal['date']} (${proposal['startTime']} - ${proposal['endTime']})",
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Guests: ${proposal['guests']} Attendees",
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Parking Passes: ${proposal['visitorVehicles']} Slots (${(proposal['assignedParkingSlots'] as List?)?.join(', ') ?? 'Auto'})",
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        if (requiresApproval &&
+                            !isApproved &&
+                            workflowId != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFFBEB),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFFFDE68A),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Resident High-Impact Confirmation Required",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12.5,
+                                    color: Color(0xFFB45309),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  "This request exceeds 10 guests or 2 visitor vehicles. Please confirm to execute your booking.",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF92400E),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 40,
+                                  child: ElevatedButton(
+                                    onPressed: _isApproving
+                                        ? null
+                                        : () => _approveHighImpactRequest(
+                                            workflowId!,
+                                          ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF10B981),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    child: _isApproving
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Text(
+                                            "Approve & Confirm AI Booking",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
               ],
             ],
           ],
