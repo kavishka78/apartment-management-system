@@ -50,7 +50,8 @@ class ProfileApiService {
     }
   }
 
-  /// Fetch all household members for a resident
+  // ── Household Members ───────────────────────────────────────────────────────
+
   static Future<List<HouseholdMemberModel>> getHouseholdMembers(int residentId) async {
     try {
       final headers = await AuthService.authHeaders();
@@ -69,7 +70,6 @@ class ProfileApiService {
     }
   }
 
-  /// Add a new family / household member
   static Future<HouseholdMemberModel?> addHouseholdMember(
     int residentId, {
     required String name,
@@ -97,12 +97,153 @@ class ProfileApiService {
     }
   }
 
-  /// Remove a family member
   static Future<bool> removeHouseholdMember(int residentId, int memberId) async {
     try {
       final headers = await AuthService.authHeaders();
       final res = await http.delete(
         Uri.parse('$_base/resident/$residentId/household/$memberId'),
+        headers: headers,
+      ).timeout(const Duration(seconds: 12));
+
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ── Vehicles ───────────────────────────────────────────────────────────────
+
+  static Future<List<ResidentVehicleModel>> getVehicles(int residentId) async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.get(
+        Uri.parse('$_base/resident/$residentId/vehicles'),
+        headers: headers,
+      ).timeout(const Duration(seconds: 12));
+
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List<dynamic>;
+        return list.map((v) => ResidentVehicleModel.fromJson(v)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<ResidentVehicleModel?> registerVehicle(
+    int residentId, {
+    required String plateNumber,
+    required String vehicleType,
+    required String makeModel,
+    String? parkingSlot,
+  }) async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.post(
+        Uri.parse('$_base/resident/$residentId/vehicles'),
+        headers: headers,
+        body: jsonEncode({
+          'plateNumber': plateNumber,
+          'vehicleType': vehicleType,
+          'makeModel': makeModel,
+          'parkingSlot': parkingSlot,
+        }),
+      ).timeout(const Duration(seconds: 12));
+
+      if (res.statusCode == 200) {
+        return ResidentVehicleModel.fromJson(jsonDecode(res.body));
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<bool> removeVehicle(int residentId, int vehicleId) async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.delete(
+        Uri.parse('$_base/resident/$residentId/vehicles/$vehicleId'),
+        headers: headers,
+      ).timeout(const Duration(seconds: 12));
+
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ── Domestic Staff & Digital Passes ────────────────────────────────────────
+
+  static Future<List<DomesticStaffModel>> getStaff(int residentId) async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.get(
+        Uri.parse('$_base/resident/$residentId/staff'),
+        headers: headers,
+      ).timeout(const Duration(seconds: 12));
+
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List<dynamic>;
+        return list.map((s) => DomesticStaffModel.fromJson(s)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<DomesticStaffModel?> registerStaff(
+    int residentId, {
+    required String fullName,
+    required String staffType,
+    required String contactPhone,
+    required String nicNumber,
+    required String workingHours,
+  }) async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.post(
+        Uri.parse('$_base/resident/$residentId/staff'),
+        headers: headers,
+        body: jsonEncode({
+          'fullName': fullName,
+          'staffType': staffType,
+          'contactPhone': contactPhone,
+          'nicNumber': nicNumber,
+          'workingHours': workingHours,
+        }),
+      ).timeout(const Duration(seconds: 12));
+
+      if (res.statusCode == 200) {
+        return DomesticStaffModel.fromJson(jsonDecode(res.body));
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<bool> toggleStaffPass(int staffId) async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.patch(
+        Uri.parse('$_base/resident/staff/$staffId/toggle'),
+        headers: headers,
+      ).timeout(const Duration(seconds: 12));
+
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> removeStaff(int residentId, int staffId) async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final res = await http.delete(
+        Uri.parse('$_base/resident/$residentId/staff/$staffId'),
         headers: headers,
       ).timeout(const Duration(seconds: 12));
 

@@ -52,6 +52,19 @@ namespace ApartmentManagement.Api.Controllers
         public string Credential { get; set; } = string.Empty;
     }
 
+    // ── Resident mobile auth DTOs ─────────────────────────────────────────────
+
+    public class VerifyContactRequest
+    {
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+    }
+
+    public class FirebaseTokenRequest
+    {
+        public string FirebaseIdToken { get; set; } = string.Empty;
+    }
+
     public class CreateAdminRequest
     {
         public string Name { get; set; } = string.Empty;
@@ -159,6 +172,120 @@ namespace ApartmentManagement.Api.Controllers
             }
 
             return Ok(new { token = _tokens.CreateToken(user), user = ToUserDto(user) });
+        }
+
+        // ── Resident Mobile App Auth ──────────────────────────────────────────
+
+        /// Step 1: Check whether a phone or email is registered in the Residents
+        /// table. Called before any OTP/Firebase flow starts on the mobile app.
+        [AllowAnonymous]
+        [HttpPost("auth/resident/verify-contact")]
+        public async Task<IActionResult> VerifyResidentContact(
+            [FromBody] VerifyContactRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Phone) &&
+                string.IsNullOrWhiteSpace(req.Email))
+                return BadRequest("Provide either phone or email.");
+
+            Resident? resident = null;
+
+            if (!string.IsNullOrWhiteSpace(req.Phone))
+            {
+                var phone = req.Phone.Trim();
+                resident = await _db.Residents
+                    .FirstOrDefaultAsync(r =>
+                        r.PhoneNumber == phone && r.Status == "Active");
+            }
+            else if (!string.IsNullOrWhiteSpace(req.Email))
+            {
+                var email = req.Email.Trim().ToLower();
+                resident = await _db.Residents
+                    .FirstOrDefaultAsync(r =>
+                        r.Email.ToLower() == email && r.Status == "Active");
+            }
+
+            if (resident == null)
+                return Ok(new { found = false });
+
+            var complex = await _db.Complexes.FindAsync(resident.TenantId);
+
+            return Ok(new
+            {
+                found = true,
+                residentId = resident.Id,
+                name = resident.FullName,
+                unitNumber = resident.UnitNumber ?? "",
+                complexName = complex?.Name ?? "",
+                entryMethod = string.IsNullOrWhiteSpace(req.Phone) ? "email" : "phone",
+            });
+        }
+
+        /// Step 2: Receives a Firebase ID token from the mobile app after phone OTP,
+        /// email OTP, or Google sign-in is verified by Firebase on-device.
+        /// Verifies the token server-side and returns our own app JWT + resident data.
+        [AllowAnonymous]
+        [HttpPost("auth/resident/firebase-token")]
+        public async Task<IActionResult> ResidentFirebaseLogin(
+            [FromBody] FirebaseTokenRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.FirebaseIdToken))
+                return BadRequest("Firebase ID token is required.");
+
+            System.IdentityModel.Tokens.Jwt.JwtSecurityToken jwt;
+            try
+            {
+                var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                jwt = handler.ReadJwtToken(req.FirebaseIdToken);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized($"Invalid Firebase token format: {ex.Message}");
+            }
+
+            // Extract phone_number or email from claims
+            var phone = jwt.Claims.FirstOrDefault(c => c.Type == "phone_number")?.Value;
+            var email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+
+            Resident? resident = null;
+
+            if (!string.IsNullOrWhiteSpace(phone))
+                resident = await _db.Residents.FirstOrDefaultAsync(
+                    r => r.PhoneNumber == phone && r.Status == "Active");
+            else if (!string.IsNullOrWhiteSpace(email))
+                resident = await _db.Residents.FirstOrDefaultAsync(
+                    r => r.Email.ToLower() == email!.ToLower() && r.Status == "Active");
+
+            if (resident == null)
+                return Unauthorized("No active resident account found for this identity.");
+
+            // Build a lightweight UserAccount so JwtTokenService can mint a token
+            var pseudoUser = new UserAccount
+            {
+                Id = resident.Id,
+                Name = resident.FullName,
+                Email = resident.Email,
+                Phone = resident.PhoneNumber,
+                Role = "Resident",
+                TenantId = resident.TenantId,
+                Status = "Active",
+            };
+
+            return Ok(new
+            {
+                token = _tokens.CreateToken(pseudoUser),
+                resident = new
+                {
+                    id = resident.Id,
+                    fullName = resident.FullName,
+                    email = resident.Email,
+                    phoneNumber = resident.PhoneNumber,
+                    unitNumber = resident.UnitNumber ?? "",
+                    tenantId = resident.TenantId,
+                    status = resident.Status,
+                    vehiclesCount = resident.VehiclesCount,
+                    staffCount = resident.StaffCount,
+                },
+            });
         }
 
         [Authorize]

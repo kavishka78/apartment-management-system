@@ -13,6 +13,8 @@ import 'services/auth/auth_service.dart';
 /// The Profile tab is currently a placeholder — Part 2 will replace it
 /// with the full Resident Profile Hub screen.
 import 'screens/profile/profile_home_screen.dart';
+import 'screens/profile/vehicle_registration_screen.dart';
+import 'screens/profile/domestic_staff_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -278,6 +280,36 @@ class HomeScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                         builder: (context) => const PaymentHomeScreen()),
+                  );
+                },
+              ),
+              ServiceCard(
+                title: 'My Vehicles',
+                subtitle: 'Plates & Slots',
+                icon: Icons.directions_car_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VehicleRegistrationScreen(
+                        residentId: session?.residentId ?? 0,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ServiceCard(
+                title: 'Staff Passes',
+                subtitle: 'Gate Access',
+                icon: Icons.badge_outlined,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DomesticStaffScreen(
+                        residentId: session?.residentId ?? 0,
+                      ),
+                    ),
                   );
                 },
               ),
