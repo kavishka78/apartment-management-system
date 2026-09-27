@@ -3,8 +3,16 @@ import 'screens/payment/payment_home_screen.dart';
 import 'screens/facility/facilities_list_screen.dart';
 import 'screens/facility/my_bookings_screen.dart';
 import 'screens/parking/visitor_parking_screen.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
-void main() {
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  Stripe.publishableKey = 'pk_test_51UKHuqGhXNDaGQ3gLG4KIDK7V3UKGf1n98pYETF4jS1dsxJHZUiep7Wm4ZTinHGo0dcrsmrhSj1856ONM1MhQJh7002mxfo6bS';
+
+  //await Stripe.instance.applySettings();
+
   runApp(const ApartmentResidentApp());
 }
 
