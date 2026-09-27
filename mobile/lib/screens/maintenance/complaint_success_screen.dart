@@ -40,7 +40,7 @@ class ComplaintSuccessScreen extends StatelessWidget {
                       width: 80,
                       height: 80,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFFF8C3A), // Orange from screenshot
+                        color: Color(0xFF03A9F4), // Blue theme
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -53,12 +53,12 @@ class ComplaintSuccessScreen extends StatelessWidget {
                       child: const Icon(Icons.check, color: Colors.white, size: 48, weight: 800),
                     ),
                     // Just a few simple decorative dots using positioned containers
-                    Positioned(top: 15, left: 15, child: _buildDot(6, const Color(0xFFFFB74D))),
-                    Positioned(top: 25, right: 20, child: _buildDot(8, const Color(0xFFFF6B6B))),
-                    Positioned(bottom: 25, left: 25, child: _buildDot(10, const Color(0xFFE57373))),
-                    Positioned(bottom: 20, right: 30, child: _buildDot(7, const Color(0xFF4FC3F7))),
-                    Positioned(top: 60, left: 5, child: _buildDot(5, const Color(0xFFFFB74D))),
-                    Positioned(bottom: 60, right: 5, child: _buildDot(5, const Color(0xFFFFB74D))),
+                    Positioned(top: 15, left: 15, child: _buildDot(6, const Color(0xFF81D4FA))),
+                    Positioned(top: 25, right: 20, child: _buildDot(8, const Color(0xFF29B6F6))),
+                    Positioned(bottom: 25, left: 25, child: _buildDot(10, const Color(0xFFB3E5FC))),
+                    Positioned(bottom: 20, right: 30, child: _buildDot(7, const Color(0xFF03A9F4))),
+                    Positioned(top: 60, left: 5, child: _buildDot(5, const Color(0xFF81D4FA))),
+                    Positioned(bottom: 60, right: 5, child: _buildDot(5, const Color(0xFF81D4FA))),
                   ],
                 ),
               ),
@@ -132,7 +132,7 @@ class ComplaintSuccessScreen extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF8C3A), // Orange
+                    backgroundColor: const Color(0xFF03A9F4), // Blue
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -150,8 +150,8 @@ class ComplaintSuccessScreen extends StatelessWidget {
                     Navigator.pop(context, true);
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFFF8C3A),
-                    side: const BorderSide(color: Color(0xFFFF8C3A), width: 1.5),
+                    foregroundColor: const Color(0xFF03A9F4),
+                    side: const BorderSide(color: Color(0xFF03A9F4), width: 1.5),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: const Text('Back to Home', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
@@ -182,7 +182,7 @@ class ComplaintSuccessScreen extends StatelessWidget {
         valueColor = Colors.red;
         priorityIcon = Icons.flag;
       } else if (value == 'Medium') {
-        valueColor = const Color(0xFFFF8C3A);
+        valueColor = const Color(0xFF03A9F4);
         priorityIcon = Icons.flag;
       } else {
         valueColor = Colors.green;

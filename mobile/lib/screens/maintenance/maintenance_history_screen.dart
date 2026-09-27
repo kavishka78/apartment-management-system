@@ -4,7 +4,7 @@ import '../../services/maintenance/maintenance_api_service.dart';
 import '../../widgets/maintenance/maintenance_widgets.dart';
 import 'maintenance_details_screen.dart';
 import '../../widgets/maintenance/maintenance_skeleton.dart';
-import '../../widgets/maintenance/cost_filter_bottom_sheet.dart';
+import '../../widgets/maintenance/repair_costs_bottom_sheet.dart';
 
 // HARDCODED for now until Phase 1 JWT is complete
 const int CURRENT_RESIDENT_ID = 1;
@@ -24,8 +24,6 @@ class _MaintenanceHistoryScreenState extends State<MaintenanceHistoryScreen> {
   
   String _searchQuery = '';
   String _statusFilter = 'All History';
-  double _minCost = 0;
-  double _maxCost = 5000; // 'All History', 'Resolved', 'Closed'
   
   @override
   void initState() {
@@ -71,8 +69,7 @@ class _MaintenanceHistoryScreenState extends State<MaintenanceHistoryScreen> {
         final matchesSearch = t.title.toLowerCase().contains(_searchQuery) ||
                               t.description.toLowerCase().contains(_searchQuery);
         final matchesStatus = _statusFilter == 'All History' || t.status == _statusFilter;
-        final matchesCost = t.repairCost >= _minCost && t.repairCost <= _maxCost;
-        return matchesSearch && matchesStatus && matchesCost;
+        return matchesSearch && matchesStatus;
       }).toList();
     });
   }
@@ -90,29 +87,7 @@ appBar: AppBar(
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune, color: Color(0xFF1E2532)),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                isScrollControlled: true,
-                builder: (context) => CostFilterBottomSheet(
-                  currentMin: _minCost,
-                  currentMax: _maxCost,
-                  onApply: (min, max) {
-                    setState(() {
-                      _minCost = min;
-                      _maxCost = max;
-                      _applyFilters();
-                    });
-                  },
-                ),
-              );
-            },
-          )
-        ],
+
       ),
       body: Column(
         children: [
@@ -281,7 +256,7 @@ children: [
                                                   Text(t.category?.name ?? 'General', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                                                   const Spacer(),
                                                   Text(
-                                                    '\$${t.repairCost.toStringAsFixed(0)}',
+                                                    'Rs. ${t.repairCost.toStringAsFixed(0)}',
                                                     style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF1E2532), fontSize: 14),
                                                   )
                                                 ],

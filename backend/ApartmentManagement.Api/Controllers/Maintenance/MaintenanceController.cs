@@ -186,7 +186,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         }
 
         [HttpPost("{id}/assign")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
         public async Task<ActionResult<MaintenanceDto>> AssignTechnician(int id, [FromBody] AssignTechnicianRequest request)
         {
             var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
@@ -223,7 +223,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         }
 
         [HttpPost("{id}/start")]
-        [Authorize(Roles = "Technician,Manager,Admin")]
+        [Authorize(Roles = "Technician,ApartmentAdmin,SuperAdmin")]
         public async Task<ActionResult<MaintenanceDto>> StartWork(int id)
         {
             var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
@@ -247,7 +247,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         }
 
         [HttpPost("{id}/resolve")]
-        [Authorize(Roles = "Technician,Manager,Admin")]
+        [Authorize(Roles = "Technician,ApartmentAdmin,SuperAdmin")]
         public async Task<ActionResult<MaintenanceDto>> ResolveMaintenance(int id, [FromBody] ResolveMaintenanceRequest request)
         {
             var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
@@ -259,6 +259,32 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             maintenance.Status = "Resolved";
             maintenance.RepairCost = request.RepairCost;
             maintenance.UpdatedAt = DateTimeOffset.UtcNow;
+
+            // Generate Invoice if RepairCost > 0
+            if (request.RepairCost > 0)
+            {
+                var invoice = new Invoice
+                {
+                    ResidentId = maintenance.ResidentId,
+                    ApartmentId = 1, // Defaulting to 1 as ApartmentId is required but not directly on maintenance ticket
+                    InvoiceNumber = $"INV-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
+                    BillingMonth = DateTime.UtcNow,
+                    TotalAmount = request.RepairCost,
+                    DueDate = DateTime.UtcNow.AddDays(7),
+                    Status = "Pending",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var invoiceItem = new InvoiceItem
+                {
+                    Description = $"Repair Cost for Maintenance Ticket #{maintenance.Id} ({maintenance.Title})",
+                    ChargeType = "Repair Cost",
+                    Amount = request.RepairCost
+                };
+                
+                invoice.InvoiceItems.Add(invoiceItem);
+                _context.Invoices.Add(invoice);
+            }
 
 maintenance.History.Add(new MaintenanceHistory
             {
@@ -280,7 +306,7 @@ maintenance.History.Add(new MaintenanceHistory
         }
 
         [HttpPost("{id}/close")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
         public async Task<ActionResult<MaintenanceDto>> CloseMaintenance(int id)
         {
             var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
@@ -350,7 +376,7 @@ maintenance.History.Add(new MaintenanceHistory
         }
         
         [HttpPost("{id}/triage")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
         public async Task<ActionResult<AiTriageRecommendationDto>> GetAiTriageRecommendation(int id)
         {
             var maintenance = await _context.Maintenances.FindAsync(id);
@@ -445,7 +471,7 @@ maintenance.History.Add(new MaintenanceHistory
         }
 
         [HttpPost("workflows/{workflowId}/approval")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
         public async Task<IActionResult> DecideWorkflow(int workflowId, [FromBody] WorkflowApprovalRequest request)
         {
             var workflow = await _context.AgentWorkflows.FirstOrDefaultAsync(w => w.Id == workflowId);
@@ -502,7 +528,7 @@ maintenance.History.Add(new MaintenanceHistory
                 public class ReviseTriageRequest { public string ManagerFeedback { get; set; } = string.Empty; }
 
         [HttpPost("{id}/revise")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
         public async Task<ActionResult<AiTriageRecommendationDto>> ReviseAiTriageRecommendation(int id, [FromBody] ReviseTriageRequest request)
         {
             var maintenance = await _context.Maintenances.FindAsync(id);
@@ -582,7 +608,7 @@ maintenance.History.Add(new MaintenanceHistory
         }
 
         [HttpPost("{id}/reject")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
         public async Task<IActionResult> RejectAiTriageRecommendation(int id)
         {
             var pendingWorkflow = await _context.AgentWorkflows

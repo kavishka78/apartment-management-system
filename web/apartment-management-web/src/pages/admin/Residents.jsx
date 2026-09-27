@@ -217,10 +217,10 @@ export default function Residents() {
 
       {/* Table */}
       {loading ? (
-        <div className="admin-loading">
-          <div className="spinner" />
-        </div>
-      ) : filteredResidents.length === 0 ? (
+            <div className="admin-loading">
+            <div className="spinner" />
+          </div>
+          ) : filteredResidents.length === 0 ? (
         <div className="admin-card" style={{ textAlign: "center", padding: "40px" }}>
           <p style={{ color: "#64748b", margin: 0 }}>No resident records found for {activeComplexName}.</p>
         </div>
@@ -300,7 +300,7 @@ export default function Residents() {
                   </span>
                 </div>
               </div>
-              <button className="drawer-close-btn" onClick={() => setSelectedResident(null)}>✕</button>
+              <button className="drawer-close-btn" onClick={() => setSelectedResident(null)}>âœ•</button>
             </div>
 
             <div className="drawer-section">
@@ -347,7 +347,7 @@ export default function Residents() {
                 selectedResident.householdMembers.map((m, idx) => (
                   <div className="household-member-pill" key={idx}>
                     <span style={{ fontWeight: 600, color: "#1e293b" }}>{m.name}</span>
-                    <span style={{ color: "#64748b" }}>{m.relation} • Age {m.age}</span>
+                    <span style={{ color: "#64748b" }}>{m.relation} â€¢ Age {m.age}</span>
                   </div>
                 ))
               ) : (

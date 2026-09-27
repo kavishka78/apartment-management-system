@@ -1,8 +1,12 @@
-/* ─── Maintenance Sidebar (Matching Main Admin Theme) ─────────────────────────────────────── */
+/* â”€â”€â”€ Maintenance Sidebar (Matching Main Admin Theme) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .maintenance-sidebar {
   width: 264px;
   min-height: 100vh;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
   background: linear-gradient(180deg, #111827 0%, #1a2234 100%);
   color: #fff;
   padding: 28px 18px;
