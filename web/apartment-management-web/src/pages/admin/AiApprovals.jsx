@@ -18,10 +18,29 @@ export default function AiApprovals() {
     "I want to host my birthday party at the Clubhouse this Saturday from 4 PM to 8 PM for 20 guests and need 4 visitor parking slots."
   );
 
+  // Revision Modal State
+  const [reviseModal, setReviseModal] = useState({
+    open: false,
+    workflowId: null,
+    notes: "",
+  });
+
   const fetchData = useCallback(() => {
     return getPendingWorkflows()
-      .then((data) => {
-        setWorkflows(Array.isArray(data) ? data : []);
+      .then(async (data) => {
+        let list = Array.isArray(data) ? data : [];
+        if (list.length === 0) {
+          try {
+            const allRes = await fetch("http://localhost:5073/api/workflows");
+            if (allRes.ok) {
+              const allData = await allRes.json();
+              if (Array.isArray(allData)) list = allData;
+            }
+          } catch (e) {
+            console.error("Error fetching all workflows fallback:", e);
+          }
+        }
+        setWorkflows(list);
       })
       .catch((err) => {
         setError(err.message);
@@ -42,12 +61,16 @@ export default function AiApprovals() {
     fetchData();
   }, [fetchData]);
 
-  async function handleAction(id, action) {
+  async function handleAction(id, action, customNotes = null) {
     setActionLoading(id);
     try {
-      if (action === "approve") await approveWorkflow(id);
-      else if (action === "reject") await rejectWorkflow(id);
-      else if (action === "revise") await reviseWorkflow(id, { notes: "Please revise." });
+      if (action === "approve") {
+        await approveWorkflow(id);
+      } else if (action === "reject") {
+        await rejectWorkflow(id);
+      } else if (action === "revise") {
+        await reviseWorkflow(id, { notes: customNotes || "Please revise your request." });
+      }
       await load();
     } catch (err) {
       alert(`Action failed: ${err.message}`);
@@ -86,11 +109,27 @@ export default function AiApprovals() {
     }
   }
 
+  function openReviseModal(workflowId) {
+    setReviseModal({
+      open: true,
+      workflowId,
+      notes: "Facility availability conflict or guest threshold exceeded. Please pick another time slot.",
+    });
+  }
+
+  async function submitRevision() {
+    if (!reviseModal.workflowId) return;
+    const wid = reviseModal.workflowId;
+    const notes = reviseModal.notes;
+    setReviseModal({ open: false, workflowId: null, notes: "" });
+    await handleAction(wid, "revise", notes);
+  }
+
   return (
-    <div id="ai-approvals-page">
+    <div className="ai-approvals-container" id="ai-approvals-page">
       <Header
         title="Agentic AI Approvals"
-        subtitle="Review and action high-impact multi-agent workflow requests."
+        subtitle="Human-in-the-Loop review portal for high-impact multi-agent facility and parking workflows."
       >
         <button className="admin-btn admin-btn--secondary" onClick={load} id="btn-refresh-workflows">
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -100,35 +139,33 @@ export default function AiApprovals() {
         </button>
       </Header>
 
-      {/* Simulator Section */}
-      <div className="admin-card" style={{ padding: "1.25rem", marginBottom: "1.5rem" }}>
-        <h3 style={{ fontSize: "1rem", fontWeight: "600", marginBottom: "0.5rem" }}>
-          🚀 Test Resident Request (Mobile Simulation)
-        </h3>
-        <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.75rem" }}>
-          Submit a natural language objective for facility booking & visitor parking allocation. The 4-agent pipeline will execute planning, entity extraction, backend tool checks, and business rule validation.
+      {/* Mobile Resident Request Simulator */}
+      <div className="ai-sim-card">
+        <div className="ai-sim-title">
+          <span>🚀 Resident Mobile Simulator</span>
+          <span style={{ fontSize: "0.75rem", background: "#f1f5f9", padding: "2px 8px", borderRadius: "12px", color: "#475569" }}>
+            4-Agent LangGraph Pipeline
+          </span>
+        </div>
+        <p className="ai-sim-desc">
+          Submit a complex multi-domain objective. The Planner, Analyzer, Tool Action, and Validation agents will generate a structured plan, query real DB records, and pause high-impact requests for human manager approval.
         </p>
-        <form onSubmit={handleSimulateRequest} style={{ display: "flex", gap: "0.75rem" }}>
+        <form onSubmit={handleSimulateRequest} className="ai-sim-form">
           <input
             type="text"
-            className="admin-form-input"
-            style={{ flex: 1 }}
+            className="ai-sim-input"
             value={simPrompt}
             onChange={(e) => setSimPrompt(e.target.value)}
-            placeholder="e.g. Reserve Clubhouse for 20 guests and 4 parking slots this Saturday..."
+            placeholder="e.g. Request Banquet & Party Hall for 20 guests and 4 visitor parking slots..."
           />
-          <button
-            type="submit"
-            className="admin-btn admin-btn--primary"
-            disabled={simulating}
-          >
-            {simulating ? "Agents Processing..." : "Submit AI Workflow Request"}
+          <button type="submit" className="admin-btn admin-btn--primary" disabled={simulating}>
+            {simulating ? "Agents Processing..." : "Execute AI Request"}
           </button>
         </form>
       </div>
 
       {error && (
-        <div className="overview-error-banner">
+        <div className="overview-error-banner" style={{ marginBottom: "1.5rem" }}>
           ⚠️ {error}
         </div>
       )}
@@ -143,7 +180,7 @@ export default function AiApprovals() {
           <div>
             <h3 className="ai-info-title">No Pending Workflows</h3>
             <p className="ai-info-text">
-              Use the simulator above to submit an AI request. Pending requests will appear here for manager review and single-click approval.
+              Use the mobile request simulator above to test resident objectives. Requests will appear here for human manager approval.
             </p>
           </div>
         </div>
@@ -154,100 +191,217 @@ export default function AiApprovals() {
           <div className="spinner" />
         </div>
       ) : workflows.length > 0 ? (
-        <div className="admin-card">
-          <div className="admin-table-wrap">
-            <table className="admin-table" id="workflows-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Resident</th>
-                  <th>Objective & Agent Plan</th>
-                  <th>Proposal Summary</th>
-                  <th>Validation Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {workflows.map((wf) => {
-                  const proposal = parseJson(wf.proposalJson);
-                  const plan = parseJson(wf.planJson);
-                  const extracted = parseJson(wf.extractedDataJson);
+        <div className="ai-table-card">
+          <table className="ai-table" id="workflows-table">
+            <thead>
+              <tr>
+                <th style={{ width: "80px" }}>ID & Date</th>
+                <th style={{ width: "130px" }}>Resident</th>
+                <th style={{ width: "35%" }}>Objective & Agent Execution Plan</th>
+                <th style={{ width: "26%" }}>AI Proposal Summary</th>
+                <th style={{ width: "16%" }}>Validation Status</th>
+                <th style={{ width: "140px" }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {workflows.map((wf) => {
+                const proposal = parseJson(wf.proposalJson);
+                const plan = parseJson(wf.planJson);
+                const valStatusText = wf.validationStatus || wf.status || "Pending";
 
-                  return (
-                    <tr key={wf.id}>
-                      <td>
-                        <span className="wf-id">#{wf.id}</span>
-                        <div style={{ fontSize: "0.75rem", color: "#888" }}>{formatDate(wf.createdAt)}</div>
-                      </td>
-                      <td>
-                        <strong>{wf.residentName || "Resident"}</strong>
-                        <div style={{ fontSize: "0.75rem", color: "#666" }}>Resident ID: #{wf.residentId}</div>
-                      </td>
-                      <td className="td-desc" style={{ maxWidth: "320px" }}>
-                        <div style={{ fontWeight: "600", marginBottom: "0.25rem" }}>"{wf.objective}"</div>
+                const isFailed =
+                  valStatusText.startsWith("Failed") ||
+                  valStatusText.startsWith("Rejected") ||
+                  valStatusText.toLowerCase().includes("insufficient") ||
+                  valStatusText.toLowerCase().includes("not found");
+
+                const isApproved = wf.status === "Approved";
+                const isRejected = wf.status === "Rejected";
+                const isRevision = wf.status === "RequiresRevision";
+
+                const badgeInfo = getValidationBadgeInfo(valStatusText, wf.status);
+
+                return (
+                  <tr key={wf.id}>
+                    {/* ID & Timestamp */}
+                    <td>
+                      <div className="wf-meta-id">#{wf.id}</div>
+                      <div className="wf-meta-date">{formatDate(wf.createdAt)}</div>
+                    </td>
+
+                    {/* Resident Info */}
+                    <td>
+                      <div className="wf-resident-name">{wf.residentName || "Resident"}</div>
+                      <div className="wf-resident-id">ID: #{wf.residentId}</div>
+                    </td>
+
+                    {/* Objective & Full Agent Execution Plan */}
+                    <td>
+                      <div className="wf-plan-box">
+                        <div className="wf-objective-text">"{wf.objective}"</div>
                         {Array.isArray(plan) && plan.length > 0 && (
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.25rem" }}>
-                            <strong>Agent Plan:</strong>
-                            <ol style={{ paddingLeft: "1.2rem", margin: "0.2rem 0" }}>
+                          <div>
+                            <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#475569", marginBottom: "0.2rem" }}>
+                              🧠 Agent Execution Plan (4-Node Pipeline):
+                            </div>
+                            <ol className="wf-steps-list">
                               {plan.map((step, idx) => (
                                 <li key={idx}>{step}</li>
                               ))}
                             </ol>
                           </div>
                         )}
-                      </td>
-                      <td>
-                        {proposal && proposal.facilityName ? (
-                          <div style={{ fontSize: "0.85rem" }}>
-                            <div>🏢 <strong>Facility:</strong> {proposal.facilityName}</div>
-                            <div>📅 <strong>Date:</strong> {proposal.date} ({proposal.startTime} - {proposal.endTime})</div>
-                            <div>👥 <strong>Guests:</strong> {proposal.guests}</div>
-                            <div>🚗 <strong>Visitor Vehicles:</strong> {proposal.visitorVehicles} slots</div>
+                        {wf.managerNotes && (
+                          <div style={{ fontSize: "0.775rem", background: "#fef3c7", borderLeft: "3px solid #f59e0b", padding: "0.4rem 0.6rem", borderRadius: "0 4px 4px 0", color: "#92400e" }}>
+                            <strong>Manager Note:</strong> {wf.managerNotes}
                           </div>
-                        ) : (
-                          <span style={{ color: "#999" }}>—</span>
                         )}
-                      </td>
-                      <td>
-                        <span className={`badge ${wf.requiresApproval ? "badge--warning" : "badge--success"}`}>
-                          {wf.validationStatus || wf.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="wf-actions">
-                          <button
-                            className="admin-btn admin-btn--success admin-btn--sm"
-                            disabled={actionLoading === wf.id}
-                            onClick={() => handleAction(wf.id, "approve")}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            className="admin-btn admin-btn--danger admin-btn--sm"
-                            disabled={actionLoading === wf.id}
-                            onClick={() => handleAction(wf.id, "reject")}
-                          >
-                            Reject
-                          </button>
-                          <button
-                            className="admin-btn admin-btn--warning admin-btn--sm"
-                            disabled={actionLoading === wf.id}
-                            onClick={() => handleAction(wf.id, "revise")}
-                          >
-                            Revise
-                          </button>
+                      </div>
+                    </td>
+
+                    {/* Proposal Summary Card */}
+                    <td>
+                      {proposal && proposal.facilityName && !isFailed ? (
+                        <div className="wf-proposal-card">
+                          <div className="wf-proposal-item">
+                            <span>🏢</span>
+                            <span><strong>Facility:</strong> {proposal.facilityName}</span>
+                          </div>
+                          <div className="wf-proposal-item">
+                            <span>📅</span>
+                            <span><strong>Date & Time:</strong> {proposal.date} ({proposal.startTime} - {proposal.endTime})</span>
+                          </div>
+                          <div className="wf-proposal-item">
+                            <span>👥</span>
+                            <span><strong>Guest Count:</strong> {proposal.guests}</span>
+                          </div>
+                          <div className="wf-proposal-item">
+                            <span>🚗</span>
+                            <span><strong>Parking Slots:</strong> {proposal.visitorVehicles} ({proposal.assignedParkingSlots?.join(", ") || "Auto-Allocated"})</span>
+                          </div>
+                          {proposal.isHighImpact && (
+                            <div style={{ marginTop: "0.4rem", fontSize: "0.725rem", color: "#b45309", fontWeight: "700" }}>
+                              ⚠️ High Impact Event (&gt;15 guests or &gt;3 vehicles)
+                            </div>
+                          )}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      ) : (
+                        <div className="wf-proposal-empty">
+                          <div style={{ fontWeight: "700", marginBottom: "0.2rem" }}>❌ No Proposal Generated</div>
+                          <div>Agent 4 halted execution due to validation rule failure.</div>
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Validation & Security Status */}
+                    <td>
+                      <div className={`val-badge ${badgeInfo.badgeClass}`}>
+                        <span>{badgeInfo.icon}</span>
+                        <span>{badgeInfo.label}</span>
+                      </div>
+                    </td>
+
+                    {/* Action Buttons */}
+                    <td>
+                      <div className="wf-actions-col">
+                        {isApproved ? (
+                          <span className="status-pill status-pill--approved">✓ Approved & Staged</span>
+                        ) : isRejected ? (
+                          <span className="status-pill status-pill--rejected">✕ Rejected by Manager</span>
+                        ) : (
+                          <>
+                            {isRevision && (
+                              <span className="status-pill status-pill--revision" style={{ marginBottom: "0.25rem" }}>
+                                ✍️ Revision Requested
+                              </span>
+                            )}
+                            <button
+                              className="btn-action btn-action--approve"
+                              disabled={actionLoading === wf.id || isFailed}
+                              title={isFailed ? "Cannot approve: Rule validation failed" : "Approve request and issue facility/parking passes"}
+                              onClick={() => handleAction(wf.id, "approve")}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              className="btn-action btn-action--reject"
+                              disabled={actionLoading === wf.id}
+                              title="Reject this request"
+                              onClick={() => handleAction(wf.id, "reject")}
+                            >
+                              Reject
+                            </button>
+                            <button
+                              className="btn-action btn-action--revise"
+                              disabled={actionLoading === wf.id}
+                              title="Send back to resident with notes"
+                              onClick={() => openReviseModal(wf.id)}
+                            >
+                              Revise
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       ) : null}
+
+      {/* Revision Manager Note Modal */}
+      {reviseModal.open && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 className="modal-title">✍️ Request Revision from Resident</h3>
+            <p className="modal-desc">
+              Provide feedback or instructions for the resident (e.g. requesting a different time slot or fewer visitor vehicles).
+            </p>
+            <textarea
+              className="modal-textarea"
+              value={reviseModal.notes}
+              onChange={(e) => setReviseModal({ ...reviseModal, notes: e.target.value })}
+              placeholder="Enter revision notes here..."
+            />
+            <div className="modal-actions">
+              <button
+                className="admin-btn admin-btn--secondary"
+                onClick={() => setReviseModal({ open: false, workflowId: null, notes: "" })}
+              >
+                Cancel
+              </button>
+              <button className="admin-btn admin-btn--warning" onClick={submitRevision}>
+                Submit Revision Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function getValidationBadgeInfo(validationStatus, status) {
+  if (status === "Approved") {
+    return { badgeClass: "val-badge--success", icon: "✅", label: "Approved & Executed in DB" };
+  }
+  if (status === "Rejected") {
+    return { badgeClass: "val-badge--danger", icon: "⛔", label: "Rejected by Manager" };
+  }
+  if (status === "RequiresRevision") {
+    return { badgeClass: "val-badge--warning", icon: "✍️", label: "Revision Note Sent" };
+  }
+
+  const text = (validationStatus || "").toLowerCase();
+  if (text.startsWith("failed") || text.startsWith("rejected") || text.includes("insufficient") || text.includes("not found") || text.includes("exceeded")) {
+    return { badgeClass: "val-badge--danger", icon: "❌", label: validationStatus };
+  }
+  if (text.includes("valid")) {
+    return { badgeClass: "val-badge--success", icon: "🟢", label: validationStatus };
+  }
+  return { badgeClass: "val-badge--info", icon: "ℹ️", label: validationStatus };
 }
 
 function parseJson(str) {
@@ -263,7 +417,6 @@ function formatDate(str) {
   return new Date(str).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });

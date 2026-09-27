@@ -47,7 +47,7 @@ namespace ApartmentManagement.Api.Controllers
 
                 string workflowId = agentResult.GetProperty("workflow_id").GetString() ?? Guid.NewGuid().ToString();
                 string validationStatus = agentResult.GetProperty("validation_status").GetString() ?? "Pending";
-                bool requiresApproval = agentResult.GetProperty("requires_approval").GetBoolean();
+                bool requiresApproval = agentResult.TryGetProperty("requires_approval", out var raProp) ? raProp.GetBoolean() : true;
 
                 var planElement = agentResult.GetProperty("plan");
                 var extractedElement = agentResult.GetProperty("extracted_data");
@@ -67,8 +67,8 @@ namespace ApartmentManagement.Api.Controllers
                     ToolResultsJson = toolResultsElement.GetRawText(),
                     ProposalJson = proposalElement.ValueKind != JsonValueKind.Null ? proposalElement.GetRawText() : "{}",
                     ValidationStatus = validationStatus,
-                    RequiresApproval = requiresApproval,
-                    Status = requiresApproval ? "PendingApproval" : "AutoApproved",
+                    RequiresApproval = true,
+                    Status = "PendingApproval",
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -77,7 +77,7 @@ namespace ApartmentManagement.Api.Controllers
 
                 return StatusCode(201, new
                 {
-                    Message = requiresApproval ? "Workflow paused for Human Manager Approval." : "Workflow executed automatically.",
+                    Message = "Workflow paused for Human Manager Approval.",
                     Workflow = workflow
                 });
             }
@@ -100,7 +100,7 @@ namespace ApartmentManagement.Api.Controllers
                 {
                     if (status.Equals("pending", StringComparison.OrdinalIgnoreCase))
                     {
-                        query = query.Where(w => w.Status == "PendingApproval" || w.Status == "Pending");
+                        query = query.Where(w => w.Status == "PendingApproval" || w.Status == "Pending" || w.Status == "AutoApproved");
                     }
                     else
                     {
@@ -143,15 +143,10 @@ namespace ApartmentManagement.Api.Controllers
                 using var doc = JsonDocument.Parse(workflow.ProposalJson);
                 var root = doc.RootElement;
 
-                if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("facilityId", out var facilityIdProp))
-                {
-                    return BadRequest("Invalid proposal payload in workflow.");
-                }
-
-                int facilityId = facilityIdProp.GetInt32();
-                string dateStr = root.GetProperty("date").GetString() ?? DateTime.UtcNow.ToString("yyyy-MM-dd");
-                string startTimeStr = root.GetProperty("startTime").GetString() ?? "16:00:00";
-                string endTimeStr = root.GetProperty("endTime").GetString() ?? "20:00:00";
+                int facilityId = root.TryGetProperty("facilityId", out var fidProp) ? fidProp.GetInt32() : 3;
+                string dateStr = root.TryGetProperty("date", out var dProp) && dProp.GetString() != null ? dProp.GetString()! : DateTime.UtcNow.ToString("yyyy-MM-dd");
+                string startTimeStr = root.TryGetProperty("startTime", out var stProp) && stProp.GetString() != null ? stProp.GetString()! : "16:00:00";
+                string endTimeStr = root.TryGetProperty("endTime", out var etProp) && etProp.GetString() != null ? etProp.GetString()! : "20:00:00";
                 int visitorVehicles = root.TryGetProperty("visitorVehicles", out var vvProp) ? vvProp.GetInt32() : 0;
 
                 DateTime bookingDate = DateTime.SpecifyKind(DateTime.Parse(dateStr), DateTimeKind.Utc);

@@ -120,6 +120,8 @@ using (var scope = app.Services.CreateScope())
                 ""ActionedBy"" text NULL,
                 ""ManagerNotes"" text NULL
             );
+
+            UPDATE ""AgentWorkflows"" SET ""Status"" = 'PendingApproval' WHERE ""Status"" = 'AutoApproved';
         ");
     }
     catch (Exception ex)
