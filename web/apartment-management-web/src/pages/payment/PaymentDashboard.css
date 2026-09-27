@@ -22,21 +22,21 @@
 .payment-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-size: 19px;
   font-weight: 700;
   margin-bottom: 45px;
 }
 
 .payment-logo-icon {
-  width: 36px;
-  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #788477;
-  border-radius: 8px;
-  font-size: 18px;
+}
+
+.logo-img {
+  height: 28px;
+  width: auto;
 }
 
 .menu-label {

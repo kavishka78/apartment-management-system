@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
 import "./Payments.css";
@@ -23,62 +23,61 @@ function Payments() {
   const [receipt, setReceipt] = useState(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
 
-  const fetchPayments = async () => {
-    setLoading(true);
+  const fetchPayments = useCallback(() => {
+    let sortBy = "paidAt";
+    let sortOrder = "desc";
 
-    try {
-      let sortBy = "paidAt";
-      let sortOrder = "desc";
-
-      if (sort === "oldest") {
-        sortBy = "paidAt";
-        sortOrder = "asc";
-      } else if (sort === "amountHigh") {
-        sortBy = "amount";
-        sortOrder = "desc";
-      } else if (sort === "amountLow") {
-        sortBy = "amount";
-        sortOrder = "asc";
-      }
-
-      const params = new URLSearchParams({
-        page: page.toString(),
-        pageSize: pageSize.toString(),
-        sortBy,
-        sortOrder,
-      });
-
-      if (search.trim()) {
-        params.append("search", search.trim());
-      }
-
-      if (status) {
-        params.append("status", status);
-      }
-
-      const response = await fetch(
-        `http://localhost:5073/api/payments?${params.toString()}`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to load payments.");
-      }
-
-      const data = await response.json();
-
-      setPayments(data.items || []);
-      setTotalPages(data.totalPages || 1);
-    } catch (error) {
-      console.error("Error loading payments:", error);
-      setErrorMessage("Unable to load payments.");
-    } finally {
-      setLoading(false);
+    if (sort === "oldest") {
+      sortBy = "paidAt";
+      sortOrder = "asc";
+    } else if (sort === "amountHigh") {
+      sortBy = "amount";
+      sortOrder = "desc";
+    } else if (sort === "amountLow") {
+      sortBy = "amount";
+      sortOrder = "asc";
     }
-  };
+
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+      sortBy,
+      sortOrder,
+    });
+
+    if (search.trim()) {
+      params.append("search", search.trim());
+    }
+
+    if (status) {
+      params.append("status", status);
+    }
+
+    return fetch(
+      `http://localhost:5073/api/payments?${params.toString()}`
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load payments.");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setPayments(data.items || []);
+        setTotalPages(data.totalPages || 1);
+      })
+      .catch((error) => {
+        console.error("Error loading payments:", error);
+        setErrorMessage("Unable to load payments.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [search, status, sort, page]);
 
   useEffect(() => {
     fetchPayments();
-  }, [search, status, sort, page]);
+  }, [fetchPayments]);
 
   const handleVerify = async (paymentId) => {
     const confirmed = window.confirm(
@@ -121,6 +120,7 @@ function Payments() {
         data.message || "Payment verified successfully."
       );
 
+      setLoading(true);
       await fetchPayments();
     } catch (error) {
       console.error("Error verifying payment:", error);
@@ -222,6 +222,7 @@ function Payments() {
               placeholder="Search payment reference or invoice..."
               value={search}
               onChange={(e) => {
+                setLoading(true);
                 setSearch(e.target.value);
                 setPage(1);
               }}
@@ -231,6 +232,7 @@ function Payments() {
           <select
             value={status}
             onChange={(e) => {
+              setLoading(true);
               setStatus(e.target.value);
               setPage(1);
             }}
@@ -244,6 +246,7 @@ function Payments() {
           <select
             value={sort}
             onChange={(e) => {
+              setLoading(true);
               setSort(e.target.value);
               setPage(1);
             }}
@@ -377,9 +380,10 @@ function Payments() {
               {totalPages > 1 && (
                 <div className="payments-pagination">
                   <button
-                    onClick={() =>
-                      setPage((prev) => prev - 1)
-                    }
+                    onClick={() => {
+                      setLoading(true);
+                      setPage((prev) => prev - 1);
+                    }}
                     disabled={page === 1}
                   >
                     ← Previous
@@ -390,9 +394,10 @@ function Payments() {
                   </span>
 
                   <button
-                    onClick={() =>
-                      setPage((prev) => prev + 1)
-                    }
+                    onClick={() => {
+                      setLoading(true);
+                      setPage((prev) => prev + 1);
+                    }}
                     disabled={page === totalPages}
                   >
                     Next →

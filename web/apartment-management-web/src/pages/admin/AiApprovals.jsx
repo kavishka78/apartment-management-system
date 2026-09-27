@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Header from "../../components/admin/Header";
 import {
   getPendingWorkflows,
@@ -14,23 +14,29 @@ export default function AiApprovals() {
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
 
-  async function load() {
+  const fetchData = useCallback(() => {
+    return getPendingWorkflows()
+      .then((data) => {
+        setWorkflows(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setWorkflows([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  function load() {
     setLoading(true);
     setError(null);
-    try {
-      const data = await getPendingWorkflows();
-      setWorkflows(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(err.message);
-      setWorkflows([]);
-    } finally {
-      setLoading(false);
-    }
+    return fetchData();
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   async function handleAction(id, action) {
     setActionLoading(id);

@@ -1,0 +1,54 @@
+.complaint-form-styled {
+  padding: 20px;
+}
+
+.form-group-styled {
+  margin-bottom: 20px;
+}
+
+.form-group-styled.half-width {
+  display: inline-block;
+  width: calc(50% - 10px);
+  margin-right: 20px;
+}
+
+.form-group-styled.half-width:nth-of-type(even) {
+  margin-right: 0;
+}
+
+.form-group-styled label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.form-group-styled input,
+.form-group-styled textarea,
+.form-group-styled select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  background-color: #fafafa;
+  transition: border-color 0.2s;
+}
+
+.form-group-styled input:focus,
+.form-group-styled textarea:focus,
+.form-group-styled select:focus {
+  outline: none;
+  border-color: #1e3a8a;
+  background-color: #fff;
+}
+
+.form-actions-styled {
+  margin-top: 30px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}

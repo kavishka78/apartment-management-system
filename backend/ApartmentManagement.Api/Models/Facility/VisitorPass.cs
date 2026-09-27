@@ -47,6 +47,7 @@ namespace ApartmentManagement.Api.Models
         Active,
         CheckedIn,
         CheckedOut,
-        Expired
+        Expired,
+        Cancelled
     }
 }
