@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack } from 'react-icons/md';
+import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdAssignmentInd, MdClose, MdComment, MdArrowBack } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
 import './MaintenanceDetails.css';
@@ -248,7 +248,7 @@ function MaintenanceDetails() {
                         
                         {aiRecommendation.recommendedTechnicianId && (
                           <button className="action-btn-dark" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={handleAssign}>
-                            <MdAutoAwesome size={18} /> Approve Assignment
+                            <MdAssignmentInd size={18} /> Approve Assignment
                           </button>
                         )}
                       </div>
