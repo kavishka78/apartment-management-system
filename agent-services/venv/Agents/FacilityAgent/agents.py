@@ -14,9 +14,10 @@ class PlanOutput(BaseModel):
     plan: list[str] = Field(description="A step by step list of internal actions needed to fulfill the integrated facility reservation and visitor parking request.")
 
 class ExtractionOutput(BaseModel):
+    is_cancellation: bool = Field(default=False, description="True if the prompt is asking to CANCEL, MODIFY, REMOVE, or DELETE an existing booking/reservation (e.g., 'Cancel my booking', 'Delete reservation', 'Cancel tennis court').")
     is_general_query: bool = Field(default=False, description="True if the prompt is a general greeting, greeting question, or out-of-scope question (e.g., 'Hi', 'Hello', 'How are you?', 'Who built this?', 'What is the weather?').")
-    is_inquiry: bool = Field(default=False, description="True if the user is asking a facility/parking capacity query (e.g. 'How much capacity available...', 'Is gym open?'), False if requesting a booking/reservation.")
-    facility: str = Field(default="Clubhouse", description="Name of the facility requested (e.g., Clubhouse, Swimming Pool, Gym, Party Hall).")
+    is_inquiry: bool = Field(default=False, description="True if the user is asking a facility/parking capacity query (e.g. 'How much capacity available...', 'Is gym open?'), False if requesting a NEW booking/reservation.")
+    facility: str = Field(default="Clubhouse", description="Name of the facility requested (e.g., Clubhouse, Swimming Pool, Gym, Party Hall, Tennis & Squash Court).")
     date: str = Field(default="", description="The date requested, formatted as YYYY-MM-DD.")
     start_time: str = Field(default="16:00:00", description="Start time requested in HH:MM:SS format.")
     end_time: str = Field(default="20:00:00", description="End time requested in HH:MM:SS format.")
@@ -29,7 +30,7 @@ def planner_node(state: FacilityWorkflowState):
     
     prompt = (
         f"You are an AI planner for an apartment management complex. "
-        f"Create a high level 4 step internal execution plan for processing a resident request (booking, inquiry, or greeting): '{state['objective']}'. "
+        f"Create a high level 4 step internal execution plan for processing a resident request (booking, cancellation request, inquiry, or greeting): '{state['objective']}'. "
         f"Steps should include intent classification, availability verification if applicable, business rule validation, and response generation."
     )
     
@@ -46,9 +47,10 @@ def domain_analysis_node(state: FacilityWorkflowState):
     
     prompt = (
         f"Analyze this request: '{state['objective']}'. "
-        f"1. Determine if it is a general greeting/casual query like 'Hi', 'How are you', 'Hello' (is_general_query = True).\n"
-        f"2. If not general, determine if it is an information/capacity inquiry (is_inquiry = True) or a booking reservation (is_inquiry = False).\n"
-        f"3. Extract requested facility name (Clubhouse, Swimming Pool, Gym, Party Hall), requested date (assume today is {today_str} if relative terms like 'today', 'tomorrow' are used), "
+        f"1. Determine if it is asking to CANCEL, MODIFY, REMOVE, or DELETE an existing booking (is_cancellation = True).\n"
+        f"2. Determine if it is a general greeting/casual query like 'Hi', 'How are you', 'Hello' (is_general_query = True).\n"
+        f"3. If not cancellation or greeting, determine if it is an information/capacity inquiry (is_inquiry = True) or a NEW booking reservation (is_inquiry = False).\n"
+        f"4. Extract requested facility name (Clubhouse, Swimming Pool, Gym, Party Hall, Tennis & Squash Court), requested date (assume today is {today_str} if relative terms like 'today', 'tomorrow' are used), "
         f"start_time, end_time, guest count, and visitor vehicle count."
     )
     
@@ -68,8 +70,8 @@ def action_node(state: FacilityWorkflowState):
     print("AGENT 3 (Action Agent): Calling allow listed tools for facility & parking checks...")
     data = state["extracted_data"]
     
-    if data.get("is_general_query", False):
-        print("   -> General query detected. Skipping database availability tool call.")
+    if data.get("is_general_query", False) or data.get("is_cancellation", False):
+        print("   -> General query or cancellation request detected. Skipping database availability tool call.")
         state["tool_results"] = {
             "facility_and_parking_check": {"is_general_query": True}
         }
@@ -95,7 +97,25 @@ def validation_node(state: FacilityWorkflowState):
     visitor_vehicles = data.get("visitor_vehicles", 0)
     check_res = state["tool_results"]["facility_and_parking_check"]
 
-    # Check 0: General Conversational Greeting or Out-of-Scope Query
+    # Check 0.1: Cancellation / Modification Request
+    if data.get("is_cancellation", False):
+        facility_name = data.get("facility", "facility")
+        answer_text = (
+            f"Cancellation Guidance: To cancel or modify your existing booking for {facility_name}, "
+            "please navigate to the 'My Facilities / Bookings' tab in your app or contact building management directly. "
+            "The AI Assistant currently specializes in checking real-time availability and creating new reservations."
+        )
+        state["validation_status"] = answer_text
+        state["requires_approval"] = False
+        state["final_proposal"] = {
+            "isInquiry": True,
+            "isCancellation": True,
+            "answer": answer_text,
+            "status": "InquiryAnswered"
+        }
+        return state
+
+    # Check 0.2: General Conversational Greeting or Out-of-Scope Query
     if data.get("is_general_query", False):
         answer_text = (
             "Hello! I am your Resident AI Assistant for Facility Bookings & Visitor Parking. "
