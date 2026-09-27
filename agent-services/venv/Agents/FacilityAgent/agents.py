@@ -14,9 +14,10 @@ class PlanOutput(BaseModel):
     plan: list[str] = Field(description="A step by step list of internal actions needed to fulfill the integrated facility reservation and visitor parking request.")
 
 class ExtractionOutput(BaseModel):
-    is_inquiry: bool = Field(default=False, description="True if the user is asking an information/capacity query (e.g. 'How much capacity available...', 'Is gym open?'), False if requesting a booking/reservation.")
-    facility: str = Field(description="Name of the facility requested (e.g., Clubhouse, Swimming Pool, Gym, Party Hall).")
-    date: str = Field(description="The date requested, formatted as YYYY-MM-DD.")
+    is_general_query: bool = Field(default=False, description="True if the prompt is a general greeting, greeting question, or out-of-scope question (e.g., 'Hi', 'Hello', 'How are you?', 'Who built this?', 'What is the weather?').")
+    is_inquiry: bool = Field(default=False, description="True if the user is asking a facility/parking capacity query (e.g. 'How much capacity available...', 'Is gym open?'), False if requesting a booking/reservation.")
+    facility: str = Field(default="Clubhouse", description="Name of the facility requested (e.g., Clubhouse, Swimming Pool, Gym, Party Hall).")
+    date: str = Field(default="", description="The date requested, formatted as YYYY-MM-DD.")
     start_time: str = Field(default="16:00:00", description="Start time requested in HH:MM:SS format.")
     end_time: str = Field(default="20:00:00", description="End time requested in HH:MM:SS format.")
     guests: int = Field(default=1, description="Number of guests attending.")
@@ -28,8 +29,8 @@ def planner_node(state: FacilityWorkflowState):
     
     prompt = (
         f"You are an AI planner for an apartment management complex. "
-        f"Create a high level 4 step internal execution plan for processing a resident request (booking or inquiry): '{state['objective']}'. "
-        f"Steps should include entity extraction, backend availability verification for facility and parking, business rule validation, and human approval determination."
+        f"Create a high level 4 step internal execution plan for processing a resident request (booking, inquiry, or greeting): '{state['objective']}'. "
+        f"Steps should include intent classification, availability verification if applicable, business rule validation, and response generation."
     )
     
     structured_llm = llm.with_structured_output(PlanOutput)
@@ -45,15 +46,20 @@ def domain_analysis_node(state: FacilityWorkflowState):
     
     prompt = (
         f"Analyze this request: '{state['objective']}'. "
-        f"Determine if it is an information/capacity inquiry (is_inquiry = True) or a booking request (is_inquiry = False). "
-        f"Extract requested facility name, requested date (assume today is {today_str} if relative terms like 'today', 'tomorrow' are used), "
+        f"1. Determine if it is a general greeting/casual query like 'Hi', 'How are you', 'Hello' (is_general_query = True).\n"
+        f"2. If not general, determine if it is an information/capacity inquiry (is_inquiry = True) or a booking reservation (is_inquiry = False).\n"
+        f"3. Extract requested facility name (Clubhouse, Swimming Pool, Gym, Party Hall), requested date (assume today is {today_str} if relative terms like 'today', 'tomorrow' are used), "
         f"start_time, end_time, guest count, and visitor vehicle count."
     )
     
     structured_llm = llm.with_structured_output(ExtractionOutput)
     result = structured_llm.invoke(prompt)
     
-    state["extracted_data"] = result.model_dump()
+    extracted = result.model_dump()
+    if not extracted.get("date"):
+        extracted["date"] = today_str
+
+    state["extracted_data"] = extracted
     print(f"   -> Extracted Data: {state['extracted_data']}")
     return state
 
@@ -62,9 +68,16 @@ def action_node(state: FacilityWorkflowState):
     print("AGENT 3 (Action Agent): Calling allow listed tools for facility & parking checks...")
     data = state["extracted_data"]
     
+    if data.get("is_general_query", False):
+        print("   -> General query detected. Skipping database availability tool call.")
+        state["tool_results"] = {
+            "facility_and_parking_check": {"is_general_query": True}
+        }
+        return state
+
     check_result = check_facility_and_parking_availability(
-        facility_name=data["facility"],
-        requested_date=data["date"],
+        facility_name=data.get("facility", "Clubhouse"),
+        requested_date=data.get("date", datetime.now().strftime("%Y-%m-%d")),
         visitor_vehicles_count=data.get("visitor_vehicles", 0)
     )
     
@@ -81,6 +94,23 @@ def validation_node(state: FacilityWorkflowState):
     guests = data.get("guests", 1)
     visitor_vehicles = data.get("visitor_vehicles", 0)
     check_res = state["tool_results"]["facility_and_parking_check"]
+
+    # Check 0: General Conversational Greeting or Out-of-Scope Query
+    if data.get("is_general_query", False):
+        answer_text = (
+            "Hello! I am your Resident AI Assistant for Facility Bookings & Visitor Parking. "
+            "I can help you check facility availability, reserve amenities (Gym, Swimming Pool, Clubhouse, Party Hall), "
+            "or allocate visitor parking passes. How can I assist you with your facility needs today?"
+        )
+        state["validation_status"] = answer_text
+        state["requires_approval"] = False
+        state["final_proposal"] = {
+            "isInquiry": True,
+            "isGeneralQuery": True,
+            "answer": answer_text,
+            "status": "InquiryAnswered"
+        }
+        return state
     
     if "error" in check_res:
         state["validation_status"] = f"Failed: {check_res['error']}"
@@ -103,7 +133,7 @@ def validation_node(state: FacilityWorkflowState):
             "capacityRemaining": capacity_remaining,
             "totalAvailableVisitorParking": total_available_parking,
             "answer": answer_text,
-            "status": "Inquiry Answered"
+            "status": "InquiryAnswered"
         }
         return state
 
