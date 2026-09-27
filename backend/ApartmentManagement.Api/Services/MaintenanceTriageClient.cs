@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -26,7 +26,7 @@ namespace ApartmentManagement.Api.Services
             string description, 
             List<Technician> technicians, 
             Dictionary<int, int> technicianWorkloads,
-            string currentSlaDeadlineInfo = "")
+            string currentSlaDeadlineInfo = "", string slaRisk = "Low", string managerFeedback = "")
         {
             var techniciansList = new List<object>();
             foreach (var t in technicians)
@@ -56,9 +56,10 @@ namespace ApartmentManagement.Api.Services
                 technicians = techniciansList,
                 sla = new
                 {
-                    risk = "Unknown",
+                    risk = slaRisk,
                     reason = currentSlaDeadlineInfo
-                }
+                },
+                manager_feedback = managerFeedback
             };
 
             var response = await _httpClient.PostAsJsonAsync($"{_pythonAgentUrl}/triage", requestPayload);
@@ -92,3 +93,5 @@ namespace ApartmentManagement.Api.Services
         }
     }
 }
+
+

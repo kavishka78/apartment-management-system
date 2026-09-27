@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MdWarning, MdArrowForward, MdCheckCircle } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
 
 function SlaRisk() {
+  const navigate = useNavigate();
   const [risks, setRisks] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -72,7 +74,7 @@ function SlaRisk() {
                       </div>
                     </td>
                     <td>
-                      <button className="primary-btn" style={{ padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', background: r.slaStatus === 'Overdue' ? '#e53e3e' : '#dd6b20' }} onClick={() => window.location.href=`/maintenance/${r.id}`}>
+                      <button className="primary-btn" style={{ padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', background: r.slaStatus === 'Overdue' ? '#e53e3e' : '#dd6b20' }} onClick={() => navigate(`/maintenance/complaints/${r.id}`)}>
                         Escalate <MdArrowForward size={14}/>
                       </button>
                     </td>
@@ -88,3 +90,5 @@ function SlaRisk() {
 }
 
 export default SlaRisk;
+
+

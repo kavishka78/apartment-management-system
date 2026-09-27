@@ -3,6 +3,8 @@ import { AuthProvider } from "./context/AuthContext";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import ModuleRoute from "./components/ModuleRoute";
+import TechnicianDashboard from './pages/technician/TechnicianDashboard';
+
 
 // ─── Payment Pages (teammate's code — untouched) ────────
 import PaymentDashboard from "./pages/payment/PaymentDashboard";
@@ -93,7 +95,8 @@ function App() {
           <Route path="/maintenance/sla-risk" element={<ModuleRoute module="maintenance"><SlaRisk /></ModuleRoute>} />
           <Route path="/maintenance/reports" element={<ModuleRoute module="maintenance"><MaintenanceReports /></ModuleRoute>} />
 
-          {/* Catch-all */}
+          <Route path="/technician/work-orders" element={<TechnicianDashboard />} />
+            {/* Catch-all */}
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
       </BrowserRouter>

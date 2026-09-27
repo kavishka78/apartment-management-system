@@ -8,6 +8,7 @@ using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.Models;
 using ApartmentManagement.Api.DTOs.Maintenance;
 using ApartmentManagement.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ApartmentManagement.Api.Controllers.Maintenance
 {
@@ -15,13 +16,32 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
     [ApiController]
     public class MaintenanceController : ControllerBase
     {
+        private DateTimeOffset ToColomboTime(DateTimeOffset utcTime)
+        {
+            var tz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Colombo");
+            return TimeZoneInfo.ConvertTime(utcTime, tz);
+        }
+
+        private DateTimeOffset CalculateDeadline(Models.Maintenance m)
+        {
+            if (m.SlaDueDate.HasValue) return m.SlaDueDate.Value;
+            return m.Priority switch
+            {
+                "Urgent" => m.CreatedAt.AddHours(4),
+                "High" => m.CreatedAt.AddHours(24),
+                "Medium" => m.CreatedAt.AddDays(3),
+                _ => m.CreatedAt.AddDays(7)
+            };
+        }
         private readonly AppDbContext _context;
         private readonly IMaintenanceTriageService _aiService;
+        private readonly INotificationService _notificationService;
 
-        public MaintenanceController(AppDbContext context, IMaintenanceTriageService aiService)
+        public MaintenanceController(AppDbContext context, IMaintenanceTriageService aiService, INotificationService notificationService)
         {
             _context = context;
             _aiService = aiService;
+            _notificationService = notificationService;
         }
 
         [HttpGet]
@@ -126,12 +146,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                     activeWorkloads
                 );
 
-                maintenance.History.Add(new MaintenanceHistory
-                {
-                    Status = "AI Triage Completed",
-                    Note = $"AI recommends Category: {triageResult.Category}, Priority: {triageResult.Priority}, Technician: {triageResult.RecommendedTechnicianId}. Reason: {triageResult.Reason}",
-                    ChangedBy = "System"
-                });
+
                 await _context.SaveChangesAsync();
             }
 
@@ -171,6 +186,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         }
 
         [HttpPost("{id}/assign")]
+        [Authorize(Roles = "Manager,Admin")]
         public async Task<ActionResult<MaintenanceDto>> AssignTechnician(int id, [FromBody] AssignTechnicianRequest request)
         {
             var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
@@ -193,11 +209,21 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                 ChangedBy = "Manager"
             });
 
+            // Assignment is a high-impact action. A pending AI workflow must be
+            // decided through the explicit approval endpoint before it can proceed.
+            var pendingWorkflow = await _context.AgentWorkflows
+                .Where(w => w.MaintenanceId == id && w.ApprovalStatus == "Pending")
+                .OrderByDescending(w => w.CreatedAt)
+                .FirstOrDefaultAsync();
+            if (pendingWorkflow != null)
+                return BadRequest("The AI workflow is awaiting an authorised approval decision.");
+
             await _context.SaveChangesAsync();
             return Ok(MapToDto(maintenance));
         }
 
         [HttpPost("{id}/start")]
+        [Authorize(Roles = "Technician,Manager,Admin")]
         public async Task<ActionResult<MaintenanceDto>> StartWork(int id)
         {
             var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
@@ -221,6 +247,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         }
 
         [HttpPost("{id}/resolve")]
+        [Authorize(Roles = "Technician,Manager,Admin")]
         public async Task<ActionResult<MaintenanceDto>> ResolveMaintenance(int id, [FromBody] ResolveMaintenanceRequest request)
         {
             var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
@@ -233,11 +260,19 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             maintenance.RepairCost = request.RepairCost;
             maintenance.UpdatedAt = DateTimeOffset.UtcNow;
 
-            maintenance.History.Add(new MaintenanceHistory
+maintenance.History.Add(new MaintenanceHistory
             {
                 Status = "Resolved",
                 Note = request.Note,
                 ChangedBy = "Technician"
+            });
+
+            _context.Notifications.Add(new Notification
+            {
+                ResidentId = maintenance.ResidentId,
+                Title = "Maintenance Resolved",
+                Message = $"Your request '{maintenance.Title}' has been resolved by the technician. Please verify the resolution.",
+                CreatedAt = DateTimeOffset.UtcNow
             });
 
             await _context.SaveChangesAsync();
@@ -245,6 +280,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         }
 
         [HttpPost("{id}/close")]
+        [Authorize(Roles = "Manager,Admin")]
         public async Task<ActionResult<MaintenanceDto>> CloseMaintenance(int id)
         {
             var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
@@ -314,6 +350,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         }
         
         [HttpPost("{id}/triage")]
+        [Authorize(Roles = "Manager,Admin")]
         public async Task<ActionResult<AiTriageRecommendationDto>> GetAiTriageRecommendation(int id)
         {
             var maintenance = await _context.Maintenances.FindAsync(id);
@@ -328,10 +365,252 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                 .Select(g => new { TechId = g.Key.Value, Count = g.Count() })
                 .ToDictionaryAsync(k => k.TechId, v => v.Count);
 
-            var slaContext = $"Ticket was created at {maintenance.CreatedAt}. Deadline is {maintenance.SlaDueDate}. Current time is {DateTimeOffset.UtcNow}.";
+                        var deadline = CalculateDeadline(maintenance);
+            if (!maintenance.SlaDueDate.HasValue) 
+            {
+                maintenance.SlaDueDate = deadline;
+                await _context.SaveChangesAsync();
+            }
 
-            var result = await _aiService.TriageComplaintAsync(maintenance.Title, maintenance.Description, availableTechs, activeTickets, slaContext);
+            var colomboCreated = ToColomboTime(maintenance.CreatedAt).ToString("MMM dd, yyyy hh:mm tt");
+            var colomboDeadline = ToColomboTime(deadline).ToString("MMM dd, yyyy hh:mm tt");
+            var colomboNow = ToColomboTime(DateTimeOffset.UtcNow).ToString("MMM dd, yyyy hh:mm tt");
+
+            var slaContext = $"Created: {colomboCreated} | Deadline: {colomboDeadline} | Now: {colomboNow}";
+
+                        var timeDiff = deadline - DateTimeOffset.UtcNow;
+            string risk = "Low";
+            if (timeDiff.TotalHours < 0) risk = "Urgent";
+            else if (timeDiff.TotalHours < 24) risk = "High";
+            else if (timeDiff.TotalHours < 72) risk = "Medium";
+
+            var result = await _aiService.TriageComplaintAsync(maintenance.Title, maintenance.Description, availableTechs, activeTickets, slaContext, risk);
+            
+            // Persist Agent Workflow State
+            var workflow = new AgentWorkflow
+            {
+                MaintenanceId = id,
+                Objective = "Triage Complaint and Assign Technician",
+                Plan = System.Text.Json.JsonSerializer.Serialize(result.Plan),
+                CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
+                ToolResults = result.ToolResults,
+                ValidationResults = result.ValidationResults,
+                ApprovalStatus = "Pending",
+                Status = "PendingApproval",
+                CurrentStep = "Pending Approval",
+                FinalOutcome = System.Text.Json.JsonSerializer.Serialize(new { result.RecommendedTechnicianId, result.Category, result.Priority, result.SlaRisk }),
+                Steps = result.AgentSteps.Select(step => new AgentWorkflowStep
+                {
+                    Sequence = step.Sequence,
+                    AgentRole = step.AgentRole,
+                    Action = step.Action,
+                    Status = step.Status,
+                    ToolName = step.ToolName,
+                    InputSummary = step.InputSummary,
+                    OutputSummary = step.OutputSummary,
+                    ValidationResult = step.ValidationResult,
+                    DurationMilliseconds = step.DurationMilliseconds
+                }).ToList()
+            };
+            
+            _context.AgentWorkflows.Add(workflow);
+            
+
+            
+            await _context.SaveChangesAsync();
+            
+            result.WorkflowId = workflow.Id;
+
             return Ok(result);
+        }
+
+        [HttpGet("{id}/workflows/latest")]
+        public async Task<IActionResult> GetLatestWorkflow(int id)
+        {
+            var workflow = await _context.AgentWorkflows
+                .Include(w => w.Steps)
+                .Where(w => w.MaintenanceId == id)
+                .OrderByDescending(w => w.CreatedAt)
+                .FirstOrDefaultAsync();
+            return workflow == null ? NotFound() : Ok(ToWorkflowSummary(workflow));
+        }
+
+        [HttpGet("workflows/{workflowId}")]
+        public async Task<IActionResult> GetWorkflow(int workflowId)
+        {
+            var workflow = await _context.AgentWorkflows
+                .Include(w => w.Steps)
+                .FirstOrDefaultAsync(w => w.Id == workflowId);
+            return workflow == null ? NotFound() : Ok(ToWorkflowSummary(workflow));
+        }
+
+        [HttpPost("workflows/{workflowId}/approval")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> DecideWorkflow(int workflowId, [FromBody] WorkflowApprovalRequest request)
+        {
+            var workflow = await _context.AgentWorkflows.FirstOrDefaultAsync(w => w.Id == workflowId);
+            if (workflow == null) return NotFound();
+            if (workflow.ApprovalStatus != "Pending") return BadRequest("This workflow has already been decided.");
+
+            workflow.ApprovalUser = request.ApprovedBy;
+            workflow.ApprovalTime = DateTimeOffset.UtcNow;
+            workflow.ApprovalNote = request.Note ?? string.Empty;
+            workflow.UpdatedAt = DateTimeOffset.UtcNow;
+
+            if (request.Decision == "Reject")
+            {
+                workflow.ApprovalStatus = "Rejected";
+                workflow.Status = "Rejected";
+                workflow.CurrentStep = "Recommendation rejected by manager";
+            }
+            else if (request.Decision == "RequestRevision")
+            {
+                workflow.ApprovalStatus = "Revised";
+                workflow.Status = "RevisionRequested";
+                workflow.CurrentStep = "Revision requested by manager";
+            }
+            else
+            {
+                var recommendation = System.Text.Json.JsonSerializer.Deserialize<AiTriageRecommendationDto>(workflow.FinalOutcome);
+                if (recommendation?.RecommendedTechnicianId == null)
+                    return BadRequest("There is no validated technician recommendation to approve.");
+
+                var maintenance = await _context.Maintenances.Include(m => m.History)
+                    .FirstOrDefaultAsync(m => m.Id == workflow.MaintenanceId);
+                var technician = await _context.Technicians.FindAsync(recommendation.RecommendedTechnicianId.Value);
+                if (maintenance == null || technician == null || technician.Status != "Available")
+                    return BadRequest("The recommended technician is no longer eligible; request a revision.");
+
+                maintenance.TechnicianId = technician.Id;
+                maintenance.Status = "Assigned";
+                maintenance.UpdatedAt = DateTimeOffset.UtcNow;
+                maintenance.History.Add(new MaintenanceHistory
+                {
+                    Status = "AI Recommendation Approved & Technician Assigned",
+                    Note = $"Approved by {request.ApprovedBy}. {request.Note}".Trim(),
+                    ChangedBy = request.ApprovedBy
+                });
+                workflow.ApprovalStatus = "Approved";
+                workflow.Status = "Approved";
+                workflow.CurrentStep = "Assignment approved and executed";
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(ToWorkflowSummary(workflow));
+        }
+
+                public class ReviseTriageRequest { public string ManagerFeedback { get; set; } = string.Empty; }
+
+        [HttpPost("{id}/revise")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<ActionResult<AiTriageRecommendationDto>> ReviseAiTriageRecommendation(int id, [FromBody] ReviseTriageRequest request)
+        {
+            var maintenance = await _context.Maintenances.FindAsync(id);
+            if (maintenance == null) return NotFound();
+
+            var availableTechs = await _context.Technicians.Where(t => t.Status == "Available").ToListAsync();
+            var activeTickets = await _context.Maintenances
+                .Where(m => m.Status == "Assigned" || m.Status == "In Progress")
+                .GroupBy(m => m.TechnicianId)
+                .Where(g => g.Key.HasValue)
+                .Select(g => new { TechId = g.Key.Value, Count = g.Count() })
+                .ToDictionaryAsync(k => k.TechId, v => v.Count);
+
+                        var deadline = CalculateDeadline(maintenance);
+            if (!maintenance.SlaDueDate.HasValue) 
+            {
+                maintenance.SlaDueDate = deadline;
+                await _context.SaveChangesAsync();
+            }
+
+            var colomboCreated = ToColomboTime(maintenance.CreatedAt).ToString("MMM dd, yyyy hh:mm tt");
+            var colomboDeadline = ToColomboTime(deadline).ToString("MMM dd, yyyy hh:mm tt");
+            var colomboNow = ToColomboTime(DateTimeOffset.UtcNow).ToString("MMM dd, yyyy hh:mm tt");
+
+            var slaContext = $"Created: {colomboCreated} | Deadline: {colomboDeadline} | Now: {colomboNow}";
+
+                        var timeDiff = deadline - DateTimeOffset.UtcNow;
+            string risk = "Low";
+            if (timeDiff.TotalHours < 0) risk = "Urgent";
+            else if (timeDiff.TotalHours < 24) risk = "High";
+            else if (timeDiff.TotalHours < 72) risk = "Medium";
+
+            var result = await _aiService.TriageComplaintAsync(maintenance.Title, maintenance.Description, availableTechs, activeTickets, slaContext, risk, request.ManagerFeedback);
+            
+            // Mark older pending workflows for this ticket as revised
+            var oldWorkflows = await _context.AgentWorkflows.Where(w => w.MaintenanceId == id && w.ApprovalStatus == "Pending").ToListAsync();
+            foreach(var ow in oldWorkflows) { ow.ApprovalStatus = "Revised"; }
+
+            var workflow = new AgentWorkflow
+            {
+                MaintenanceId = id,
+                Objective = "Revise Triage Complaint",
+                Plan = System.Text.Json.JsonSerializer.Serialize(result.Plan),
+                CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
+                ToolResults = result.ToolResults,
+                ValidationResults = result.ValidationResults,
+                ApprovalStatus = "Pending",
+                Status = "PendingApproval",
+                CurrentStep = "Pending Approval",
+                FinalOutcome = System.Text.Json.JsonSerializer.Serialize(new { result.RecommendedTechnicianId, result.Category, result.Priority, result.SlaRisk }),
+                Steps = result.AgentSteps.Select(step => new AgentWorkflowStep
+                {
+                    Sequence = step.Sequence,
+                    AgentRole = step.AgentRole,
+                    Action = step.Action,
+                    Status = step.Status,
+                    ToolName = step.ToolName,
+                    InputSummary = step.InputSummary,
+                    OutputSummary = step.OutputSummary,
+                    ValidationResult = step.ValidationResult,
+                    DurationMilliseconds = step.DurationMilliseconds
+                }).ToList()
+            };
+            
+            _context.AgentWorkflows.Add(workflow);
+            
+            maintenance.History.Add(new MaintenanceHistory
+            {
+                Status = "AI Triage Revised",
+                Note = $"Manager requested revision: {request.ManagerFeedback}",
+                ChangedBy = "Manager"
+            });
+            
+            await _context.SaveChangesAsync();
+            result.WorkflowId = workflow.Id;
+            return Ok(result);
+        }
+
+        [HttpPost("{id}/reject")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> RejectAiTriageRecommendation(int id)
+        {
+            var pendingWorkflow = await _context.AgentWorkflows
+                .Where(w => w.MaintenanceId == id && w.ApprovalStatus == "Pending")
+                .OrderByDescending(w => w.CreatedAt)
+                .FirstOrDefaultAsync();
+                
+            if (pendingWorkflow != null)
+            {
+                pendingWorkflow.ApprovalStatus = "Rejected";
+                pendingWorkflow.ApprovalUser = "Manager";
+                pendingWorkflow.ApprovalTime = DateTimeOffset.UtcNow;
+                pendingWorkflow.CurrentStep = "Rejected by Manager";
+            }
+
+            var maintenance = await _context.Maintenances.FindAsync(id);
+            if (maintenance != null)
+            {
+                maintenance.History.Add(new MaintenanceHistory
+                {
+                    Status = "AI Triage Rejected",
+                    Note = "Manager rejected the AI recommendation.",
+                    ChangedBy = "Manager"
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Rejected successfully" });
         }
 
         [HttpPost("{id}/photo")]
@@ -453,13 +732,93 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                     ALTER TABLE ""Technicians"" ADD COLUMN IF NOT EXISTS ""AccessPassCode"" text;
                     ALTER TABLE ""Technicians"" ADD COLUMN IF NOT EXISTS ""WorkingHours"" text;
                     ALTER TABLE ""Technicians"" ADD COLUMN IF NOT EXISTS ""IsAccessGranted"" boolean NOT NULL DEFAULT true;
+                    
+                    CREATE TABLE IF NOT EXISTS ""AgentWorkflows"" (
+                        ""Id"" integer GENERATED BY DEFAULT AS IDENTITY,
+                        ""MaintenanceId"" integer NOT NULL,
+                        ""Objective"" text,
+                        ""Plan"" text,
+                        ""CurrentStep"" text,
+                        ""CompletedSteps"" text,
+                        ""ToolResults"" text,
+                        ""ValidationResults"" text,
+                        ""Errors"" text,
+                        ""ApprovalStatus"" text,
+                        ""ApprovalUser"" text,
+                        ""ApprovalTime"" timestamp with time zone,
+                        ""FinalOutcome"" text,
+                        ""CreatedAt"" timestamp with time zone NOT NULL,
+                        ""UpdatedAt"" timestamp with time zone NOT NULL,
+                        CONSTRAINT ""PK_AgentWorkflows"" PRIMARY KEY (""Id""),
+                        CONSTRAINT ""FK_AgentWorkflows_Maintenances_MaintenanceId"" FOREIGN KEY (""MaintenanceId"") REFERENCES ""Maintenances"" (""Id"") ON DELETE CASCADE
+                    );
                 ");
-                return Ok("Columns added successfully");
+                await _context.Database.ExecuteSqlRawAsync(@"
+    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""Status"" text DEFAULT 'Running';
+    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""ApprovalNote"" text DEFAULT '';
+    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""IsSafeFailure"" boolean NOT NULL DEFAULT false;
+
+    CREATE TABLE IF NOT EXISTS ""AgentWorkflowSteps"" (
+        ""Id"" integer GENERATED BY DEFAULT AS IDENTITY,
+        ""AgentWorkflowId"" integer NOT NULL,
+        ""Sequence"" integer NOT NULL,
+        ""AgentRole"" text,
+        ""Action"" text,
+        ""Status"" text,
+        ""ToolName"" text,
+        ""InputSummary"" text,
+        ""OutputSummary"" text,
+        ""ValidationResult"" text,
+        ""DurationMilliseconds"" integer NOT NULL,
+        ""CreatedAt"" timestamp with time zone NOT NULL,
+        CONSTRAINT ""PK_AgentWorkflowSteps"" PRIMARY KEY (""Id""),
+        CONSTRAINT ""FK_AgentWorkflowSteps_AgentWorkflows_AgentWorkflowId"" FOREIGN KEY (""AgentWorkflowId"") REFERENCES ""AgentWorkflows"" (""Id"") ON DELETE CASCADE
+    );
+");
+return Ok("Database setup successfully");
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        private static object ToWorkflowSummary(AgentWorkflow workflow)
+        {
+            return new
+            {
+                workflow.Id,
+                workflow.MaintenanceId,
+                workflow.Objective,
+                workflow.Plan,
+                workflow.CurrentStep,
+                workflow.Status,
+                workflow.CompletedSteps,
+                workflow.ToolResults,
+                workflow.ValidationResults,
+                workflow.Errors,
+                workflow.ApprovalStatus,
+                workflow.ApprovalUser,
+                workflow.ApprovalTime,
+                workflow.ApprovalNote,
+                workflow.FinalOutcome,
+                workflow.IsSafeFailure,
+                workflow.CreatedAt,
+                workflow.UpdatedAt,
+                Steps = workflow.Steps.OrderBy(step => step.Sequence).Select(step => new
+                {
+                    step.Sequence,
+                    step.AgentRole,
+                    step.Action,
+                    step.Status,
+                    step.ToolName,
+                    step.InputSummary,
+                    step.OutputSummary,
+                    step.ValidationResult,
+                    step.DurationMilliseconds,
+                    step.CreatedAt
+                })
+            };
         }
 
         private static MaintenanceDto MapToDto(Models.Maintenance m)
@@ -493,3 +852,9 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         }
     }
 }
+
+
+
+
+
+

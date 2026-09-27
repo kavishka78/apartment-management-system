@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSave, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck } from 'react-icons/md';
+import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSave, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck, MdEmail } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
 import './Complaints.css';
@@ -21,7 +21,7 @@ function TechniciansList() {
   // Modal / Form state
   const [showModal, setShowModal] = useState(false);
   const [editingTech, setEditingTech] = useState(null);
-  const [formData, setFormData] = useState({ name: '', contactInformation: '', skills: '', status: 'Available', nicNumber: '', accessPassCode: '', workingHours: '', isAccessGranted: true });
+  const [formData, setFormData] = useState({ name: '', email: '', contactInformation: '', skills: '', status: 'Available', nicNumber: '', accessPassCode: '', workingHours: '', isAccessGranted: true });
   const [availableSkills, setAvailableSkills] = useState(['Plumbing', 'Electrical', 'HVAC', 'Carpentry', 'General', 'Appliances', 'Painting']);
   const [newSkill, setNewSkill] = useState('');
 
@@ -62,7 +62,7 @@ function TechniciansList() {
 
   const openAddModal = () => {
     setEditingTech(null);
-    setFormData({ name: '', contactInformation: '', skills: '', status: 'Available', nicNumber: '', accessPassCode: '', workingHours: '', isAccessGranted: true });
+    setFormData({ name: '', email: '', contactInformation: '', skills: '', status: 'Available', nicNumber: '', accessPassCode: '', workingHours: '', isAccessGranted: true });
     setPhotoPreview(null);
     setShowTimeDropdown(false);
     setShowModal(true);
@@ -72,7 +72,8 @@ function TechniciansList() {
     setEditingTech(tech);
     setFormData({
       name: tech.name,
-      contactInformation: tech.contactInformation,
+      email: tech.email || '',
+        contactInformation: tech.contactInformation,
       skills: tech.skills,
       status: tech.status,
       nicNumber: tech.nicNumber || '',
@@ -115,11 +116,18 @@ function TechniciansList() {
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.skills || !formData.contactInformation || !formData.nicNumber) {
+    if (!formData.name || !formData.skills || !formData.contactInformation || !formData.nicNumber || !formData.email) {
       alert('Please fill in all required fields (Name, Contact, Skills, NIC).');
       return;
     }
-    const contactRegex = /^\d{10}$/;
+    
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        alert('Please enter a valid email address.');
+        return;
+      }
+      const contactRegex = /^\d{10}$/;
+
     if (!contactRegex.test(formData.contactInformation.replace(/\s+/g, ''))) {
       alert('Contact number must be exactly 10 digits.');
       return;
@@ -132,6 +140,7 @@ function TechniciansList() {
 
     const payload = {
       name: formData.name,
+      email: formData.email,
       contactInformation: formData.contactInformation.replace(/\s+/g, ''),
       skills: formData.skills,
       status: formData.status,
@@ -143,26 +152,39 @@ function TechniciansList() {
     };
 
     try {
-      setLoading(true);
-      if (editingTech) {
-        await fetch(`http://localhost:5073/api/technicians/${editingTech.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, id: editingTech.id })
-        });
-      } else {
-        await fetch('http://localhost:5073/api/technicians', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        setLoading(true);
+        if (editingTech) {
+          const res = await fetch(`http://localhost:5073/api/technicians/${editingTech.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...payload, id: editingTech.id })
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            alert(err.message || 'Failed to update technician.');
+            setLoading(false);
+            return;
+          }
+        } else {
+          const res = await fetch('http://localhost:5073/api/technicians', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            alert(err.message || 'Failed to create technician.');
+            setLoading(false);
+            return;
+          }
+        }
+        setShowModal(false);
+        fetchTechs();
+      } catch (e) {
+        console.error('Save failed', e);
+        alert('An unexpected network error occurred.');
+        setLoading(false);
       }
-      setShowModal(false);
-      fetchTechs();
-    } catch (e) {
-      console.error('Save failed', e);
-      setLoading(false);
-    }
   };
 
   const filteredTechs = techs.filter(t => {
@@ -573,7 +595,19 @@ function TechniciansList() {
                   </div>
                 </div>
 
-                {/* Contact Number */}
+                
+                  <div style={{ marginBottom: '24px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700', color: '#68727c', marginBottom: '8px' }}>Email Address <span style={{ color: '#e53e3e' }}>*</span></label>
+                    <input
+                      type="email"
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '12px 18px', borderRadius: '50px', border: '1px solid #e0e0e0', fontSize: '14px', outline: 'none' }}
+                      value={formData.email || ''}
+                      onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="e.g. tech@apartment.lk"
+                    />
+                    <span style={{ fontSize: '11px', color: '#a0aec0', marginTop: '4px', display: 'block', marginLeft: '12px' }}>This will be used for technician login.</span>
+                  </div>
+{/* Contact Number */}
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700', color: '#68727c', marginBottom: '8px' }}>Contact Number</label>
                   <input

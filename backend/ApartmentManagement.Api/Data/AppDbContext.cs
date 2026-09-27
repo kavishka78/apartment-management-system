@@ -13,6 +13,7 @@ namespace ApartmentManagement.Api.Data
         // Payment Models
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Receipt> Receipts { get; set; }
 
@@ -21,6 +22,8 @@ namespace ApartmentManagement.Api.Data
         public DbSet<MaintenanceCategory> MaintenanceCategories { get; set; }
         public DbSet<Technician> Technicians { get; set; }
         public DbSet<MaintenanceHistory> MaintenanceHistories { get; set; }
+        public DbSet<AgentWorkflow> AgentWorkflows { get; set; }
+        public DbSet<AgentWorkflowStep> AgentWorkflowSteps { get; set; }
 
         // Facility and Visitor Models
         public DbSet<Facility> Facilities { get; set; }

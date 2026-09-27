@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using ApartmentManagement.Api.DTOs.Maintenance;
 using ApartmentManagement.Api.Models;
@@ -12,6 +12,10 @@ namespace ApartmentManagement.Api.Services
             string description, 
             List<Technician> technicians, 
             Dictionary<int, int> technicianWorkloads,
-            string currentSlaDeadlineInfo = "");
+            string currentSlaDeadlineInfo = "",
+            string slaRisk = "Low",
+
+            string managerFeedback = "");
     }
 }
+
