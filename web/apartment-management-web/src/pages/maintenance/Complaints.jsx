@@ -1,3 +1,5 @@
+import { SkeletonTable } from "../../components/admin/SkeletonLoader";
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiSearch, FiFilter } from 'react-icons/fi';
@@ -50,7 +52,7 @@ function Complaints() {
   return (
     <div className="payment-page">
       <MaintenanceSidebar />
-      <main className="payment-content">
+      <motion.main className="payment-content" initial={{opacity:0, y:15}} animate={{opacity:1, y:0}} transition={{duration:0.25, ease:"easeInOut"}}>
         <header className="payment-header">
           <div>
             <p className="page-label">MAINTENANCE</p>
@@ -135,9 +137,7 @@ function Complaints() {
           </div>
 
           {loading ? (
-            <div className="empty-state">
-              <h3>Loading complaints...</h3>
-            </div>
+            <SkeletonTable rows={5} columns={8} />
           ) : filteredComplaints.length === 0 ? (
             <div className="empty-state">
               <h3>No complaints found</h3>
@@ -188,8 +188,8 @@ function Complaints() {
             </div>
           )}
         </section>
-      </main>
-    </div>
+      </motion.main>
+</div>
   );
 }
 

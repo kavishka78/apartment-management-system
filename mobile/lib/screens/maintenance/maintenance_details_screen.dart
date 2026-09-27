@@ -34,29 +34,38 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
       _error = '';
     });
 
-    final results = await Future.wait([
-      MaintenanceApiService.getComplaintById(widget.ticketId),
-      MaintenanceApiService.getWorkflowSummary(widget.ticketId),
-    ]);
+    try {
+      final results = await Future.wait([
+        MaintenanceApiService.getComplaintById(widget.ticketId),
+        MaintenanceApiService.getWorkflowSummary(widget.ticketId),
+      ]);
 
-    final ticketRes = results[0];
-    final aiRes = results[1];
+      final ticketRes = results[0];
+      final aiRes = results[1];
 
-    if (ticketRes['success'] == true && mounted) {
-      setState(() {
-        _ticket = MaintenanceTicket.fromJson(ticketRes['data']);
-        
-        if (aiRes['success'] == true && aiRes['data'] != null) {
-          _aiStatus = AiRecommendation.fromJson(aiRes['data']);
-          _aiWorkflowStatus = aiRes['data']['workflowStatus'] ?? '';
+      if (ticketRes['success'] == true && mounted) {
+        setState(() {
+          _ticket = MaintenanceTicket.fromJson(ticketRes['data']);
+          
+          if (aiRes['success'] == true && aiRes['data'] != null) {
+            _aiStatus = AiRecommendation.fromJson(aiRes['data']);
+            _aiWorkflowStatus = aiRes['data']['workflowStatus'] ?? '';
+          }
+          
+          _isLoading = false;
+        });
+      } else {
+        if (mounted) {
+          setState(() {
+            _error = ticketRes['message'] ?? 'Failed to load ticket';
+            _isLoading = false;
+          });
         }
-        
-        _isLoading = false;
-      });
-    } else {
+      }
+    } catch (e) {
       if (mounted) {
         setState(() {
-          _error = ticketRes['message'];
+          _error = 'Error parsing ticket: $e';
           _isLoading = false;
         });
       }
@@ -239,7 +248,7 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         const Text('Repair Cost', style: TextStyle(color: Colors.white70, fontSize: 15)),
-                                        Text('\$${_ticket!.repairCost.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                                        Text('Rs. ${_ticket!.repairCost.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                                       ],
                                     ),
                                   )
@@ -384,10 +393,10 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      Expanded(child: Text(
                         h.status == 'Pending' ? 'Complaint Created' : h.status,
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1E2532)),
-                      ),
+                      )),
                       Text(
                         DateFormat('MMM d, h:mm a').format(h.createdAt),
                         style: TextStyle(color: Colors.grey.shade500, fontSize: 12),

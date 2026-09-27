@@ -1,3 +1,4 @@
+import 'dart:convert';
 class AgentStep {
   final int sequence;
   final String agentRole;
@@ -67,6 +68,22 @@ class AiRecommendation {
     this.workflowId,
   });
 
+  static List<String> _parseList(dynamic value) {
+    if (value == null) return [];
+    if (value is List) return value.map((e) => e.toString()).toList();
+    if (value is String) {
+      if (value.trim().startsWith('[')) {
+        try {
+
+          final parsed = jsonDecode(value);
+          if (parsed is List) return parsed.map((e) => e.toString()).toList();
+        } catch (_) {}
+      }
+      return [value];
+    }
+    return [];
+  }
+
   factory AiRecommendation.fromJson(Map<String, dynamic> json) {
     return AiRecommendation(
       category: json['category'] ?? '',
@@ -76,17 +93,15 @@ class AiRecommendation {
       technicianReason: json['technicianReason'] ?? '',
       slaRisk: json['slaRisk'] ?? '',
       slaReason: json['slaReason'] ?? '',
-      plan: (json['plan'] as List?)?.map((e) => e as String).toList() ?? [],
-      completedSteps:
-          (json['completedSteps'] as List?)?.map((e) => e as String).toList() ??
-              [],
+      plan: _parseList(json['plan']),
+      completedSteps: _parseList(json['completedSteps']),
       toolResults: json['toolResults'] ?? '',
       validationResults: json['validationResults'] ?? '',
-      agentSteps: (json['agentSteps'] as List?)
-              ?.map((e) => AgentStep.fromJson(e))
+      agentSteps: (json['steps'] as List? ?? json['agentSteps'] as List?)
+              ?.map((e) => AgentStep.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      workflowId: json['workflowId'] as int?,
+      workflowId: json['workflowId'] ?? json['id'] as int?,
     );
   }
 }

@@ -15,7 +15,7 @@ export default function DomesticStaff() {
   const [formData, setFormData] = useState({
     residentId: "",
     fullName: "",
-    staffType: "Housekeeper / Maid",
+    staffType: "Technician",
     nicNumber: "",
     contactPhone: "",
     workingHours: "08:00 AM - 05:00 PM (Mon-Fri)",
@@ -33,10 +33,10 @@ export default function DomesticStaff() {
     const mappedTechs = (techsList || []).map(t => ({
       id: `tech-${t.id}`,
       fullName: t.name,
-      staffType: `Technician (${t.skills})`,
+      staffType: "Technician",
       residentName: "Building Management",
       unitNumber: "ALL",
-      nicNumber: t.contactInformation || "N/A",
+      nicNumber: t.nicNumber || t.nicnumber || "N/A",
       accessPassCode: `TECH-${t.id.toString().padStart(4, '0')}`,
       workingHours: "Authorized Access",
       isActive: t.status !== 'Offline',
@@ -90,7 +90,7 @@ export default function DomesticStaff() {
       setFormData({
         residentId: "",
         fullName: "",
-        staffType: "Housekeeper / Maid",
+        staffType: "Technician",
         nicNumber: "",
         contactPhone: "",
         workingHours: "08:00 AM - 05:00 PM (Mon-Fri)",
@@ -192,10 +192,10 @@ export default function DomesticStaff() {
 
       {/* Table */}
       {loading ? (
-        <div className="admin-loading">
-          <div className="spinner" />
-        </div>
-      ) : filteredStaff.length === 0 ? (
+            <div className="admin-loading">
+            <div className="spinner" />
+          </div>
+          ) : filteredStaff.length === 0 ? (
         <div className="admin-card" style={{ textAlign: "center", padding: "40px" }}>
           <p style={{ color: "#64748b", margin: 0 }}>No domestic staff records found for {activeComplexName}.</p>
         </div>
@@ -286,10 +286,7 @@ export default function DomesticStaff() {
                 <div className="form-group">
                   <label>Staff Role *</label>
                   <select name="staffType" value={formData.staffType} onChange={handleInputChange}>
-                    <option value="Housekeeper / Maid">Housekeeper / Maid</option>
-                    <option value="Chauffeur / Driver">Chauffeur / Driver</option>
-                    <option value="Chef / Cook">Chef / Cook</option>
-                    <option value="Nanny / Caretaker">Nanny / Caretaker</option>
+                    <option value="Technician">Technician</option>
                   </select>
                 </div>
               </div>

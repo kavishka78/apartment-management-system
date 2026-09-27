@@ -19,6 +19,21 @@ function CreateComplaint() {
 
   const [photoFile, setPhotoFile] = useState(null);
 
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:5073/api/maintenance/categories')
+      .then(res => res.json())
+      .then(data => {
+        setCategories(data);
+        if (data.length > 0 && !formData.categoryId) {
+          setFormData(prev => ({ ...prev, categoryId: data[0].id.toString() }));
+        }
+      })
+      .catch(err => console.error("Failed to load categories", err));
+  }, []);
+
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -135,12 +150,9 @@ function CreateComplaint() {
                     fontFamily: 'inherit'
                   }}
                 >
-                  <option value="1">Plumbing</option>
-                  <option value="2">Electrical</option>
-                  <option value="3">Air Conditioning</option>
-                  <option value="4">Cleaning</option>
-                  <option value="5">Security</option>
-                  <option value="6">Other</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
                 </select>
               </div>
 

@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css'; // Reuse existing styles
@@ -27,7 +28,7 @@ function MaintenanceDashboard() {
     <div className="payment-page">
       <MaintenanceSidebar />
 
-      <main className="payment-content">
+      <motion.main className="payment-content" initial={{opacity:0, y:15}} animate={{opacity:1, y:0}} transition={{duration:0.25, ease:"easeInOut"}}>
         <header className="payment-header">
           <div>
             <p className="page-label">ADMIN PORTAL</p>
@@ -105,8 +106,8 @@ function MaintenanceDashboard() {
             </table></div>
           )}
         </section>
-      </main>
-    </div>
+      </motion.main>
+</div>
   );
 }
 

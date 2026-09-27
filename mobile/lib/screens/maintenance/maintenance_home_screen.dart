@@ -6,6 +6,8 @@ import 'create_complaint_screen.dart';
 import 'my_complaints_screen.dart';
 import 'maintenance_history_screen.dart';
 import 'notifications_screen.dart';
+import '../../models/maintenance/maintenance_model.dart';
+import '../../widgets/maintenance/repair_costs_bottom_sheet.dart';
 
 const int CURRENT_RESIDENT_ID = 1;
 
@@ -19,6 +21,7 @@ class MaintenanceHomeScreen extends StatefulWidget {
 class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
   int _openCount = 0;
   int _inProgressCount = 0;
+  List<MaintenanceTicket> _allTickets = [];
   int _unreadNotifications = 0;
   bool _isLoading = true;
 
@@ -48,11 +51,13 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
 
     if (mounted) {
       if (result['success'] == true) {
-        final List<dynamic> tickets = result['data'];
+        final List<dynamic> ticketsData = result['data'];
+        final List<MaintenanceTicket> parsedTickets = ticketsData.map((e) => MaintenanceTicket.fromJson(e)).toList();
+        
         int open = 0;
         int inProgress = 0;
         
-        for (var t in tickets) {
+        for (var t in ticketsData) {
           if (t['status'] == 'Pending' || t['status'] == 'Assigned') {
             open++;
           } else if (t['status'] == 'In Progress' || (t['status'] == 'Resolved' && t['residentVerified'] == false)) {
@@ -62,6 +67,7 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
         setState(() {
           _openCount = open;
           _inProgressCount = inProgress;
+          _allTickets = parsedTickets;
           _isLoading = false;
         });
       } else {
@@ -245,6 +251,24 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                   'View your completed and closed requests',
                   Icons.history,
                   () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MaintenanceHistoryScreen())),
+                ),
+                const SizedBox(height: 12),
+                
+                _buildServiceListItem(
+                  'Cost Analysis',
+                  'Track and analyze repair expenditures',
+                  Icons.analytics_outlined,
+                  () {
+                    if (_allTickets.isEmpty) return;
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (context) => RepairCostsBottomSheet(
+                        tickets: _allTickets.where((t) => t.status == 'Resolved' || t.status == 'Closed').toList(),
+                      ),
+                    );
+                  },
                 ),
                 
                 const SizedBox(height: 40),

@@ -1,5 +1,6 @@
+import { motion } from 'framer-motion';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSave, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck } from 'react-icons/md';
+import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSave, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck, MdVpnKey } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
 import './Complaints.css';
@@ -254,7 +255,7 @@ function TechniciansList() {
   return (
     <div className="payment-page">
       <MaintenanceSidebar />
-      <main className="payment-content">
+      <motion.main className="payment-content" initial={{opacity:0, y:15}} animate={{opacity:1, y:0}} transition={{duration:0.25, ease:"easeInOut"}}>
         <header className="payment-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <p className="page-label">MANAGEMENT</p>
@@ -366,7 +367,7 @@ function TechniciansList() {
                         
                         {/* Access Pass Code */}
                         <td style={{ opacity: t.status === 'Offline' ? 0.5 : 1 }}>
-                          {t.accessPassCode ? <span className="pass-code-tag">ðŸ”‘ {t.accessPassCode}</span> : '-'}
+                          {t.accessPassCode ? <span className="pass-code-tag" style={{display: "inline-flex", alignItems: "center"}}><MdVpnKey size={14} style={{marginRight: "4px"}} /> {t.accessPassCode}</span> : '-'}
                         </td>
                         
                         {/* Working Hours */}
@@ -719,8 +720,8 @@ function TechniciansList() {
           </div>
         )}
 
-      </main>
-    </div>
+      </motion.main>
+</div>
   );
 }
 

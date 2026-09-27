@@ -112,7 +112,7 @@ class MaintenanceTicket {
       technician: json['technician'] != null
           ? TechnicianInfo.fromJson(json['technician'])
           : null,
-      repairCost: (json['repairCost'] ?? 0).toDouble(),
+      repairCost: json['repairCost'] != null ? double.tryParse(json['repairCost'].toString()) ?? 0.0 : 0.0,
       slaDueDate: json['slaDueDate'] != null
           ? DateTime.parse(json['slaDueDate'])
           : null,

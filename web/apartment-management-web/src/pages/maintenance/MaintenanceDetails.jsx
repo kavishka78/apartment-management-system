@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAuthToken } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack } from 'react-icons/md';
+import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack, MdBuild, MdFlag, MdPerson, MdAttachMoney } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
+import { motion } from 'framer-motion';
 import '../payment/PaymentDashboard.css';
 import './MaintenanceDetails.css';
 
@@ -171,25 +172,25 @@ const fetchWithAuth = useCallback((url, options = {}) => {
   if (loading) return (
     <div className="payment-page">
       <MaintenanceSidebar />
-      <main className="payment-content">
+      <motion.main className="payment-content" initial={{opacity:0, y:15}} animate={{opacity:1, y:0}} transition={{duration:0.25, ease:"easeInOut"}}>
         <p>Loading...</p>
-      </main>
+      </motion.main>
     </div>
   );
 
   if (!ticket) return (
     <div className="payment-page">
       <MaintenanceSidebar />
-      <main className="payment-content">
+      <motion.main className="payment-content" initial={{opacity:0, y:15}} animate={{opacity:1, y:0}} transition={{duration:0.25, ease:"easeInOut"}}>
         <p>Ticket not found</p>
-      </main>
+      </motion.main>
     </div>
   );
 
   return (
     <div className="payment-page">
       <MaintenanceSidebar />
-      <main className="payment-content">
+      <motion.main className="payment-content" initial={{opacity:0, y:15}} animate={{opacity:1, y:0}} transition={{duration:0.25, ease:"easeInOut"}}>
         <header className="payment-header">
           <div>
             <p className="page-label">TICKET #{ticket.id}</p>
@@ -215,6 +216,38 @@ const fetchWithAuth = useCallback((url, options = {}) => {
             </div>
             
             <div className="ticket-body">
+
+              <div className="md-info-grid">
+                <div className="md-info-box md-info-blue">
+                  <MdBuild className="md-info-icon" />
+                  <div>
+                    <div className="md-info-label">Category</div>
+                    <div className="md-info-value">{ticket.category?.name || 'None'}</div>
+                  </div>
+                </div>
+                <div className="md-info-box md-info-yellow">
+                  <MdFlag className="md-info-icon" />
+                  <div>
+                    <div className="md-info-label">Priority</div>
+                    <div className="md-info-value md-text-yellow">{ticket.priority}</div>
+                  </div>
+                </div>
+                <div className="md-info-box md-info-green">
+                  <MdPerson className="md-info-icon" />
+                  <div>
+                    <div className="md-info-label">Technician</div>
+                    <div className="md-info-value">{ticket.technician?.name || 'Unassigned'}</div>
+                  </div>
+                </div>
+                <div className="md-info-box md-info-red">
+                  <MdAttachMoney className="md-info-icon" />
+                  <div>
+                    <div className="md-info-label">Repair Cost</div>
+                    <div className="md-info-value">Rs. {ticket.repairCost}</div>
+                  </div>
+                </div>
+              </div>
+
               {ticket.slaStatus && ticket.slaStatus !== 'On Track' && ticket.slaStatus !== 'Normal' && ticket.status !== 'Resolved' && ticket.status !== 'Closed' && (
                 <div style={{ 
                   backgroundColor: ticket.slaStatus.toLowerCase().includes('breach') ? '#FEF2F2' : '#FFFBEB', 
@@ -264,24 +297,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                 </div>
               )}
               
-              <div className="meta-grid">
-                <div className="meta-item">
-                  <span className="meta-label">Category</span>
-                  <span className="meta-value">{ticket.category?.name || 'Unknown'}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Priority</span>
-                  <span className={`status-badge ${ticket.priority.toLowerCase()}`} style={{width: 'fit-content'}}>{ticket.priority}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Technician</span>
-                  <span className="meta-value">{ticket.technician?.name || 'Unassigned'}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Repair Cost</span>
-                  <span className="meta-value">Rs. {ticket.repairCost}</span>
-                </div>
-              </div>
+
             </div>
 
             <div className="actions-section">
@@ -484,7 +500,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
             </div>
           </section>
         </div>
-      </main>
+      </motion.main>
     </div>
   );
 }

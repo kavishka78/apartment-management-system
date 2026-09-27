@@ -1,18 +1,8 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import {
-    MdCheckCircle,
-    MdPlayArrow,
-    MdOutlineBuild,
-    MdAccessTime,
-    MdLogout,
-    MdConfirmationNumber,
-    MdLocalPhone,
-    MdFlag,
-    MdAssignment,
-    MdBuild
-} from 'react-icons/md';
+import {MdCheckCircle, MdPlayArrow, MdOutlineBuild, MdAccessTime, MdLogout, MdConfirmationNumber, MdLocalPhone, MdFlag, MdAssignment, MdBuild} from 'react-icons/md';
 import './TechnicianDashboard.css';
 
 const colors = {
@@ -94,6 +84,7 @@ function TechnicianDashboard() {
             return;
         }
         
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchJobs();
     }, [currentUser, navigate, fetchJobs]);
 
@@ -146,7 +137,7 @@ function TechnicianDashboard() {
     const inProgressCount = jobs.filter(j => j.status === 'In Progress').length;
 
     return (
-        <div className="technician-page">
+        <motion.div className="technician-page" initial={{opacity:0, y:15}} animate={{opacity:1, y:0}} transition={{duration:0.25, ease:"easeInOut"}}>
             <div className="ah-container">
 
                 {/* Header */}
@@ -338,7 +329,7 @@ function TechnicianDashboard() {
                     </div>
                 )}
             </div>
-        </div>
+        </motion.div>
     );
 }
 

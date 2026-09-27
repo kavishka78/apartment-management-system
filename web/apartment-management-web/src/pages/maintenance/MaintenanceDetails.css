@@ -171,3 +171,40 @@
 
 
 .action-btn-dark { background: #17212b; color: #fff; border: none; padding: 12px 24px; border-radius: 50px; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.2s; font-family: 'Montserrat', sans-serif; font-size: 14px; display: inline-flex; justify-content: center; align-items: center; } .action-btn-dark:hover { background: #000; transform: translateY(-2px); }
+
+
+/* --- Ticket Information Styles --- */
+.md-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.md-info-box {
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.md-info-icon { font-size: 20px; }
+.md-info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748B;
+  margin-bottom: 4px;
+}
+.md-info-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+}
+.md-info-blue { background: #EFF6FF; }
+.md-info-blue .md-info-icon { color: #3B82F6; }
+.md-info-yellow { background: #FEFCE8; }
+.md-info-yellow .md-info-icon { color: #EAB308; }
+.md-text-yellow { color: #CA8A04; }
+.md-info-green { background: #F0FDF4; }
+.md-info-green .md-info-icon { color: #22C55E; }
+.md-info-red { background: #FEF2F2; }
+.md-info-red .md-info-icon { color: #EF4444; }
