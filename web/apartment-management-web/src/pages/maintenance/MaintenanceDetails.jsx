@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getAuthToken } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdAssignmentInd, MdClose, MdComment, MdArrowBack } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
@@ -17,8 +18,15 @@ function MaintenanceDetails() {
   const [note, setNote] = useState('');
   const [commentNote, setCommentNote] = useState('');
 
+const fetchWithAuth = useCallback((url, options = {}) => {
+    const token = getAuthToken();
+    const headers = { ...options.headers };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return fetch(url, { ...options, headers });
+  }, []);
+
   const fetchTicket = useCallback(() => {
-    fetch(`http://localhost:5073/api/maintenance/${id}`)
+    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}`)
       .then(res => res.json())
       .then(data => {
         setTicket(data);
@@ -36,7 +44,7 @@ function MaintenanceDetails() {
 
   const loadAiTriage = () => {
     setAiRecommendation({ loading: true });
-    fetch(`http://localhost:5073/api/maintenance/${id}/triage`, { method: 'POST' })
+    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/triage`, { method: 'POST' })
       .then(res => res.json())
       .then(data => setAiRecommendation(data))
       .catch(err => {
@@ -45,25 +53,82 @@ function MaintenanceDetails() {
       });
   };
 
-  const handleAssign = () => {
-    if (!aiRecommendation?.recommendedTechnicianId) {
-        alert('Please get AI recommendation first to know who to assign.');
-        return;
+    const handleRevise = () => {
+    const feedback = window.prompt('Enter your feedback for the AI Agent:');
+    if (feedback === null) return; // User cancelled
+    
+    // Mark old workflow as revised first
+    if (aiRecommendation?.workflowId) {
+      fetchWithAuth(`http://localhost:5073/api/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision: 'RequestRevision', note: feedback, approvedBy: 'Manager' })
+      });
     }
-    fetch(`http://localhost:5073/api/maintenance/${id}/assign`, {
+
+    setAiRecommendation(null);
+    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/revise`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ technicianId: aiRecommendation.recommendedTechnicianId })
-    }).then(res => res.ok && fetchTicket());
+      body: JSON.stringify({ managerFeedback: feedback })
+    })
+    .then(res => res.json())
+    .then(data => {
+        setAiRecommendation(data);
+        fetchTicket();
+    })
+    .catch(err => {
+        console.error(err);
+        setAiRecommendation({ error: 'Failed to revise AI recommendation.' });
+    });
+  };
+
+    const handleReject = () => {
+    // Mark workflow as rejected
+    if (aiRecommendation?.workflowId) {
+      fetchWithAuth(`http://localhost:5073/api/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision: 'Reject', note: 'Rejected by manager', approvedBy: 'Manager' })
+      });
+    }
+
+    setAiRecommendation(null);
+    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/reject`, {
+      method: 'POST'
+    })
+    .then(res => {
+        if (res.ok) fetchTicket();
+    });
+  };
+
+  const handleWorkflowDecision = (decision) => {
+    if (!aiRecommendation?.workflowId) {
+      alert('Run AI triage before making an approval decision.');
+      return;
+    }
+    fetchWithAuth(`http://localhost:5073/api/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        decision,
+        note: decision === 'Approve' ? 'Approved after manager review.' : 'Manager decision recorded.',
+        approvedBy: 'Manager'
+      })
+    }).then(res => {
+      if (!res.ok) return res.text().then(message => alert(message));
+      setAiRecommendation(null);
+      fetchTicket();
+    });
   };
 
   const handleStartWork = () => {
-    fetch(`http://localhost:5073/api/maintenance/${id}/start`, { method: 'POST' })
+    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/start`, { method: 'POST' })
       .then(res => res.ok && fetchTicket());
   };
 
   const handleResolve = () => {
-    fetch(`http://localhost:5073/api/maintenance/${id}/resolve`, {
+    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/resolve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repairCost: parseFloat(repairCost || 0), note })
@@ -77,7 +142,7 @@ function MaintenanceDetails() {
 
   const handleClose = () => {
     // Admin force-closes the ticket on behalf of resident or after manual verification
-    fetch(`http://localhost:5073/api/maintenance/${id}/verify`, {
+    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isApproved: true, note: 'Admin forcibly closed ticket.' })
@@ -91,7 +156,7 @@ function MaintenanceDetails() {
 
   const handleAddComment = () => {
     if (!commentNote) return;
-    fetch(`http://localhost:5073/api/maintenance/${id}/comments`, {
+    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ note: commentNote, role: 'Admin/Manager' })
@@ -150,22 +215,52 @@ function MaintenanceDetails() {
             </div>
             
             <div className="ticket-body">
-              {ticket.slaStatus && ticket.slaStatus !== 'On Track' && ticket.status !== 'Resolved' && ticket.status !== 'Closed' && (
-                <div style={{ backgroundColor: '#fff5f5', border: '1px solid #fc8181', color: '#c53030', padding: '12px 15px', borderRadius: '6px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '500', fontSize: '14px' }}>
-                  <span style={{ fontSize: '18px' }}>⚠️</span> 
-                  SLA WARNING: This ticket is currently {ticket.slaStatus.toUpperCase()}.
+              {ticket.slaStatus && ticket.slaStatus !== 'On Track' && ticket.slaStatus !== 'Normal' && ticket.status !== 'Resolved' && ticket.status !== 'Closed' && (
+                <div style={{ 
+                  backgroundColor: ticket.slaStatus.toLowerCase().includes('breach') ? '#FEF2F2' : '#FFFBEB', 
+                  border: `1px solid ${ticket.slaStatus.toLowerCase().includes('breach') ? '#FCA5A5' : '#FDE68A'}`, 
+                  color: ticket.slaStatus.toLowerCase().includes('breach') ? '#991B1B' : '#92400E', 
+                  padding: '16px', 
+                  borderRadius: '8px', 
+                  marginBottom: '24px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '12px', 
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}>
+                  <span style={{ fontSize: '20px' }}>{ticket.slaStatus.toLowerCase().includes('breach') ? '\uD83D\uDEA8' : '\u26A0\uFE0F'}</span> 
+                  <div>
+                    <strong style={{ display: 'block', marginBottom: '4px', fontSize: '14px' }}>
+                      {ticket.slaStatus.toLowerCase().includes('breach') ? 'SLA Breached' : 'SLA Warning'}
+                    </strong>
+                    <span style={{ fontSize: '13px' }}>
+                      This ticket is currently marked as <b>{ticket.slaStatus}</b>. Please expedite resolution to comply with service level agreements.
+                    </span>
+                  </div>
                 </div>
               )}
-              <p className="ticket-desc">{ticket.description}</p>
+              
+              <div style={{ padding: '20px', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '24px' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#475569', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</h4>
+                <p style={{ margin: 0, fontSize: '15px', color: '#1E293B', lineHeight: '1.6' }}>{ticket.description}</p>
+              </div>
               
               {ticket.photoPath && (
-                <div style={{ marginTop: '20px', marginBottom: '20px' }}>
-                  <p className="meta-label">Attached Photo:</p>
-                  <img 
-                    src={`http://localhost:5073${ticket.photoPath}`} 
-                    alt="Complaint attachment" 
-                    style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', border: '1px solid #dfe2dd' }} 
-                  />
+                <div style={{ marginBottom: '32px' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#475569', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Attached Evidence</h4>
+                  <div style={{ 
+                    borderRadius: '12px', 
+                    overflow: 'hidden', 
+                    border: '1px solid #E2E8F0', 
+                    display: 'inline-block',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' 
+                  }}>
+                    <img 
+                      src={`http://localhost:5073${ticket.photoPath}`} 
+                      alt="Complaint evidence" 
+                      style={{ display: 'block', maxWidth: '100%', maxHeight: '400px', objectFit: 'cover' }} 
+                    />
+                  </div>
                 </div>
               )}
               
@@ -215,6 +310,56 @@ function MaintenanceDetails() {
                         <h4 style={{ margin: 0, color: '#2d3748', fontSize: '16px' }}>AI Triage Recommendation</h4>
                       </div>
                       
+                                            {aiRecommendation.agentSteps && aiRecommendation.agentSteps.length > 0 ? (
+                        <div style={{ marginBottom: '20px', background: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                          <h5 style={{ margin: '0 0 10px 0', color: '#4a5568', fontSize: '14px' }}>AGENTIC AI SWARM WORKFLOW</h5>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {aiRecommendation.agentSteps.map((step, idx) => (
+                              <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', color: '#2d3748', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ minWidth: '24px', height: '24px', borderRadius: '50%', background: step.status === 'Blocked' ? '#fee2e2' : '#d4edda', color: step.status === 'Blocked' ? '#991b1b' : '#155724', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
+                                  {step.status === 'Blocked' ? 'ï¿½' : '?'}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: '600', color: '#4a5568', marginBottom: '2px' }}>{step.agentRole} <span style={{ fontWeight: 'normal', color: '#718096', fontSize: '12px' }}>({step.durationMilliseconds}ms)</span></div>
+                                  <div style={{ marginBottom: '4px' }}><strong>Action:</strong> {step.action}</div>
+                                  {step.toolName && <div style={{ fontSize: '12px', color: '#718096', marginBottom: '2px' }}>?? Tool: {step.toolName}</div>}
+                                  <div style={{ fontSize: '12px', color: '#718096', marginBottom: '2px' }}>?? Input: {step.inputSummary}</div>
+                                  <div style={{ fontSize: '12px', color: '#718096', marginBottom: '2px' }}>?? Output: {step.outputSummary}</div>
+                                  <div style={{ fontSize: '12px', color: step.status === 'Blocked' ? '#e53e3e' : '#38a169' }}>?? Validation: {step.validationResult}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : aiRecommendation.plan && aiRecommendation.plan.length > 0 && (
+                        <div style={{ marginBottom: '20px', background: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                          <h5 style={{ margin: '0 0 10px 0', color: '#4a5568', fontSize: '14px' }}>AGENTIC AI WORKFLOW PLAN</h5>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {aiRecommendation.plan.map((step, idx) => (
+                              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#2d3748' }}>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#d4edda', color: '#155724', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>âœ“</div>
+                                {step}
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #cbd5e1', fontSize: '12.5px', color: '#64748b' }}>
+                            <strong>Tools Used:</strong> {aiRecommendation.toolResults || 'Standard tools'}
+                            <br/>
+                            <strong>Validation:</strong> {aiRecommendation.validationResults || 'Passed'}
+                          </div>
+                          {aiRecommendation.agentSteps?.length > 0 && (
+                            <div style={{ marginTop: '12px', fontSize: '12.5px', color: '#475569' }}>
+                              <strong>Auditable agent roles:</strong>
+                              {aiRecommendation.agentSteps.map(step => (
+                                <div key={`${step.sequence}-${step.agentRole}`} style={{ marginTop: '5px' }}>
+                                  {step.sequence}. {step.agentRole}: {step.action} ({step.status})
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                         <div>
                           <span className="ai-badge">CLASSIFICATION</span>
@@ -247,10 +392,14 @@ function MaintenanceDetails() {
                         </div>
                         
                         {aiRecommendation.recommendedTechnicianId && (
-                          <button className="action-btn-dark" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={handleAssign}>
-                            <MdAssignmentInd size={18} /> Approve Assignment
+                          <button className="action-btn-dark" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => handleWorkflowDecision('Approve')}>
+                            Approve & Assign
                           </button>
                         )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                        <button className="action-btn-dark" style={{ background: '#6b7280' }} onClick={handleRevise}>Request Revision</button>
+                        <button className="action-btn-dark" style={{ background: '#b91c1c' }} onClick={handleReject}>Reject</button>
                       </div>
                     </div>
                   )}
@@ -341,3 +490,10 @@ function MaintenanceDetails() {
 }
 
 export default MaintenanceDetails;
+
+
+
+
+
+
+

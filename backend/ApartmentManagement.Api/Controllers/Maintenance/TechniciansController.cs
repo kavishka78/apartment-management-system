@@ -35,6 +35,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             var result = techs.Select(t => new {
                 t.Id,
                 t.Name,
+                t.Email,
                 t.ContactInformation,
                 t.Skills,
                 t.Status,
@@ -60,34 +61,101 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
 
         // POST: api/technicians
         [HttpPost]
-        public async Task<IActionResult> CreateTechnician([FromBody] Technician technician)
+                public async Task<IActionResult> CreateTechnician([FromBody] Technician technician)
         {
             _context.Technicians.Add(technician);
             await _context.SaveChangesAsync();
             
             // Auto-generate Access Pass Code based on the new ID
             technician.AccessPassCode = $"TECH-{technician.Id:D3}";
+            
+            // Create a matching UserAccount so the technician can log in
+            string email = !string.IsNullOrWhiteSpace(technician.Email) 
+                ? technician.Email.Trim().ToLower()
+                : $"tech{technician.Id}@apartment.lk";
+
+            var userAccount = new UserAccount
+            {
+                Name = technician.Name,
+                Email = email,
+                Phone = technician.ContactInformation,
+                Role = "Technician",
+                Status = "Active",
+                AssignedAt = DateTime.UtcNow.ToString("O")
+            };
+            var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<UserAccount>();
+            userAccount.PasswordHash = hasher.HashPassword(userAccount, "tech12345"); // Default password
+            
+            _context.UserAccounts.Add(userAccount);
+            
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetTechnician), new { id = technician.Id }, technician);
         }
 
         // PUT: api/technicians/5
-        [HttpPut("{id}")]
+                        [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTechnician(int id, [FromBody] Technician technician)
         {
             if (id != technician.Id) return BadRequest();
+
+            // Auto-generate passcode if it's missing
+            if (string.IsNullOrWhiteSpace(technician.AccessPassCode))
+            {
+                technician.AccessPassCode = $"TECH-{technician.Id:D3}";
+            }
 
             _context.Entry(technician).State = EntityState.Modified;
 
             try
             {
                 await _context.SaveChangesAsync();
+
+                // Sync with UserAccounts
+                var targetEmail = !string.IsNullOrWhiteSpace(technician.Email) 
+                    ? technician.Email.Trim().ToLower() 
+                    : $"tech{technician.Id}@apartment.lk";
+
+                // Ensure no OTHER user has this email
+                var duplicate = await _context.UserAccounts.FirstOrDefaultAsync(u => u.Email == targetEmail && u.Phone != technician.ContactInformation);
+                if (duplicate != null)
+                {
+                    return BadRequest(new { message = "This email is already in use by another account." });
+                }
+
+                var existingUser = await _context.UserAccounts.FirstOrDefaultAsync(u => u.Role == "Technician" && (u.Phone == technician.ContactInformation || u.Email == targetEmail));
+                
+                if (existingUser != null)
+                {
+                    existingUser.Email = targetEmail;
+                    existingUser.Name = technician.Name;
+                    existingUser.Phone = technician.ContactInformation;
+                }
+                else
+                {
+                    var newUser = new UserAccount
+                    {
+                        Name = technician.Name,
+                        Email = targetEmail,
+                        Phone = technician.ContactInformation,
+                        Role = "Technician",
+                        Status = "Active",
+                        AssignedAt = DateTime.UtcNow.ToString("O")
+                    };
+                    var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<UserAccount>();
+                    newUser.PasswordHash = hasher.HashPassword(newUser, "tech12345");
+                    _context.UserAccounts.Add(newUser);
+                }
+                await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
                 if (!TechnicianExists(id)) return NotFound();
                 else throw;
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Failed to update technician: " + ex.Message });
             }
 
             return NoContent();

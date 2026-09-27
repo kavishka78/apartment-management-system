@@ -3,6 +3,7 @@ import 'screens/payment/payment_home_screen.dart';
 import 'screens/facility/facilities_list_screen.dart';
 import 'screens/facility/my_bookings_screen.dart';
 import 'screens/parking/visitor_parking_screen.dart';
+import 'screens/maintenance/maintenance_home_screen.dart';
 
 void main() {
   runApp(const ApartmentResidentApp());
@@ -220,6 +221,17 @@ class HomeScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const FacilitiesListScreen()),
+                  );
+                },
+              ),
+              ServiceCard(
+                title: 'Maintenance',
+                subtitle: 'Report issues',
+                icon: Icons.build_circle_outlined,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MaintenanceHomeScreen()),
                   );
                 },
               ),

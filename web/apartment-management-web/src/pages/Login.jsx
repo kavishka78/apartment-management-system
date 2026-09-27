@@ -20,7 +20,7 @@ export default function Login() {
         setError(result.error);
         return;
       }
-      navigate(result.role === "SuperAdmin" ? "/super-admin" : "/admin", { replace: true });
+      if (result.role === "SuperAdmin") navigate("/super-admin", { replace: true }); else if (result.role === "Technician") navigate("/technician/work-orders", { replace: true }); else navigate("/admin", { replace: true });
     },
     [loginWithGoogle, navigate]
   );
@@ -28,7 +28,7 @@ export default function Login() {
   if (authLoading) return null;
 
   if (currentUser) {
-    return <Navigate to={currentUser.role === "SuperAdmin" ? "/super-admin" : "/admin"} replace />;
+    return <Navigate to={currentUser.role === "SuperAdmin" ? "/super-admin" : currentUser.role === "Technician" ? "/technician/work-orders" : "/admin"} replace />;
   }
 
   const handleSubmit = async (e) => {
@@ -41,7 +41,7 @@ export default function Login() {
       setError(result.error);
       return;
     }
-    navigate(result.role === "SuperAdmin" ? "/super-admin" : "/admin", { replace: true });
+    if (result.role === "SuperAdmin") navigate("/super-admin", { replace: true }); else if (result.role === "Technician") navigate("/technician/work-orders", { replace: true }); else navigate("/admin", { replace: true });
   };
 
   return (

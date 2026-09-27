@@ -16,6 +16,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddScoped<INotificationService, EmailNotificationService>();
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -110,6 +111,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles(); // For wwwroot if any
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "uploads")),
+    RequestPath = "/uploads"
+});
+
+
 app.UseCors("ReactApp");
 
 app.UseAuthentication();
@@ -135,7 +145,32 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast")
 .WithOpenApi();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
+
+// Seed Technician User
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    if (!db.UserAccounts.Any(u => u.Email == "technician@apartment.lk"))
+    {
+        var tech = new ApartmentManagement.Api.Models.UserAccount
+        {
+            Name = "Test Technician",
+            Email = "technician@apartment.lk",
+            Phone = "0771234567",
+            Role = "Technician",
+            Status = "Active",
+            AssignedAt = DateTime.UtcNow.ToString("O")
+        };
+        var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<ApartmentManagement.Api.Models.UserAccount>();
+        tech.PasswordHash = hasher.HashPassword(tech, "tech12345");
+        db.UserAccounts.Add(tech);
+        db.SaveChanges();
+    }
+}
 
 app.Run();
 

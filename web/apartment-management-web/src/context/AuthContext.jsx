@@ -35,9 +35,11 @@ export function AuthProvider({ children }) {
       setSubscriptionHistory(
         (h || []).map((x) => ({ ...x, complexName: x.complexName, by: x.by, at: x.at }))
       );
-    } else {
-      const c = await getComplexById(user.tenantId);
-      setComplexes(c ? [c] : []);
+    } else if (user.tenantId) {
+        const c = await getComplexById(user.tenantId);
+        setComplexes(c ? [c] : []);
+      } else {
+        setComplexes([]);
       setComplexAdmins([]);
       setSubscriptionHistory([]);
     }
