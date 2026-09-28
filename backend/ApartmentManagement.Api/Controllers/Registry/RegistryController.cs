@@ -122,11 +122,29 @@ namespace ApartmentManagement.Api.Controllers
             if (string.IsNullOrWhiteSpace(req.FullName)) return BadRequest("Full name is required.");
 
             Unit? unit = null;
-            if (req.UnitId.HasValue)
+            if (req.UnitId.HasValue && req.UnitId.Value > 0)
             {
                 unit = await _db.Units.FirstOrDefaultAsync(u => u.Id == req.UnitId && u.TenantId == req.TenantId);
                 if (unit == null) return BadRequest("Selected unit does not belong to this complex.");
                 if (unit.Status != "Available") return Conflict($"Unit {unit.UnitNumber} is not available.");
+            }
+            else if (!string.IsNullOrWhiteSpace(req.UnitNumber))
+            {
+                var trimmed = req.UnitNumber.Trim();
+                unit = await _db.Units.FirstOrDefaultAsync(u => u.TenantId == req.TenantId && u.UnitNumber.ToLower() == trimmed.ToLower());
+                if (unit == null)
+                {
+                    unit = new Unit
+                    {
+                        TenantId = req.TenantId,
+                        UnitNumber = trimmed.ToUpper(),
+                        Status = "Available",
+                        BlockName = "Main Block",
+                        ParkingSlot = $"P-{trimmed.ToUpper()}",
+                    };
+                    _db.Units.Add(unit);
+                    await _db.SaveChangesAsync();
+                }
             }
 
             var resident = new Resident

@@ -22,6 +22,7 @@ export default function Residents() {
     phoneNumber: "",
     nationalId: "",
     unitId: "",
+    customUnitNumber: "",
     monthlyIncome: 350000,
     emergencyContact: "",
     moveInDate: new Date().toISOString().split("T")[0],
@@ -66,6 +67,8 @@ export default function Residents() {
     setSubmitting(true);
     try {
       const selectedUnit = availableUnits.find((u) => u.id === Number(formData.unitId));
+      const finalUnitNumber = selectedUnit ? selectedUnit.unitNumber : (formData.customUnitNumber?.trim() || "Unassigned");
+      const finalUnitId = selectedUnit ? selectedUnit.id : null;
 
       // Parse household members
       const household = formData.familyMembersText
@@ -85,15 +88,15 @@ export default function Residents() {
         email: formData.email,
         phoneNumber: formData.phoneNumber,
         nationalId: formData.nationalId,
-        unitId: formData.unitId ? Number(formData.unitId) : null,
-        unitNumber: selectedUnit ? selectedUnit.unitNumber : "Unassigned",
-        monthlyIncome: parseFloat(formData.monthlyIncome),
+        unitId: finalUnitId,
+        unitNumber: finalUnitNumber,
+        monthlyIncome: parseFloat(formData.monthlyIncome) || 0,
         emergencyContact: formData.emergencyContact,
         moveInDate: formData.moveInDate,
         plateNumber: formData.plateNumber,
         vehicleType: formData.vehicleType,
         makeModel: formData.makeModel,
-        parkingSlot: formData.parkingSlot || selectedUnit?.parkingSlot || "P-Unassigned",
+        parkingSlot: formData.parkingSlot || selectedUnit?.parkingSlot || `P-${finalUnitNumber}`,
         householdMembers: household,
       });
 
@@ -187,6 +190,34 @@ export default function Residents() {
           </svg>
           Onboard Resident to {activeComplexName}
         </button>
+      </div>
+
+      {/* Tenant Isolation Scope Banner */}
+      <div style={{
+        background: "#f8fafc",
+        border: "1px solid #e2e8f0",
+        borderRadius: "10px",
+        padding: "10px 16px",
+        marginBottom: "16px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "16px" }}>🏢</span>
+          <div>
+            <div style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Tenant Scope: {activeComplexName} (Complex #{activeTenantId})
+            </div>
+            <div style={{ fontSize: "12px", color: "#334155" }}>
+              Only residents registered to <strong>{activeComplexName}</strong> are visible to this admin session.
+            </div>
+          </div>
+        </div>
+        <div style={{ textAlign: "right", fontSize: "12px" }}>
+          <span style={{ fontWeight: 700, color: "#0f172a" }}>{residents.length}</span> Residents ·{" "}
+          <span style={{ fontWeight: 700, color: "#10b981" }}>{availableUnits.length}</span> Vacant Units
+        </div>
       </div>
 
       {/* Filter & Search Bar */}
@@ -370,10 +401,21 @@ export default function Residents() {
       {/* Onboard Resident Modal */}
       {showOnboardModal && (
         <div className="modal-overlay" onClick={() => setShowOnboardModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "620px" }}>
-            <h2>Onboard New Resident ({activeComplexName})</h2>
-            <form onSubmit={handleOnboardSubmit}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Onboard New Resident ({activeComplexName})</h2>
+              <button
+                type="button"
+                className="drawer-close-btn"
+                onClick={() => setShowOnboardModal(false)}
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleOnboardSubmit} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+              <div className="modal-body">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div className="form-group">
                   <label>Full Name *</label>
                   <input
@@ -425,15 +467,68 @@ export default function Residents() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "16px" }}>
                 <div className="form-group">
-                  <label>Assign Vacant Apartment *</label>
-                  <select name="unitId" required value={formData.unitId} onChange={handleInputChange}>
-                    <option value="">-- Select Vacant Unit --</option>
-                    {availableUnits.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.unitNumber} ({u.blockName} - LKR {Number(u.monthlyRent).toLocaleString()}/mo)
-                      </option>
-                    ))}
-                  </select>
+                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>Assign Vacant Apartment *</span>
+                    {availableUnits.length > 0 && (
+                      <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 700 }}>
+                        {availableUnits.length} Vacant Available
+                      </span>
+                    )}
+                  </label>
+
+                  {availableUnits.length > 0 ? (
+                    <>
+                      <select
+                        name="unitId"
+                        required={!formData.customUnitNumber?.trim()}
+                        value={formData.unitId}
+                        onChange={(e) => {
+                          handleInputChange(e);
+                          if (e.target.value) {
+                            setFormData((prev) => ({ ...prev, customUnitNumber: "" }));
+                          }
+                        }}
+                      >
+                        <option value="">-- Select Vacant Unit ({availableUnits.length} Available) --</option>
+                        {availableUnits.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            Unit {u.unitNumber} ({u.blockName || "Main Block"} · Floor {u.floorNumber} · LKR {Number(u.monthlyRent).toLocaleString()}/mo)
+                          </option>
+                        ))}
+                      </select>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "5px" }}>
+                        <span style={{ fontSize: "11px", color: "#64748b", whiteSpace: "nowrap" }}>Or enter manually:</span>
+                        <input
+                          type="text"
+                          name="customUnitNumber"
+                          placeholder="e.g. A-105"
+                          value={formData.customUnitNumber}
+                          onChange={(e) => {
+                            handleInputChange(e);
+                            if (e.target.value) {
+                              setFormData((prev) => ({ ...prev, unitId: "" }));
+                            }
+                          }}
+                          style={{ padding: "4px 8px", fontSize: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", flex: 1 }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        name="customUnitNumber"
+                        placeholder="Enter Unit Number (e.g. Unit A-101)"
+                        required
+                        value={formData.customUnitNumber}
+                        onChange={handleInputChange}
+                        style={{ padding: "8px 10px", fontSize: "13px" }}
+                      />
+                      <small style={{ color: "#64748b", fontSize: "11px", display: "block", marginTop: "3px" }}>
+                        No pre-allocated vacant units found for this complex. Enter the unit number to allocate.
+                      </small>
+                    </>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Move-In Date *</label>
@@ -503,8 +598,9 @@ export default function Residents() {
                   onChange={handleInputChange}
                 />
               </div>
+            </div>
 
-              <div className="form-actions">
+            <div className="form-actions">
                 <button
                   type="button"
                   className="admin-btn admin-btn--secondary"

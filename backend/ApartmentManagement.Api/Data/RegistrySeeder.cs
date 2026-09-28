@@ -75,6 +75,43 @@ namespace ApartmentManagement.Api.Data
                     new DomesticStaff { TenantId = 1, ResidentId = mahesh.Id, ResidentName = mahesh.FullName, UnitNumber = "C-301", FullName = "Priyantha Jayalath", StaffType = "Chauffeur / Driver", NicNumber = "198944556677", ContactPhone = "+94 77 665 4321", AccessPassCode = "PASS-P89-301", WorkingHours = "08:00 AM - 08:00 PM (Daily)" });
                 db.SaveChanges();
             }
+
+            // Ensure all registered complexes have their units generated
+            var complexes = db.Complexes.ToList();
+            foreach (var c in complexes)
+            {
+                var existingCount = db.Units.Count(u => u.TenantId == c.Id);
+                if (existingCount == 0)
+                {
+                    int total = c.TotalUnits > 0 ? c.TotalUnits : 12;
+                    var newUnits = new List<Unit>();
+                    int unitsPerFloor = 4;
+                    for (int i = 1; i <= total; i++)
+                    {
+                        int floor = ((i - 1) / unitsPerFloor) + 1;
+                        int unitOnFloor = ((i - 1) % unitsPerFloor) + 1;
+                        char block = (char)('A' + ((floor - 1) / 4));
+                        string unitNum = $"{block}-{floor}{unitOnFloor:D2}";
+                        string parking = $"P-{block}{floor}{unitOnFloor:D2}";
+
+                        newUnits.Add(new Unit
+                        {
+                            TenantId = c.Id,
+                            UnitNumber = unitNum,
+                            FloorNumber = floor,
+                            BlockName = $"Block {block}",
+                            NumberOfBedrooms = (unitOnFloor % 3) + 1,
+                            NumberOfBathrooms = (unitOnFloor % 2) + 1,
+                            SquareFeet = 900 + ((unitOnFloor % 3) * 250),
+                            MonthlyRent = 85000 + ((unitOnFloor % 3) * 35000),
+                            Status = "Available",
+                            ParkingSlot = parking,
+                        });
+                    }
+                    db.Units.AddRange(newUnits);
+                }
+            }
+            db.SaveChanges();
         }
     }
 }
