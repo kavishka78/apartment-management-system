@@ -367,7 +367,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.between,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
                                   children: [
@@ -417,7 +417,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                             const Divider(height: 1),
                             const SizedBox(height: 10),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.between,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
                                   children: [
@@ -442,7 +442,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: Colors.emerald.shade50,
+                                    color: Colors.green.shade50,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -450,7 +450,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.emerald.shade800,
+                                      color: Colors.green.shade800,
                                     ),
                                   ),
                                 ),
