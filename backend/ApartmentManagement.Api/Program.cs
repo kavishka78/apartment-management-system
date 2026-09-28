@@ -65,13 +65,15 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(options =>
 {
+    var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? string.Empty)
+        .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     options.AddPolicy("ReactApp", policy =>
     {
-        // Allow any localhost port so Vite's dynamic port selection always works
         policy.SetIsOriginAllowed(origin =>
             {
-                var uri = new Uri(origin);
-                return uri.Host == "localhost" || uri.Host == "127.0.0.1";
+                return Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+                    (uri.IsLoopback || allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase));
             })
               .AllowAnyHeader()
               .AllowAnyMethod();
