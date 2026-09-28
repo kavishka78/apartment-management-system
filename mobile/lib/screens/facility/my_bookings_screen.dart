@@ -672,7 +672,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Row(
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 4,
+                            runSpacing: 2,
                             children: [
                               Text(
                                 isUpcoming ? 'Upcoming' : 'Completed',
@@ -684,7 +687,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              const SizedBox(width: 6),
                               const Text(
                                 '•',
                                 style: TextStyle(
@@ -692,7 +694,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                                   fontSize: 12,
                                 ),
                               ),
-                              const SizedBox(width: 6),
                               Text(
                                 "Capacity: $bookedCapacity ${bookedCapacity == 1 ? 'Spot' : 'Spots'}",
                                 style: const TextStyle(
@@ -701,7 +702,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(width: 6),
                               const Text(
                                 '•',
                                 style: TextStyle(
@@ -709,7 +709,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                                   fontSize: 12,
                                 ),
                               ),
-                              const SizedBox(width: 6),
                               Text(
                                 (booking['totalCost'] != null && (booking['totalCost'] as num) > 0)
                                     ? "LKR ${(booking['totalCost'] as num).toStringAsFixed(2)}"
