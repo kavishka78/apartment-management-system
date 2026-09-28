@@ -130,6 +130,19 @@ namespace ApartmentManagement.Api.Controllers
             });
 
         // ── Auth ─────────────────────────────────────────────────
+        private async Task<IActionResult> LoginResult(UserAccount user)
+        {
+            if (user.Role != "Resident")
+                return Ok(new { token = _tokens.CreateToken(user), user = ToUserDto(user) });
+            var matches = await _db.Residents.Where(r => r.TenantId == user.TenantId &&
+                r.Email.ToLower() == user.Email.ToLower() && r.Status == "Active").Take(2).ToListAsync();
+            if (matches.Count != 1) return Unauthorized("Resident account could not be resolved.");
+            var resident = matches[0];
+            return Ok(new { token = _tokens.CreateResidentToken(resident), user = ToUserDto(user),
+                resident = new { resident.Id, resident.FullName, resident.Email,
+                    resident.PhoneNumber, resident.UnitNumber, resident.TenantId } });
+        }
+
         [AllowAnonymous]
         [HttpPost("auth/login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest req)
@@ -140,7 +153,7 @@ namespace ApartmentManagement.Api.Controllers
                 Hasher.VerifyHashedPassword(user, user.PasswordHash, req.Password) == PasswordVerificationResult.Failed)
                 return Unauthorized("Invalid email or password.");
 
-            return Ok(new { token = _tokens.CreateToken(user), user = ToUserDto(user) });
+            return await LoginResult(user);
         }
 
         [AllowAnonymous]
@@ -180,7 +193,7 @@ namespace ApartmentManagement.Api.Controllers
                 return Unauthorized("This account is linked to a different Google identity.");
             }
 
-            return Ok(new { token = _tokens.CreateToken(user), user = ToUserDto(user) });
+            return await LoginResult(user);
         }
 
 
@@ -192,45 +205,20 @@ namespace ApartmentManagement.Api.Controllers
                 return NotFound();
 
             var identifier = (req?.Email ?? "").Trim().ToLower();
-            Resident? resident = null;
+            if (string.IsNullOrWhiteSpace(identifier))
+                return Unauthorized("Active resident could not be uniquely resolved.");
 
-            if (!string.IsNullOrWhiteSpace(identifier))
-            {
-                resident = await _db.Residents.FirstOrDefaultAsync(r =>
-                    r.Email.ToLower() == identifier ||
-                    r.PhoneNumber == req!.Email.Trim() ||
-                    r.PhoneNumber.Replace(" ", "").Replace("-", "") == identifier.Replace(" ", "").Replace("-", "")
-                );
-            }
+            var normalizedPhone = identifier.Replace(" ", "").Replace("-", "");
+            var matches = await _db.Residents.Where(r => r.Status == "Active" &&
+                (r.Email.ToLower() == identifier ||
+                 (normalizedPhone != "" &&
+                  r.PhoneNumber.Replace(" ", "").Replace("-", "") == normalizedPhone)))
+                .Take(2).ToListAsync();
+            if (matches.Count != 1)
+                return Unauthorized("Active resident could not be uniquely resolved.");
+            var resident = matches[0];
 
-            // Fallback to Kamal Perera or first active resident
-            resident ??= await _db.Residents.FirstOrDefaultAsync(r => r.Email == "kamal.perera@gmail.com" && r.Status == "Active")
-                     ?? await _db.Residents.FirstOrDefaultAsync(r => r.Status == "Active");
-
-            if (resident == null) return Unauthorized("No active residents found in database.");
-
-            // Create JWT for the resident
-            var claims = new List<System.Security.Claims.Claim>
-            {
-                new(System.Security.Claims.ClaimTypes.NameIdentifier, resident.Id.ToString()),
-                new(System.Security.Claims.ClaimTypes.Email, resident.Email),
-                new(System.Security.Claims.ClaimTypes.Name, resident.FullName),
-                new(System.Security.Claims.ClaimTypes.Role, "Resident"),
-                new("tenantId", resident.TenantId.ToString()),
-            };
-
-            var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-            var creds = new Microsoft.IdentityModel.Tokens.SigningCredentials(key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
-
-            var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddDays(7),
-                signingCredentials: creds
-            );
-
-            var tokenString = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
+            var tokenString = _tokens.CreateResidentToken(resident);
             var complex = await _db.Complexes.FindAsync(resident.TenantId);
 
             return Ok(new
@@ -342,30 +330,12 @@ namespace ApartmentManagement.Api.Controllers
             if (resident == null)
                 return Unauthorized("No registered resident found for this identity.");
 
-            var claims = new List<System.Security.Claims.Claim>
-            {
-                new(System.Security.Claims.ClaimTypes.NameIdentifier, resident.Id.ToString()),
-                new(System.Security.Claims.ClaimTypes.Email, resident.Email),
-                new(System.Security.Claims.ClaimTypes.Name, resident.FullName),
-                new(System.Security.Claims.ClaimTypes.Role, "Resident"),
-                new("tenantId", resident.TenantId.ToString()),
-            };
-
-            var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-                System.Text.Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-            var creds = new Microsoft.IdentityModel.Tokens.SigningCredentials(
-                key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
-            var jwt = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddDays(7),
-                signingCredentials: creds);
+            var tokenString = _tokens.CreateResidentToken(resident);
 
             var complex = await _db.Complexes.FindAsync(resident.TenantId);
             return Ok(new
             {
-                token = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(jwt),
+                token = tokenString,
                 residentId = resident.Id,
                 name = resident.FullName,
                 email = resident.Email,
@@ -380,7 +350,19 @@ namespace ApartmentManagement.Api.Controllers
         [HttpGet("auth/me")]
         public async Task<IActionResult> Me()
         {
-            var id = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            if (User.IsInRole("Resident"))
+            {
+                if (!int.TryParse(User.FindFirstValue("residentId"), out var residentId) ||
+                    !int.TryParse(User.FindFirstValue("tenantId"), out var tenantId)) return Unauthorized();
+                var resident = await _db.Residents.FirstOrDefaultAsync(r =>
+                    r.Id == residentId && r.TenantId == tenantId && r.Status == "Active");
+                return resident == null ? Unauthorized() : Ok(new {
+                    id = resident.Id, residentId = resident.Id, resident.TenantId,
+                    name = resident.FullName, resident.Email, phone = resident.PhoneNumber,
+                    resident.UnitNumber, role = "Resident"
+                });
+            }
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return Unauthorized();
             var user = await _db.UserAccounts.FindAsync(id);
             return user == null || user.Status != "Active" ? Unauthorized() : Ok(ToUserDto(user));
         }

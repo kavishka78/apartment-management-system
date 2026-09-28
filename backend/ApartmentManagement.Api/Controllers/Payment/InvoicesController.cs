@@ -1,3 +1,5 @@
+using ApartmentManagement.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +9,8 @@ using ApartmentManagement.Api.DTOs;
 namespace ApartmentManagement.Api.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize(Roles = PaymentAccess.Roles)]
+    [TypeFilter(typeof(PaymentSessionFilter))]
     [ApiController]
     public class InvoicesController : ControllerBase
     {
@@ -34,7 +38,7 @@ public async Task<IActionResult> GetInvoices(
     if (pageSize < 1 || pageSize > 100)
         pageSize = 10;
 
-    var query = _context.Invoices
+    var query = _context.VisibleInvoices(User)
         .Include(i => i.InvoiceItems)
         .Include(i => i.Payments)
         .AsQueryable();
@@ -54,7 +58,7 @@ public async Task<IActionResult> GetInvoices(
     }
 
     // Filter by resident
-    if (residentId.HasValue)
+    if (residentId.HasValue && !User.IsInRole("Resident"))
     {
         query = query.Where(i =>
             i.ResidentId == residentId.Value);
@@ -104,7 +108,7 @@ public async Task<IActionResult> GetInvoices(
         [HttpGet("{id}")]
         public async Task<ActionResult<Invoice>> GetInvoice(int id)
         {
-            var invoice = await _context.Invoices
+            var invoice = await _context.VisibleInvoices(User)
                 .Include(i => i.InvoiceItems)
                 .Include(i => i.Payments)
                 .FirstOrDefaultAsync(i => i.Id == id);
@@ -118,9 +122,18 @@ public async Task<IActionResult> GetInvoices(
         }
 
         // POST: api/invoices
+        [Authorize(Roles = PaymentAccess.AdminRoles)]
         [HttpPost]
         public async Task<ActionResult<Invoice>> CreateInvoice(Invoice invoice)
         {
+            if (!await _context.CanManageResident(User, invoice.ResidentId)) return Forbid();
+            // Do not accept nested payments or client-selected financial state.
+            invoice.Id = 0;
+            invoice.Payments = new();
+            invoice.InvoiceItems = invoice.InvoiceItems.Select(item => new InvoiceItem
+            {
+                Description = item.Description, ChargeType = item.ChargeType, Amount = item.Amount
+            }).ToList();
             invoice.InvoiceNumber =
                 $"INV-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}";
 
@@ -140,12 +153,13 @@ public async Task<IActionResult> GetInvoices(
         }
 
 // PUT: api/invoices/5
+[Authorize(Roles = PaymentAccess.AdminRoles)]
 [HttpPut("{id}")]
 public async Task<IActionResult> UpdateInvoice(
     int id,
     Invoice updatedInvoice)
 {
-    var invoice = await _context.Invoices
+    var invoice = await _context.VisibleInvoices(User)
         .Include(i => i.InvoiceItems)
         .Include(i => i.Payments)
         .FirstOrDefaultAsync(i => i.Id == id);
@@ -176,6 +190,8 @@ public async Task<IActionResult> UpdateInvoice(
                 "Invoices with existing payment transactions cannot be modified."
         });
     }
+
+    if (!await _context.CanManageResident(User, updatedInvoice.ResidentId)) return Forbid();
 
     // Validate resident and apartment IDs
     if (updatedInvoice.ResidentId <= 0 ||
@@ -223,7 +239,7 @@ public async Task<IActionResult> UpdateInvoice(
 
     // Prevent duplicate invoice for same resident,
     // apartment and billing month
-    var duplicateInvoice = await _context.Invoices
+    var duplicateInvoice = await _context.VisibleInvoices(User)
         .AnyAsync(i =>
             i.Id != id &&
             i.ResidentId == updatedInvoice.ResidentId &&
@@ -295,10 +311,11 @@ public async Task<IActionResult> UpdateInvoice(
 }
 
 // DELETE: api/invoices/5
+[Authorize(Roles = PaymentAccess.AdminRoles)]
 [HttpDelete("{id}")]
 public async Task<IActionResult> DeleteInvoice(int id)
 {
-    var invoice = await _context.Invoices
+    var invoice = await _context.VisibleInvoices(User)
         .Include(i => i.InvoiceItems)
         .Include(i => i.Payments)
         .FirstOrDefaultAsync(i => i.Id == id);
@@ -340,10 +357,12 @@ public async Task<IActionResult> DeleteInvoice(int id)
 
 
 // POST: api/invoices/generate-monthly
+[Authorize(Roles = PaymentAccess.AdminRoles)]
 [HttpPost("generate-monthly")]
 public async Task<IActionResult> GenerateMonthlyInvoice(
     GenerateMonthlyInvoiceRequest request)
 {
+    if (!await _context.CanManageResident(User, request.ResidentId)) return Forbid();
     if (request.DueDate <= request.BillingMonth)
     {
         return BadRequest(new
@@ -364,7 +383,7 @@ public async Task<IActionResult> GenerateMonthlyInvoice(
     }
 
     // Prevent duplicate monthly invoices
-    var existingInvoice = await _context.Invoices
+    var existingInvoice = await _context.VisibleInvoices(User)
         .AnyAsync(i =>
             i.ResidentId == request.ResidentId &&
             i.ApartmentId == request.ApartmentId &&

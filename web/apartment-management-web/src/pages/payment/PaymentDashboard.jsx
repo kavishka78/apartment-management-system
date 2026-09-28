@@ -1,3 +1,4 @@
+import { paymentFetch } from "../../services/api";
 import { useEffect, useState } from "react";
 import "./PaymentDashboard.css";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
@@ -9,7 +10,7 @@ function PaymentDashboard() {
 
   // Load collection report
   useEffect(() => {
-    fetch("http://localhost:5073/api/reports/collections")
+    paymentFetch("/reports/collections")
       .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to load collection report");
@@ -29,8 +30,8 @@ function PaymentDashboard() {
 
   // Load recent payments
   useEffect(() => {
-    fetch(
-      "http://localhost:5073/api/payments?sortBy=paidAt&sortOrder=desc&page=1&pageSize=5"
+    paymentFetch(
+      "/payments?sortBy=paidAt&sortOrder=desc&page=1&pageSize=5"
     )
       .then((response) => {
         if (!response.ok) {

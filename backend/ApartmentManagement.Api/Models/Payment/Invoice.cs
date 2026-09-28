@@ -22,6 +22,10 @@ namespace ApartmentManagement.Api.Models
 
         public List<InvoiceItem> InvoiceItems { get; set; } = new();
 
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public bool CanPay => Status == "Pending" &&
+            !Payments.Any(p => p.Status == "Successful" || p.Status == "Verified");
+
         public List<Payment> Payments { get; set; } = new();
     }
 }

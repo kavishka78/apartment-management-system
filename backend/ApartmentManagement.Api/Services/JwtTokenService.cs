@@ -40,5 +40,25 @@ namespace ApartmentManagement.Api.Services
                 signingCredentials: new SigningCredentials(GetKey(_config), SecurityAlgorithms.HmacSha256));
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+        public string CreateResidentToken(Resident resident)
+        {
+            var claims = new List<Claim>
+            {
+                new(JwtRegisteredClaimNames.Sub, $"resident:{resident.Id}"),
+                new(ClaimTypes.NameIdentifier, resident.Id.ToString()),
+                new("residentId", resident.Id.ToString()),
+                new("tenantId", resident.TenantId.ToString()),
+                new(ClaimTypes.Name, resident.FullName),
+                new(ClaimTypes.Email, resident.Email),
+                new(ClaimTypes.Role, "Resident"),
+            };
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"], audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(_config.GetValue("Jwt:ExpiryHours", 8)),
+                signingCredentials: new SigningCredentials(GetKey(_config), SecurityAlgorithms.HmacSha256));
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
     }
 }

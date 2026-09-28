@@ -1,3 +1,5 @@
+using ApartmentManagement.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.DTOs;
 using ApartmentManagement.Api.Models;
@@ -8,6 +10,8 @@ using Stripe;
 namespace ApartmentManagement.Api.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize(Roles = PaymentAccess.Roles)]
+    [TypeFilter(typeof(PaymentSessionFilter))]
     [ApiController]
     public class PaymentsController : ControllerBase
     {
@@ -27,124 +31,16 @@ namespace ApartmentManagement.Api.Controllers
 
 
         // POST: api/payments/create
+        [Authorize(Roles = PaymentAccess.AdminRoles)]
         [HttpPost("create")]
-        public async Task<IActionResult> CreatePayment(CreatePaymentRequest request)
-        {
-            var invoice = await _context.Invoices
-                .Include(i => i.Payments)
-                .FirstOrDefaultAsync(i => i.Id == request.InvoiceId);
-
-            if (invoice == null)
-            {
-                return NotFound(new
-                {
-                    message = "Invoice not found."
-                });
-            }
-
-            if (invoice.Status == "Paid")
-            {
-                return BadRequest(new
-                {
-                    message = "This invoice has already been paid."
-                });
-            }
-
-            // Prevent duplicate successful or verified payments
-                var existingPayment = await _context.Payments
-                    .AnyAsync(p =>
-                     p.InvoiceId == request.InvoiceId &&
-                        (p.Status == "Successful" || p.Status == "Verified"));
-
-                if (existingPayment)
-            {
-                    return BadRequest(new
-                {
-                       message = "A successful payment already exists for this invoice."
-                 });
-            }
-
-
-            if (request.Amount != invoice.TotalAmount)
-            {
-                return BadRequest(new
-                {
-                    message = $"Payment amount must be {invoice.TotalAmount}."
-                });
-            }
-
-            if (request.PaymentMethod != "Card")
-            {
-                return BadRequest(new
-                {
-                    message = "Only card payments are supported in this demo."
-                });
-            }
-
-            
-
-
-
-            // Basic demo validation
-            var cleanCardNumber = request.CardNumber.Replace(" ", "");
-
-            if (cleanCardNumber.Length != 16 ||
-                !cleanCardNumber.All(char.IsDigit))
-            {
-                return BadRequest(new
-                {
-                    message = "Invalid card number."
-                });
-            }
-
-            if (request.Cvv.Length != 3 ||
-                !request.Cvv.All(char.IsDigit))
-            {
-                return BadRequest(new
-                {
-                    message = "Invalid CVV."
-                });
-            }
-
-            var payment = new Payment
-            {
-                InvoiceId = invoice.Id,
-
-                PaymentReference =
-                    $"PAY-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
-
-                Amount = request.Amount,
-                PaymentMethod = "Card",
-                Status = "Successful",
-                PaidAt = DateTime.UtcNow,
-
-                // Only last 4 digits are stored
-                CardLastFourDigits = cleanCardNumber[^4..]
-            };
-
-            _context.Payments.Add(payment);
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                message = "Demo card payment successful.",
-                payment.Id,
-                payment.PaymentReference,
-                payment.Amount,
-                payment.Status,
-                payment.PaidAt,
-                payment.CardLastFourDigits
-            });
-        }
-
-
+        public IActionResult CreatePayment(CreatePaymentRequest request) =>
+            StatusCode(StatusCodes.Status410Gone, new { message = "Use the Stripe PaymentSheet flow." });
 
         // POST: api/payments/create-intent
         [HttpPost("create-intent")]
         public async Task<IActionResult> CreatePaymentIntent([FromBody] CreatePaymentIntentRequest request)
         {
-            var invoice = await _context.Invoices
+            var invoice = await _context.VisibleInvoices(User)
                 .Include(i => i.Payments)
                 .FirstOrDefaultAsync(i => i.Id == request.InvoiceId);
 
@@ -156,7 +52,7 @@ namespace ApartmentManagement.Api.Controllers
                 });
             }
 
-            if (invoice.Status == "Paid")
+            if (invoice.Status != "Pending" || invoice.TotalAmount <= 0)
             {
                 return BadRequest(new
                 {
@@ -164,7 +60,7 @@ namespace ApartmentManagement.Api.Controllers
                 });
             }
 
-            var existingPayment = await _context.Payments
+            var existingPayment = await _context.VisiblePayments(User)
                 .AnyAsync(p =>
                     p.InvoiceId == request.InvoiceId &&
                     (p.Status == "Successful" || p.Status == "Verified"));
@@ -198,7 +94,10 @@ namespace ApartmentManagement.Api.Controllers
                 };
 
                 var service = new PaymentIntentService();
-                var paymentIntent = await service.CreateAsync(options);
+                var paymentIntent = await service.CreateAsync(options, new RequestOptions
+                {
+                    IdempotencyKey = $"invoice-{invoice.Id}-{options.Amount}-lkr"
+                });
 
                 return Ok(new
                 {
@@ -211,12 +110,11 @@ namespace ApartmentManagement.Api.Controllers
                     currency = "lkr"
                 });
             }
-            catch (StripeException ex)
+            catch (StripeException)
             {
                 return BadRequest(new
                 {
-                    message = "Unable to create Stripe PaymentIntent.",
-                    stripeError = ex.StripeError?.Message
+                    message = "Unable to create Stripe PaymentIntent."
                 });
             }
         }
@@ -243,16 +141,6 @@ public async Task<IActionResult> ConfirmStripePayment(
         var paymentIntent =
             await service.GetAsync(request.PaymentIntentId);
 
-        // Never trust Flutter alone for payment success.
-        if (paymentIntent.Status != "succeeded")
-        {
-            return BadRequest(new
-            {
-                message = "Stripe payment has not succeeded.",
-                stripeStatus = paymentIntent.Status
-            });
-        }
-
         // Get invoice ID stored in Stripe metadata.
         if (!paymentIntent.Metadata.TryGetValue(
                 "invoiceId",
@@ -265,7 +153,7 @@ public async Task<IActionResult> ConfirmStripePayment(
             });
         }
 
-        var invoice = await _context.Invoices
+        var invoice = await _context.VisibleInvoices(User)
             .Include(i => i.Payments)
             .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
@@ -274,6 +162,16 @@ public async Task<IActionResult> ConfirmStripePayment(
             return NotFound(new
             {
                 message = "Invoice not found."
+            });
+        }
+
+        // Never trust Flutter alone for payment success.
+        if (paymentIntent.Status != "succeeded")
+        {
+            return BadRequest(new
+            {
+                message = "Stripe payment has not succeeded.",
+                stripeStatus = paymentIntent.Status
             });
         }
 
@@ -302,7 +200,7 @@ public async Task<IActionResult> ConfirmStripePayment(
 
         // Prevent duplicate local payment records.
         var existingPayment =
-            await _context.Payments
+            await _context.VisiblePayments(User)
                 .FirstOrDefaultAsync(p =>
                     p.InvoiceId == invoice.Id &&
                     (p.Status == "Successful" ||
@@ -348,12 +246,11 @@ public async Task<IActionResult> ConfirmStripePayment(
             stripePaymentIntentId = paymentIntent.Id
         });
     }
-    catch (StripeException ex)
+    catch (StripeException)
     {
         return BadRequest(new
         {
-            message = "Unable to verify Stripe payment.",
-            stripeError = ex.StripeError?.Message
+            message = "Unable to verify Stripe payment."
         });
     }
 }
@@ -361,10 +258,11 @@ public async Task<IActionResult> ConfirmStripePayment(
 
 
         // POST: api/payments/1/verify
+[Authorize(Roles = PaymentAccess.AdminRoles)]
 [HttpPost("{id}/verify")]
 public async Task<IActionResult> VerifyPayment(int id)
 {
-    var payment = await _context.Payments
+    var payment = await _context.VisiblePayments(User)
         .Include(p => p.Invoice)
         .Include(p => p.Receipt)
         .FirstOrDefaultAsync(p => p.Id == id);
@@ -451,7 +349,7 @@ public async Task<IActionResult> GetPayments(
     if (pageSize < 1 || pageSize > 100)
         pageSize = 10;
 
-    var query = _context.Payments
+    var query = _context.VisiblePayments(User)
         .Include(p => p.Invoice)
         .Include(p => p.Receipt)
         .AsQueryable();
@@ -547,7 +445,7 @@ if (!string.IsNullOrWhiteSpace(search))
 [HttpGet("{id}/receipt")]
 public async Task<IActionResult> GetReceipt(int id)
 {
-    var payment = await _context.Payments
+    var payment = await _context.VisiblePayments(User)
         .Include(p => p.Invoice)
         .Include(p => p.Receipt)
         .FirstOrDefaultAsync(p => p.Id == id);
@@ -596,8 +494,9 @@ public async Task<IActionResult> GetOverdueInvoices()
 {
     var now = DateTime.UtcNow;
 
-    var overdueInvoices = await _context.Invoices
-        .Where(i => i.DueDate < now && i.Status != "Paid")
+    var overdueInvoices = await _context.VisibleInvoices(User)
+        .Where(i => i.DueDate < now && i.Status != "Paid" &&
+            !i.Payments.Any(p => p.Status == "Successful" || p.Status == "Verified"))
         .OrderBy(i => i.DueDate)
         .Select(i => new
         {

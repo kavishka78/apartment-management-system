@@ -1,3 +1,4 @@
+import { paymentFetch } from "../../services/api";
 import { useEffect, useState } from "react";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
@@ -18,8 +19,8 @@ function OverdueAccounts() {
         setLoading(true);
         setErrorMessage("");
 
-        const response = await fetch(
-          "http://localhost:5073/api/payments/overdue"
+        const response = await paymentFetch(
+          "/payments/overdue"
         );
 
         if (!response.ok) {
