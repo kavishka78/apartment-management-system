@@ -194,12 +194,39 @@ def validation_node(state: FacilityWorkflowState):
         state["requires_approval"] = False
         return state
 
+    # Calculate Total Estimated Cost
+    hourly_cost = check_res.get("hourlyCost", 0.0) or 0.0
+    start_t_str = data.get("start_time", "16:00:00")
+    end_t_str = data.get("end_time", "20:00:00")
+    
+    def get_hours(s_str, e_str):
+        try:
+            s_fmt = "%H:%M:%S" if len(s_str.split(":")) == 3 else "%H:%M"
+            e_fmt = "%H:%M:%S" if len(e_str.split(":")) == 3 else "%H:%M"
+            s_dt = datetime.strptime(s_str[:8], s_fmt)
+            e_dt = datetime.strptime(e_str[:8], e_fmt)
+            return max(0.5, (e_dt - s_dt).total_seconds() / 3600.0)
+        except Exception:
+            return 1.0
+
+    duration_hours = get_hours(start_t_str, end_t_str)
+    estimated_total_cost = round(duration_hours * hourly_cost * guests, 2)
+
     # Rule Check 3: Deterministic High-Impact Threshold Trigger (High-Risk Policy)
-    # Large events (>10 guests OR >2 visitor vehicles) MUST pause for Resident/Human Approval.
-    is_high_impact = (guests > 10) or (visitor_vehicles > 2)
+    # Events (>10 guests OR >2 visitor vehicles OR total cost > 3000 LKR) MUST pause for Resident/Human Approval.
+    is_high_impact = (guests > 10) or (visitor_vehicles > 2) or (estimated_total_cost > 3000)
 
     if is_high_impact:
-        state["validation_status"] = f"Valid Proposal Created - High Impact Event (>10 guests or >2 vehicles). Resident Approval Required."
+        reasons = []
+        if guests > 10:
+            reasons.append(">10 guests")
+        if visitor_vehicles > 2:
+            reasons.append(">2 visitor vehicles")
+        if estimated_total_cost > 3000:
+            reasons.append(f"cost exceeds 3000 LKR (Total: LKR {estimated_total_cost:.2f})")
+        reason_str = ", ".join(reasons)
+
+        state["validation_status"] = f"Valid Proposal Created - High Impact Event ({reason_str}). Resident Approval Required."
         state["requires_approval"] = True
     else:
         state["validation_status"] = "Valid Proposal Created - Standard Event (Auto-Approved & Booked)."
@@ -210,10 +237,11 @@ def validation_node(state: FacilityWorkflowState):
         "facilityId": check_res.get("facilityId"),
         "facilityName": check_res.get("facilityName"),
         "date": data.get("date"),
-        "startTime": data.get("start_time", "16:00:00"),
-        "endTime": data.get("end_time", "20:00:00"),
+        "startTime": start_t_str,
+        "endTime": end_t_str,
         "guests": guests,
         "visitorVehicles": visitor_vehicles,
+        "estimatedTotalCost": estimated_total_cost,
         "assignedParkingSlots": check_res.get("availableSlotNumbers", []),
         "isHighImpact": is_high_impact,
         "status": "Awaiting Resident Approval" if is_high_impact else "Auto-Approved"

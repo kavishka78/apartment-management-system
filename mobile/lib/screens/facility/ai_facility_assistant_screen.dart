@@ -521,6 +521,19 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
                             color: Color(0xFF334155),
                           ),
                         ),
+                        if (proposal['estimatedTotalCost'] != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            "Estimated Cost: LKR ${(proposal['estimatedTotalCost'] as num).toStringAsFixed(2)}",
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: (proposal['estimatedTotalCost'] as num) > 3000
+                                  ? const Color(0xFFB45309)
+                                  : const Color(0xFF047857),
+                            ),
+                          ),
+                        ],
 
                         const SizedBox(height: 14),
 
@@ -549,7 +562,7 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 const Text(
-                                  "This request exceeds 10 guests or 2 visitor vehicles. Please confirm to execute your booking.",
+                                  "This request exceeds 10 guests, 2 visitor vehicles, or 3,000 LKR total cost. Please confirm to execute your booking.",
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Color(0xFF92400E),
