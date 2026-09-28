@@ -59,7 +59,10 @@ namespace ApartmentManagement.Api.Controllers
                                  inqProp.GetBoolean();
 
                 bool isFailed = validationStatus.StartsWith("Failed", StringComparison.OrdinalIgnoreCase) || 
-                                validationStatus.StartsWith("Rejected", StringComparison.OrdinalIgnoreCase);
+                                validationStatus.StartsWith("Rejected", StringComparison.OrdinalIgnoreCase) ||
+                                validationStatus.Contains("Rejected", StringComparison.OrdinalIgnoreCase) ||
+                                validationStatus.Contains("Failed", StringComparison.OrdinalIgnoreCase) ||
+                                validationStatus.Contains("outside operating hours", StringComparison.OrdinalIgnoreCase);
 
                 // 2. Persist Workflow State into PostgreSQL Database for Auditability & Execution
                 var workflow = new FacilityAgentWorkflow
@@ -202,25 +205,40 @@ namespace ApartmentManagement.Api.Controllers
             int guests = root.TryGetProperty("guests", out var gProp) ? gProp.GetInt32() : 1;
             int requestedCapacity = guests > 0 ? guests : 1;
 
-            // Check facility capacity in database before approving workflow booking
             var facility = await _context.Facilities.FindAsync(facilityId);
-            if (facility != null)
+            if (facility == null || !facility.IsActive)
             {
-                var overlappingBookings = await _context.FacilityBookings
-                    .Where(b => b.FacilityId == facilityId &&
-                                b.BookingDate.Date == bookingDate.Date &&
-                                b.Status != BookingStatus.Rejected &&
-                                ((startTime < b.EndTime) && (endTime > b.StartTime)))
-                    .ToListAsync();
-
-                int alreadyBookedCapacity = overlappingBookings.Sum(b => b.BookedCapacity > 0 ? b.BookedCapacity : 1);
-                int remainingCapacity = Math.Max(0, facility.Capacity - alreadyBookedCapacity);
-
-                if (alreadyBookedCapacity + requestedCapacity > facility.Capacity)
-                {
-                    throw new InvalidOperationException($"Booking failed: Exceeds facility capacity. Facility '{facility.FacilityName}' has {remainingCapacity} spots remaining for this time slot (Requested: {requestedCapacity} spots).");
-                }
+                string reason = !string.IsNullOrWhiteSpace(facility?.DeactivationReason) ? facility.DeactivationReason : "Facility is currently closed for maintenance.";
+                throw new InvalidOperationException($"Booking failed: Facility '{facility?.FacilityName ?? "Requested Facility"}' is inactive or closed. Reason: {reason}");
             }
+
+            if (endTime <= startTime || startTime < facility.OpenTime || endTime > facility.CloseTime)
+            {
+                throw new InvalidOperationException($"Booking failed: Requested time ({startTime:hh\\:mm} - {endTime:hh\\:mm}) is outside facility operating hours ({facility.OpenTime:hh\\:mm} - {facility.CloseTime:hh\\:mm}).");
+            }
+
+            if (bookingDate.Date.Add(startTime) < DateTime.UtcNow.AddMinutes(-5))
+            {
+                throw new InvalidOperationException($"Booking failed: Cannot book for a past date or time.");
+            }
+
+            var overlappingBookings = await _context.FacilityBookings
+                .Where(b => b.FacilityId == facilityId &&
+                            b.BookingDate.Date == bookingDate.Date &&
+                            b.Status != BookingStatus.Rejected &&
+                            ((startTime < b.EndTime) && (endTime > b.StartTime)))
+                .ToListAsync();
+
+            int alreadyBookedCapacity = overlappingBookings.Sum(b => b.BookedCapacity > 0 ? b.BookedCapacity : 1);
+            int remainingCapacity = Math.Max(0, facility.Capacity - alreadyBookedCapacity);
+
+            if (alreadyBookedCapacity + requestedCapacity > facility.Capacity)
+            {
+                throw new InvalidOperationException($"Booking failed: Exceeds facility capacity. Facility '{facility.FacilityName}' has {remainingCapacity} spots remaining for this time slot (Requested: {requestedCapacity} spots).");
+            }
+
+            double durationHours = (endTime - startTime).TotalHours;
+            decimal calculatedTotalCost = Math.Round((decimal)durationHours * facility.HourlyCost * requestedCapacity, 2);
 
             // 1. Create Facility Booking
             var booking = new FacilityBooking
@@ -231,6 +249,7 @@ namespace ApartmentManagement.Api.Controllers
                 StartTime = startTime,
                 EndTime = endTime,
                 BookedCapacity = requestedCapacity,
+                TotalCost = calculatedTotalCost,
                 Status = BookingStatus.Approved
             };
             _context.FacilityBookings.Add(booking);

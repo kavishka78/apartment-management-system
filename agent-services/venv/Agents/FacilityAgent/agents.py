@@ -80,7 +80,9 @@ def action_node(state: FacilityWorkflowState):
     check_result = check_facility_and_parking_availability(
         facility_name=data.get("facility", "Clubhouse"),
         requested_date=data.get("date", datetime.now().strftime("%Y-%m-%d")),
-        visitor_vehicles_count=data.get("visitor_vehicles", 0)
+        visitor_vehicles_count=data.get("visitor_vehicles", 0),
+        start_time_str=data.get("start_time", "16:00:00"),
+        end_time_str=data.get("end_time", "20:00:00")
     )
     
     state["tool_results"] = {
@@ -134,6 +136,29 @@ def validation_node(state: FacilityWorkflowState):
     
     if "error" in check_res:
         state["validation_status"] = f"Failed: {check_res['error']}"
+        state["requires_approval"] = False
+        return state
+
+    # Rule Check 0.3: Active Facility Status Check
+    if check_res.get("isActive") == False:
+        reason = check_res.get("deactivationReason") or "Facility is currently closed for maintenance."
+        state["validation_status"] = f"Rejected: Facility '{check_res.get('facilityName')}' is currently closed or inactive. Reason: {reason}"
+        state["requires_approval"] = False
+        return state
+
+    # Rule Check 0.4: Past Date / Time Check
+    if check_res.get("isPast"):
+        state["validation_status"] = f"Rejected: Cannot book for a past date or time ({check_res.get('requestedDate')} at {check_res.get('requestedTime')[:5]})."
+        state["requires_approval"] = False
+        return state
+
+    # Rule Check 0.5: Facility Operating Hours Check
+    if check_res.get("isOutsideHours"):
+        open_t = str(check_res.get("openTime", ""))[:5]
+        close_t = str(check_res.get("closeTime", ""))[:5]
+        req_s = str(check_res.get("requestedStart", ""))[:5]
+        req_e = str(check_res.get("requestedEnd", ""))[:5]
+        state["validation_status"] = f"Rejected: Requested time ({req_s} - {req_e}) is outside operating hours ({open_t} - {close_t}) for {check_res.get('facilityName')}."
         state["requires_approval"] = False
         return state
 

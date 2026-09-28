@@ -48,6 +48,7 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
           final bool requiresApproval =
               _workflowData?['requiresApproval'] ?? true;
           final String status = _workflowData?['status'] ?? '';
+          final String valStatus = _workflowData?['validationStatus'] ?? '';
 
           Map<String, dynamic>? proposal;
           try {
@@ -59,13 +60,29 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
           final bool isInquiry =
               proposal?['isInquiry'] == true || status == 'InquiryAnswered';
 
-          if (isInquiry) {
+          final bool isFailed = status == 'Failed' ||
+              valStatus.startsWith("Failed") ||
+              valStatus.startsWith("Rejected") ||
+              valStatus.contains("outside operating hours") ||
+              valStatus.contains("closed") ||
+              valStatus.contains("inactive");
+
+          if (isFailed) {
+            _errorMessage = valStatus.isNotEmpty
+                ? valStatus.replaceAll("Rejected: ", "")
+                : "Facility is not available within that time period.";
+            _successMessage = null;
+          } else if (isInquiry) {
             _successMessage =
                 proposal?['answer'] ??
-                _workflowData?['validationStatus'] ??
+                valStatus ??
                 'Inquiry Answered by AI Agent.';
-          } else if (!requiresApproval || status == 'AutoApproved') {
+          } else if (status == 'AutoApproved') {
             _successMessage = "Standard Request Auto-Approved! Facility spot and visitor parking allocated in database.";
+          } else if (requiresApproval) {
+            _successMessage = "High-Impact Request Paused for Resident Approval.";
+          } else {
+            _successMessage = null;
           }
         } else {
           _errorMessage = res['message'] ?? 'AI Workflow Execution Failed';
@@ -86,7 +103,7 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
       setState(() {
         _isApproving = false;
         if (res['success'] == true) {
-          _successMessage = "Event Approved! passes issued.";
+          _successMessage = "Event Approved! Passes issued.";
           if (_workflowData != null) {
             _workflowData!['status'] = 'Approved';
           }
@@ -123,8 +140,12 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
     }
 
     final bool isFailed =
+        currentStatus == 'Failed' ||
         validationStatus.startsWith("Failed") ||
-        validationStatus.startsWith("Rejected");
+        validationStatus.startsWith("Rejected") ||
+        validationStatus.contains("outside operating hours") ||
+        validationStatus.contains("closed") ||
+        validationStatus.contains("inactive");
     final bool isApproved =
         currentStatus == 'Approved' || currentStatus == 'AutoApproved';
     final bool isInquiry =
