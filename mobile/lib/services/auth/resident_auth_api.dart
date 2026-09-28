@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../models/auth/contact_check_result.dart';
 import '../../models/auth/resident_session.dart';
@@ -10,10 +11,7 @@ import '../../models/auth/resident_session.dart';
 ///   POST /api/v1/auth/resident/firebase-token  → exchange Firebase token for app JWT
 ///   GET  /api/v1/auth/me                       → validate a saved JWT
 class ResidentAuthApi {
-  // ── Base URL ───────────────────────────────────────────────────────────────
-  // 10.0.2.2 is the Android emulator's alias for localhost.
-  // Change to your machine's IP address when testing on a physical device.
-  static const String _base = 'http://10.0.2.2:5073/api/v1';
+  static String get _base => kIsWeb ? 'http://localhost:5073/api/v1' : 'http://10.0.2.2:5073/api/v1';
 
   // ── Verify Contact ─────────────────────────────────────────────────────────
 
