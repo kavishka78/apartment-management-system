@@ -13,18 +13,56 @@ namespace ApartmentManagement.Api.Data
         // Payment Models
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Receipt> Receipts { get; set; }
+
+        // Maintenance Models
+        public DbSet<Maintenance> Maintenances { get; set; }
+        public DbSet<MaintenanceCategory> MaintenanceCategories { get; set; }
+        public DbSet<Technician> Technicians { get; set; }
+        public DbSet<MaintenanceHistory> MaintenanceHistories { get; set; }
+        public DbSet<AgentWorkflow> AgentWorkflows { get; set; }
+        public DbSet<AgentWorkflowStep> AgentWorkflowSteps { get; set; }
 
         // Facility and Visitor Models
         public DbSet<Facility> Facilities { get; set; }
         public DbSet<FacilityBooking> FacilityBookings { get; set; }
         public DbSet<VisitorPass> VisitorPasses { get; set; }
         public DbSet<ParkingSlot> ParkingSlots { get; set; }
+        public DbSet<FacilityAgentWorkflow> FacilityAgentWorkflows { get; set; }
+
+        // Tenant / Resident Registry Models
+        public DbSet<Unit> Units { get; set; }
+        public DbSet<Resident> Residents { get; set; }
+        public DbSet<HouseholdMember> HouseholdMembers { get; set; }
+        public DbSet<Vehicle> Vehicles { get; set; }
+        public DbSet<DomesticStaff> DomesticStaff { get; set; }
+
+        // Platform: complexes, login accounts, subscription audit log
+        public DbSet<Complex> Complexes { get; set; }
+        public DbSet<UserAccount> UserAccounts { get; set; }
+        public DbSet<SubscriptionHistory> SubscriptionHistory { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Registry: household members belong to a resident
+            modelBuilder.Entity<Resident>()
+                .HasMany(r => r.HouseholdMembers)
+                .WithOne()
+                .HasForeignKey(m => m.ResidentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserAccount>().HasIndex(u => u.Email).IsUnique();
+            modelBuilder.Entity<SubscriptionHistory>().HasIndex(h => h.ComplexId);
+            modelBuilder.Entity<Unit>().HasIndex(u => new { u.TenantId, u.UnitNumber }).IsUnique();
+            modelBuilder.Entity<Resident>().HasIndex(r => r.TenantId);
+            modelBuilder.Entity<Vehicle>().HasIndex(v => v.TenantId);
+            modelBuilder.Entity<DomesticStaff>().HasIndex(s => s.TenantId);
+            modelBuilder.Entity<Unit>().Property(u => u.MonthlyRent).HasPrecision(18, 2);
+            modelBuilder.Entity<Resident>().Property(r => r.MonthlyIncome).HasPrecision(18, 2);
 
             // Payment Module Relationships
 
@@ -67,7 +105,6 @@ namespace ApartmentManagement.Api.Data
                 .HasIndex(i => i.InvoiceNumber)
                 .IsUnique();
 
-       
             // Facility and Visitor Module Configurations
 
             modelBuilder.Entity<FacilityBooking>()

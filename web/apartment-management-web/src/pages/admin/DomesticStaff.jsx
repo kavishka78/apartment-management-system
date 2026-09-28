@@ -15,7 +15,7 @@ export default function DomesticStaff() {
   const [formData, setFormData] = useState({
     residentId: "",
     fullName: "",
-    staffType: "Housekeeper / Maid",
+    staffType: "Technician",
     nicNumber: "",
     contactPhone: "",
     workingHours: "08:00 AM - 05:00 PM (Mon-Fri)",
@@ -24,11 +24,27 @@ export default function DomesticStaff() {
   const loadData = useCallback(async () => {
   try {
     setLoading(true);
-    const [sList, rList] = await Promise.all([
+    const [sList, rList, techsList] = await Promise.all([
       getDomesticStaff(activeTenantId),
       getResidents(activeTenantId),
+      fetch('http://localhost:5073/api/technicians').then(r => r.json()).catch(() => [])
     ]);
-    setStaffList(sList || []);
+
+    const mappedTechs = (techsList || []).map(t => ({
+      id: `tech-${t.id}`,
+      fullName: t.name,
+      staffType: "Technician",
+      residentName: "Building Management",
+      unitNumber: "ALL",
+      nicNumber: t.nicNumber || t.nicnumber || "N/A",
+      accessPassCode: `TECH-${t.id.toString().padStart(4, '0')}`,
+      workingHours: "Authorized Access",
+      isActive: t.status !== 'Offline',
+      isTech: true,
+      originalId: t.id
+    }));
+
+    setStaffList([...(sList || []), ...mappedTechs]);
     setResidents(rList || []);
   } catch (err) {
     console.error(err);
@@ -74,7 +90,7 @@ export default function DomesticStaff() {
       setFormData({
         residentId: "",
         fullName: "",
-        staffType: "Housekeeper / Maid",
+        staffType: "Technician",
         nicNumber: "",
         contactPhone: "",
         workingHours: "08:00 AM - 05:00 PM (Mon-Fri)",
@@ -86,7 +102,12 @@ export default function DomesticStaff() {
     }
   };
 
-  const handleToggleAccess = async (id, name, currentStatus) => {
+  const handleToggleAccess = async (id, name, currentStatus, isTech) => {
+    if (isTech) {
+      setToast({ type: "danger", message: "Cannot modify building technician access from the resident registry." });
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
     try {
       await toggleStaffAccess(id);
       setToast({
@@ -122,7 +143,7 @@ export default function DomesticStaff() {
             zIndex: 9999,
             padding: "12px 20px",
             borderRadius: "8px",
-            background: toast.type === "success" ? "#10b981" : "#ef4444",
+            background: toast.type === "success" ? "#0f172a" : "#dc2626",
             color: "#fff",
             fontWeight: 600,
           }}
@@ -135,8 +156,8 @@ export default function DomesticStaff() {
       <div className="page-header">
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-            <span style={{ fontSize: "12px", background: "#ede9fe", color: "#6d28d9", fontWeight: 700, padding: "2px 8px", borderRadius: "6px" }}>
-              🏢 {activeComplexName}
+            <span style={{ fontSize: "11px", background: "#f1f5f9", color: "#334155", fontWeight: 700, padding: "2px 8px", borderRadius: "4px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              {activeComplexName}
             </span>
           </div>
           <h1>Domestic Staff Registry & Security Passes</h1>
@@ -171,10 +192,10 @@ export default function DomesticStaff() {
 
       {/* Table */}
       {loading ? (
-        <div className="admin-loading">
-          <div className="spinner" />
-        </div>
-      ) : filteredStaff.length === 0 ? (
+            <div className="admin-loading">
+            <div className="spinner" />
+          </div>
+          ) : filteredStaff.length === 0 ? (
         <div className="admin-card" style={{ textAlign: "center", padding: "40px" }}>
           <p style={{ color: "#64748b", margin: 0 }}>No domestic staff records found for {activeComplexName}.</p>
         </div>
@@ -199,15 +220,17 @@ export default function DomesticStaff() {
                 <tr key={s.id}>
                   <td style={{ fontWeight: 600, color: "#0f172a" }}>{s.fullName}</td>
                   <td>
-                    <span className="badge badge--info">{s.staffType}</span>
+                    <span className={`badge ${s.isTech ? "badge--success" : "badge--info"}`}>{s.staffType}</span>
                   </td>
                   <td>{s.residentName}</td>
                   <td>
-                    <span style={{ fontWeight: 700, color: "#4f46e5" }}>Unit {s.unitNumber}</span>
+                    <span style={{ fontWeight: 700, color: "#4f46e5" }}>
+                      {s.isTech ? "ALL" : `Unit ${s.unitNumber}`}
+                    </span>
                   </td>
                   <td style={{ fontFamily: "monospace", fontSize: "12px" }}>{s.nicNumber}</td>
                   <td>
-                    <span className="pass-code-tag">🔑 {s.accessPassCode}</span>
+                    <span className="pass-code-tag">{s.accessPassCode}</span>
                   </td>
                   <td style={{ fontSize: "12px", color: "#64748b" }}>{s.workingHours}</td>
                   <td>
@@ -217,10 +240,10 @@ export default function DomesticStaff() {
                   </td>
                   <td>
                     <button
-                      className={`admin-btn admin-btn--sm ${s.isActive ? "admin-btn--danger" : "admin-btn--success"}`}
-                      onClick={() => handleToggleAccess(s.id, s.fullName, s.isActive)}
+                      className={`admin-btn admin-btn--sm ${s.isTech ? "admin-btn--secondary" : s.isActive ? "admin-btn--danger" : "admin-btn--success"}`}
+                      onClick={() => handleToggleAccess(s.id, s.fullName, s.isActive, s.isTech)}
                     >
-                      {s.isActive ? "Revoke Access" : "Grant Access"}
+                      {s.isTech ? "Manage in Techs" : (s.isActive ? "Revoke Access" : "Grant Access")}
                     </button>
                   </td>
                 </tr>
@@ -263,10 +286,7 @@ export default function DomesticStaff() {
                 <div className="form-group">
                   <label>Staff Role *</label>
                   <select name="staffType" value={formData.staffType} onChange={handleInputChange}>
-                    <option value="Housekeeper / Maid">Housekeeper / Maid</option>
-                    <option value="Chauffeur / Driver">Chauffeur / Driver</option>
-                    <option value="Chef / Cook">Chef / Cook</option>
-                    <option value="Nanny / Caretaker">Nanny / Caretaker</option>
+                    <option value="Technician">Technician</option>
                   </select>
                 </div>
               </div>

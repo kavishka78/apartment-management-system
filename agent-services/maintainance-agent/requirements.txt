@@ -1,0 +1,17 @@
+# Maintenance Triage AI Agent — Python dependencies
+
+# Web framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# Data validation
+pydantic==2.10.3
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Google Gemini API (official SDK)
+google-genai==1.16.0
+
+# HTTP client (optional utility, used for health checks)
+httpx==0.28.1

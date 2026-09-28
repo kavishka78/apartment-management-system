@@ -1,127 +1,179 @@
-import { createContext, useContext, useState } from "react";
-
-const USERS = [
-  {
-    id: "user-super-1",
-    name: "Alexander Vance",
-    email: "owner@apartmenthub.io",
-    role: "SuperAdmin",
-    roleLabel: "Platform Owner (Super Admin)",
-    tenantId: null,
-    complexName: "All Apartment Complexes (Global Platform)",
-    avatar: "AV",
-  },
-  {
-    id: "user-admin-1",
-    name: "Nimal Fernando",
-    email: "nimal.f@lotusgrand.lk",
-    role: "ApartmentAdmin",
-    roleLabel: "Apartment Admin (Manager)",
-    tenantId: 1,
-    complexName: "Lotus Grand Residencies",
-    complexCode: "LGR-01",
-    avatar: "NF",
-  },
-  {
-    id: "user-admin-2",
-    name: "Saman Kumara",
-    email: "saman.k@cinnamonbreeze.lk",
-    role: "ApartmentAdmin",
-    roleLabel: "Apartment Admin (Manager)",
-    tenantId: 2,
-    complexName: "Cinnamon Breeze Condominiums",
-    complexCode: "CBC-02",
-    avatar: "SK",
-  },
-];
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { getSubscriptionStatus, isSubscriptionUsable } from "./authConstants.js";
+import {
+  getAuthToken,
+  setAuthToken,
+  loginApi,
+  googleLoginApi,
+  getMeApi,
+  getComplexes,
+  getComplexById,
+  createComplexApi,
+  updateComplexPackageApi,
+  renewComplexApi,
+  deactivateComplexApi,
+  reactivateComplexApi,
+  getSubscriptionHistoryApi,
+  getAdminsApi,
+  createAdminApi,
+} from "../services/api";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // Default logged in as Super Admin
-  const [currentUser, setCurrentUser] = useState(USERS[0]);
-  const [complexAdmins, setComplexAdmins] = useState([
-    {
-      id: "admin-101",
-      name: "Nimal Fernando",
-      email: "nimal.f@lotusgrand.lk",
-      phone: "+94 77 234 5678",
-      complexId: 1,
-      complexName: "Lotus Grand Residencies",
-      role: "ApartmentAdmin",
-      status: "Active",
-      assignedAt: "2026-01-16",
-    },
-    {
-      id: "admin-102",
-      name: "Saman Kumara",
-      email: "saman.k@cinnamonbreeze.lk",
-      phone: "+94 71 888 4433",
-      complexId: 2,
-      complexName: "Cinnamon Breeze Condominiums",
-      role: "ApartmentAdmin",
-      status: "Active",
-      assignedAt: "2026-02-12",
-    },
-    {
-      id: "admin-103",
-      name: "Dilini Senanayake",
-      email: "dilini.s@pearloceanic.com",
-      phone: "+94 77 665 1199",
-      complexId: 3,
-      complexName: "Pearl Oceanic Luxury Suites",
-      role: "ApartmentAdmin",
-      status: "Active",
-      assignedAt: "2026-03-02",
-    },
-  ]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(() => getAuthToken() !== null);
+  const [complexes, setComplexes] = useState([]);
+  const [complexAdmins, setComplexAdmins] = useState([]);
+  const [subscriptionHistory, setSubscriptionHistory] = useState([]);
 
-  const switchUser = (userId) => {
-    const found = USERS.find((u) => u.id === userId);
-    if (found) {
-      setCurrentUser(found);
+  const loadData = useCallback(async (user) => {
+    if (user.role === "SuperAdmin") {
+      const [c, a, h] = await Promise.all([getComplexes(), getAdminsApi(), getSubscriptionHistoryApi()]);
+      setComplexes(c || []);
+      setComplexAdmins(a || []);
+      setSubscriptionHistory(
+        (h || []).map((x) => ({ ...x, complexName: x.complexName, by: x.by, at: x.at }))
+      );
+    } else if (user.tenantId) {
+        const c = await getComplexById(user.tenantId);
+        setComplexes(c ? [c] : []);
+      } else {
+        setComplexes([]);
+      setComplexAdmins([]);
+      setSubscriptionHistory([]);
+    }
+  }, []);
+
+  // Restore the session from the database on first load
+  useEffect(() => {
+    if (getAuthToken() === null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const user = await getMeApi();
+        await loadData(user);
+        if (!cancelled) setCurrentUser(user);
+      } catch {
+        setAuthToken(null);
+      } finally {
+        if (!cancelled) setAuthLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loadData]);
+
+  const login = async (email, password) => {
+    try {
+      const { token, user } = await loginApi(email, password);
+      setAuthToken(token);
+      await loadData(user);
+      setCurrentUser(user);
+      return { ok: true, role: user.role };
+    } catch (err) {
+      const unreachable = err instanceof TypeError;
+      return { ok: false, error: unreachable ? "Cannot reach the server. Is the backend running?" : err.message };
     }
   };
 
-  const addComplexAdmin = (adminData) => {
-    const newAdmin = {
-      id: `admin-${Date.now()}`,
-      ...adminData,
-      role: "ApartmentAdmin",
-      status: "Active",
-      assignedAt: new Date().toISOString().split("T")[0],
-    };
-    setComplexAdmins((prev) => [newAdmin, ...prev]);
-
-    // Also add to available users list for simulation
-    USERS.push({
-      id: newAdmin.id,
-      name: newAdmin.name,
-      email: newAdmin.email,
-      role: "ApartmentAdmin",
-      roleLabel: `Apartment Admin (${newAdmin.complexName})`,
-      tenantId: newAdmin.complexId,
-      complexName: newAdmin.complexName,
-      avatar: newAdmin.name.slice(0, 2).toUpperCase(),
-    });
-
-    return newAdmin;
+  const loginWithGoogle = async (credential) => {
+    try {
+      const { token, user } = await googleLoginApi(credential);
+      setAuthToken(token);
+      await loadData(user);
+      setCurrentUser(user);
+      return { ok: true, role: user.role };
+    } catch (err) {
+      const unreachable = err instanceof TypeError;
+      return { ok: false, error: unreachable ? "Cannot reach the server. Is the backend running?" : err.message };
+    }
   };
 
-  const isSuperAdmin = currentUser.role === "SuperAdmin";
-  const isApartmentAdmin = currentUser.role === "ApartmentAdmin";
+  const logout = () => {
+    setAuthToken(null);
+    setCurrentUser(null);
+    setComplexes([]);
+    setComplexAdmins([]);
+    setSubscriptionHistory([]);
+  };
+
+  const refresh = () => (currentUser ? loadData(currentUser) : Promise.resolve());
+
+  const addComplex = async (complexData) => {
+    const created = await createComplexApi(complexData);
+    await refresh();
+    return created;
+  };
+
+  const updateComplexPackage = async (complexId, subscriptionPlan, enabledModules) => {
+    await updateComplexPackageApi(complexId, { subscriptionPlan, enabledModules });
+    await refresh();
+  };
+
+  const renewSubscription = async (complexId, months) => {
+    await renewComplexApi(complexId, months);
+    await refresh();
+  };
+
+  const deactivateComplex = async (complexId) => {
+    await deactivateComplexApi(complexId);
+    await refresh();
+  };
+
+  const reactivateComplex = async (complexId) => {
+    await reactivateComplexApi(complexId);
+    await refresh();
+  };
+
+  const addComplexAdmin = async (adminData) => {
+    const created = await createAdminApi(adminData);
+    await refresh();
+    return created;
+  };
+
+  const isSuperAdmin = currentUser?.role === "SuperAdmin";
+  const isApartmentAdmin = currentUser?.role === "ApartmentAdmin";
+
+  const currentComplex = isApartmentAdmin
+    ? complexes.find((c) => c.id === currentUser.tenantId) || null
+    : null;
+
+  const subscriptionStatus = isApartmentAdmin ? getSubscriptionStatus(currentComplex) : "Active";
+  const subscriptionActive = isSuperAdmin || (isApartmentAdmin && isSubscriptionUsable(currentComplex));
+
+  const isModuleEnabled = (moduleKey) => {
+    if (isSuperAdmin) return true;
+    if (!subscriptionActive || !currentComplex?.enabledModules) return false;
+    return currentComplex.enabledModules.includes(moduleKey);
+  };
 
   return (
     <AuthContext.Provider
       value={{
         currentUser,
-        availableUsers: USERS,
+        authLoading,
+        complexes,
+        currentComplex,
         complexAdmins,
+        subscriptionHistory,
         isSuperAdmin,
         isApartmentAdmin,
-        activeTenantId: currentUser.tenantId || 1,
-        activeComplexName: currentUser.complexName,
-        switchUser,
+        activeTenantId: currentUser?.tenantId ?? null,
+        activeComplexName: isSuperAdmin ? "Global Platform" : currentComplex?.name || "",
+        activePackage: isSuperAdmin ? "SuperAdmin" : currentComplex?.subscriptionPlan,
+        subscriptionStatus,
+        subscriptionActive,
+        isModuleEnabled,
+        login,
+        loginWithGoogle,
+        logout,
+        addComplex,
+        updateComplexPackage,
+        renewSubscription,
+        deactivateComplex,
+        reactivateComplex,
         addComplexAdmin,
       }}
     >
