@@ -73,6 +73,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+
+  String _formatTimeAgo(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inDays > 1) return DateFormat('MMM d, h:mm a').format(date);
+    if (diff.inDays == 1) return 'Yesterday ${DateFormat('h:mm a').format(date)}';
+    if (diff.inHours > 0) return '${diff.inHours} hours ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes} minutes ago';
+    return 'Just now';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,7 +96,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           TextButton(
             onPressed: _notifications.any((n) => n['isRead'] == false) ? _markAllAsRead : null,
-            child: const Text('Mark all read', style: TextStyle(color: Color(0xFF4FC3F7), fontWeight: FontWeight.w600)),
+            child: const Text('Mark all read', style: TextStyle(color: Color(0xFF1E2532), fontWeight: FontWeight.w600)),
           ),
           const SizedBox(width: 8),
         ],
@@ -121,9 +131,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       onRefresh: _loadNotifications,
                       color: const Color(0xFF1E2532),
                       child: ListView.separated(
-                        padding: const EdgeInsets.all(16),
                         itemCount: _notifications.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
                         itemBuilder: (context, index) {
                           final n = _notifications[index];
                           final bool isRead = n['isRead'];
@@ -134,40 +143,53 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               if (!isRead) _markAsRead(n['id']);
                             },
                             child: Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: isRead ? Colors.white : const Color(0xFFE3F2FD).withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: isRead ? const Color(0xFFE8ECEF) : const Color(0xFF4FC3F7).withOpacity(0.3)),
-                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              color: isRead ? Colors.transparent : Colors.blue.withOpacity(0.05),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: isRead ? Colors.grey.shade100 : const Color(0xFF4FC3F7).withOpacity(0.2),
-                                      shape: BoxShape.circle,
+                                  // Blue Dot
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6, right: 12),
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: isRead ? Colors.transparent : const Color(0xFF1E2532),
+                                        shape: BoxShape.circle,
+                                      ),
                                     ),
-                                    child: Icon(Icons.build_circle, color: isRead ? Colors.grey.shade500 : const Color(0xFF1E88E5), size: 24),
                                   ),
-                                  const SizedBox(width: 16),
+                                  // Content
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(child: Text(n['title'], style: TextStyle(fontWeight: isRead ? FontWeight.w600 : FontWeight.w800, fontSize: 15, color: const Color(0xFF1E2532)))),
-                                            if (!isRead)
-                                              Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
-                                          ],
+                                        Text(
+                                          n['title'],
+                                          style: TextStyle(
+                                            fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
+                                            fontSize: 15,
+                                            color: const Color(0xFF1E2532),
+                                          ),
                                         ),
                                         const SizedBox(height: 6),
-                                        Text(n['message'], style: TextStyle(color: isRead ? Colors.grey.shade600 : const Color(0xFF1E2532).withOpacity(0.8), fontSize: 13, height: 1.4)),
-                                        const SizedBox(height: 10),
-                                        Text(DateFormat('MMM d, h:mm a').format(createdAt), style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
+                                        Text(
+                                          n['message'],
+                                          style: TextStyle(
+                                            color: isRead ? Colors.grey.shade600 : const Color(0xFF1E2532).withOpacity(0.85),
+                                            fontSize: 14,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          _formatTimeAgo(createdAt),
+                                          style: TextStyle(
+                                            color: Colors.grey.shade400,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   )

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'payment/payment_home_screen.dart';
 import 'facility/facilities_list_screen.dart';
@@ -42,6 +45,77 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     PaymentHomeScreen(),
     ProfileHomeScreen(),
   ];
+
+
+  Timer? _notificationTimer;
+  final Set<int> _seenNotificationIds = {};
+  
+  @override
+  void initState() {
+    super.initState();
+    _startNotificationPolling();
+  }
+
+  @override
+  void dispose() {
+    _notificationTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startNotificationPolling() {
+    // Poll every 10 seconds for new notifications
+    _notificationTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      try {
+        final session = AuthService.currentSession;
+        // Using hardcoded 1 as per current setup, or session.residentId if available
+        final resId = session?.residentId ?? 1; 
+        
+        final response = await http.get(Uri.parse('http://10.0.2.2:5073/api/Notifications/resident/$resId'));
+        if (response.statusCode == 200) {
+          final List<dynamic> notifs = json.decode(response.body);
+          
+          for (var n in notifs) {
+            final int id = n['id'];
+            if (!_seenNotificationIds.contains(id)) {
+              // It's a new notification we haven't seen during this session!
+              // Don't pop up if it's already read from a previous session, unless we want to.
+              // We will only pop up if it's explicitly unread.
+              if (n['isRead'] == false && _seenNotificationIds.isNotEmpty) {
+                 _showNotificationPopup(n['title'], n['message']);
+              }
+              _seenNotificationIds.add(id);
+            }
+          }
+        }
+      } catch (e) {
+        // silently ignore network errors in polling
+      }
+    });
+  }
+
+  void _showNotificationPopup(String title, String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 4),
+            Text(message, style: const TextStyle(color: Colors.white70)),
+          ],
+        ),
+        backgroundColor: const Color(0xFF1E2532),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 50, left: 20, right: 20),
+        dismissDirection: DismissDirection.up,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 5),
+        elevation: 6,
+      ),
+    );
+  }
 
   void _changePage(int index) {
     setState(() {
