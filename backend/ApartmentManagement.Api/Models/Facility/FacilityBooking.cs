@@ -36,6 +36,9 @@ namespace ApartmentManagement.Api.Models
 
         public int BookedCapacity { get; set; } = 1;
 
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalCost { get; set; } = 0.00m;
+
         public DateTime CreatedAt {get;set;} = DateTime.UtcNow;
         public DateTime? UpdatedAt {get;set;} 
 

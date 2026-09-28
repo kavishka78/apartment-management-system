@@ -13,6 +13,7 @@ const EMPTY_FORM = {
   name: "",
   description: "",
   capacity: "",
+  hourlyCost: "0.00",
   openTime: "08:00",
   closeTime: "22:00",
   isActive: true,
@@ -225,6 +226,7 @@ export default function Facilities() {
       name: facility.name,
       description: facility.description,
       capacity: String(facility.capacity),
+      hourlyCost: String(facility.hourlyCost ?? "0.00"),
       openTime: facility.openTime?.substring(0, 5) || "08:00",
       closeTime: facility.closeTime?.substring(0, 5) || "22:00",
       isActive: facility.isActive,
@@ -292,6 +294,7 @@ export default function Facilities() {
         name: form.name,
         description: form.description,
         capacity: parseInt(form.capacity, 10),
+        hourlyCost: parseFloat(form.hourlyCost || "0"),
         openTime: form.openTime + ":00",
         closeTime: form.closeTime + ":00",
         isActive: form.isActive,
@@ -443,6 +446,7 @@ export default function Facilities() {
                 <tr>
                   <th>Facility</th>
                   <th>Operating Hours & Capacity</th>
+                  <th>Hourly Rate</th>
                   <th>Bookings ({filterRange})</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -451,7 +455,7 @@ export default function Facilities() {
               <tbody>
                 {facilities.length === 0 ? (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
+                    <td colSpan="6" style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
                       No facilities found. Click "Add Facility" to get started.
                     </td>
                   </tr>
@@ -479,9 +483,13 @@ export default function Facilities() {
                           <div style={{ fontSize: "13px", fontWeight: "500", color: "#334155" }}>
                             {formatTime(f.openTime)} – {formatTime(f.closeTime)}
                           </div>
-                          <div style={{ marginTop: "4px" }}>
-                            <span className="capacity-badge">Capacity: {f.capacity}</span>
+                          <div className="td-desc">Capacity: {f.capacity} spots</div>
+                        </td>
+                        <td>
+                          <div style={{ fontSize: "13.5px", fontWeight: "700", color: "#0f172a" }}>
+                            {f.hourlyCost > 0 ? `LKR ${Number(f.hourlyCost).toLocaleString("en-US", { minimumFractionDigits: 2 })} / hr` : "Free"}
                           </div>
+                          <div className="td-desc">per spot reserved</div>
                         </td>
                         <td>
                           <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
@@ -495,7 +503,7 @@ export default function Facilities() {
                             </span>
                           </div>
                         </td>
-                        <td>
+                        <td style={{ whiteSpace: "normal", minWidth: "160px", maxWidth: "220px" }}>
                           <span
                             className={`badge ${f.isActive ? "badge--success" : "badge--danger"}`}
                           >
@@ -504,14 +512,18 @@ export default function Facilities() {
                           {!f.isActive && f.deactivationReason && (
                             <div
                               style={{
-                                fontSize: "11px",
-                                color: "#dc2626",
-                                marginTop: "4px",
-                                maxWidth: "170px",
-                                lineHeight: "1.3",
+                                fontSize: "11.5px",
+                                color: "#b91c1c",
+                                marginTop: "6px",
+                                lineHeight: "1.4",
+                                wordBreak: "break-word",
+                                background: "#fef2f2",
+                                padding: "6px 8px",
+                                borderRadius: "6px",
+                                border: "1px solid #fecaca",
                               }}
                             >
-                              Reason: {f.deactivationReason}
+                              <strong>Reason:</strong> {f.deactivationReason}
                             </div>
                           )}
                         </td>
@@ -593,7 +605,7 @@ export default function Facilities() {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="fac-cap">Capacity</label>
+                  <label htmlFor="fac-cap">Capacity (Spots)</label>
                   <input
                     id="fac-cap"
                     name="capacity"
@@ -603,6 +615,21 @@ export default function Facilities() {
                     value={form.capacity}
                     onChange={handleChange}
                     placeholder="50"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="fac-cost">Hourly Cost (LKR / spot)</label>
+                  <input
+                    id="fac-cost"
+                    name="hourlyCost"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={form.hourlyCost}
+                    onChange={handleChange}
+                    placeholder="500.00"
                   />
                 </div>
 
@@ -631,16 +658,20 @@ export default function Facilities() {
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginTop: "12px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={form.isActive}
-                    onChange={handleChange}
-                  />
-                  <span>Active Facility</span>
-                </label>
+              <div className="form-group" style={{ marginTop: "16px" }}>
+                <div className="form-checkbox-container">
+                  <label htmlFor="fac-active" className="form-checkbox-label">
+                    <input
+                      id="fac-active"
+                      type="checkbox"
+                      name="isActive"
+                      checked={form.isActive}
+                      onChange={handleChange}
+                    />
+                    <span className="checkbox-text-title">Active Facility</span>
+                  </label>
+                  <p className="checkbox-text-desc">When active, residents can view and book this facility on the mobile app.</p>
+                </div>
               </div>
 
               <div className="form-actions">
