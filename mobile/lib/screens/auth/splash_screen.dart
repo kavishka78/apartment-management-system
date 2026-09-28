@@ -3,6 +3,7 @@ import 'login_entry_screen.dart';
 import '../main_navigation_screen.dart';
 import '../../services/auth/auth_service.dart';
 import '../../services/auth/resident_auth_api.dart';
+
 /// The first screen shown every time the app launches.
 ///
 /// Logic:
@@ -56,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen>
     final session = await AuthService.getSession();
 
     if (session == null || !session.isValid) {
-      _goToLogin();
+      _goToHome();
       return;
     }
 
@@ -70,11 +71,11 @@ class _SplashScreenState extends State<SplashScreen>
     } else {
       // Token expired or revoked — clear stale data and re-login
       await AuthService.clearSession();
-      _goToLogin();
+      _goToHome();
     }
   }
 
-  void _goToLogin() {
+  void _goToHome() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const LoginEntryScreen()),
     );

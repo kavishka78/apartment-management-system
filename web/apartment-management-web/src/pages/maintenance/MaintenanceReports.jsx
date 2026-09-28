@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
+import { MdAssignment, MdAttachMoney, MdPendingActions, MdWarning } from 'react-icons/md';
 import '../payment/PaymentDashboard.css';
 import '../payment/CollectionReports.css';
 
@@ -120,28 +121,48 @@ function MaintenanceReports() {
         </header>
 
         <section className="report-summary-grid">
-          <div className="report-summary-card">
-            <p>Total Complaints</p>
-            <h2>{report?.total ?? 0}</h2>
-            <span>All recorded issues</span>
+          <div className="report-summary-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p>Total Complaints</p>
+              <h2>{report?.total ?? 0}</h2>
+              <span>All recorded issues</span>
+            </div>
+            <div style={{ color: '#3b82f6', display: 'flex' }}>
+              <MdAssignment size={26} />
+            </div>
           </div>
 
-          <div className="report-summary-card">
-            <p>Total Repair Costs</p>
-            <h2>Rs. {Number(report?.totalRepairCost || 0).toLocaleString()}</h2>
-            <span>Accumulated cost</span>
+          <div className="report-summary-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p>Total Repair Costs</p>
+              <h2>Rs. {Number(report?.totalRepairCost || 0).toLocaleString()}</h2>
+              <span>Accumulated cost</span>
+            </div>
+            <div style={{ color: '#10b981', display: 'flex' }}>
+              <MdAttachMoney size={26} />
+            </div>
           </div>
 
-          <div className="report-summary-card">
-            <p>Pending / Assigned</p>
-            <h2>{(report?.pending || 0) + (report?.assigned || 0)}</h2>
-            <span>{pendingRate}% of total tickets</span>
+          <div className="report-summary-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p>Pending / Assigned</p>
+              <h2>{(report?.pending || 0) + (report?.assigned || 0)}</h2>
+              <span>{pendingRate}% of total tickets</span>
+            </div>
+            <div style={{ color: '#f59e0b', display: 'flex' }}>
+              <MdPendingActions size={26} />
+            </div>
           </div>
 
-          <div className="report-summary-card">
-            <p>SLA Risk Accounts</p>
-            <h2>{report?.slaRiskCount ?? 0}</h2>
-            <span>{slaRiskRate}% of all tickets</span>
+          <div className="report-summary-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p>SLA Risk Accounts</p>
+              <h2>{report?.slaRiskCount ?? 0}</h2>
+              <span>{slaRiskRate}% of all tickets</span>
+            </div>
+            <div style={{ color: '#ef4444', display: 'flex' }}>
+              <MdWarning size={26} />
+            </div>
           </div>
         </section>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAuthToken } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack, MdBuild, MdFlag, MdPerson, MdAttachMoney } from 'react-icons/md';
+import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack, MdBuild, MdFlag, MdPerson, MdAttachMoney, MdPhone } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import { motion } from 'framer-motion';
 import '../payment/PaymentDashboard.css';
@@ -43,6 +43,21 @@ const fetchWithAuth = useCallback((url, options = {}) => {
     fetchTicket();
   }, [fetchTicket]);
 
+  const [showReviseForm, setShowReviseForm] = useState(false);
+  const [reviseFeedback, setReviseFeedback] = useState('');
+  const [recommendedTech, setRecommendedTech] = useState(null);
+
+  useEffect(() => {
+    if (aiRecommendation?.recommendedTechnicianId) {
+      fetchWithAuth(`http://localhost:5073/api/technicians/${aiRecommendation.recommendedTechnicianId}`)
+        .then(res => res.json())
+        .then(data => setRecommendedTech(data))
+        .catch(err => console.error(err));
+    } else {
+      setRecommendedTech(null);
+    }
+  }, [aiRecommendation?.recommendedTechnicianId, fetchWithAuth]);
+
   const loadAiTriage = () => {
     setAiRecommendation({ loading: true });
     fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/triage`, { method: 'POST' })
@@ -54,24 +69,27 @@ const fetchWithAuth = useCallback((url, options = {}) => {
       });
   };
 
-    const handleRevise = () => {
-    const feedback = window.prompt('Enter your feedback for the AI Agent:');
-    if (feedback === null) return; // User cancelled
+    const submitRevision = () => {
+    if (!reviseFeedback.trim()) {
+        alert('Please enter your feedback for the AI Agent.');
+        return;
+    }
     
     // Mark old workflow as revised first
     if (aiRecommendation?.workflowId) {
       fetchWithAuth(`http://localhost:5073/api/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decision: 'RequestRevision', note: feedback, approvedBy: 'Manager' })
+        body: JSON.stringify({ decision: 'RequestRevision', note: reviseFeedback, approvedBy: 'Manager' })
       });
     }
 
     setAiRecommendation(null);
+    setShowReviseForm(false);
     fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/revise`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managerFeedback: feedback })
+      body: JSON.stringify({ managerFeedback: reviseFeedback })
     })
     .then(res => res.json())
     .then(data => {
@@ -333,15 +351,15 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                             {aiRecommendation.agentSteps.map((step, idx) => (
                               <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', color: '#2d3748', background: '#fff', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                                 <div style={{ minWidth: '24px', height: '24px', borderRadius: '50%', background: step.status === 'Blocked' ? '#fee2e2' : '#d4edda', color: step.status === 'Blocked' ? '#991b1b' : '#155724', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
-                                  {step.status === 'Blocked' ? 'Ã¯Â¿Â½' : '?'}
+                                  {step.status === 'Blocked' ? '❌' : '✅'}
                                 </div>
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontWeight: '600', color: '#4a5568', marginBottom: '2px' }}>{step.agentRole} <span style={{ fontWeight: 'normal', color: '#718096', fontSize: '12px' }}>({step.durationMilliseconds}ms)</span></div>
                                   <div style={{ marginBottom: '4px' }}><strong>Action:</strong> {step.action}</div>
-                                  {step.toolName && <div style={{ fontSize: '12px', color: '#718096', marginBottom: '2px' }}>?? Tool: {step.toolName}</div>}
-                                  <div style={{ fontSize: '12px', color: '#718096', marginBottom: '2px' }}>?? Input: {step.inputSummary}</div>
-                                  <div style={{ fontSize: '12px', color: '#718096', marginBottom: '2px' }}>?? Output: {step.outputSummary}</div>
-                                  <div style={{ fontSize: '12px', color: step.status === 'Blocked' ? '#e53e3e' : '#38a169' }}>?? Validation: {step.validationResult}</div>
+                                  {step.toolName && <div style={{ fontSize: '12px', color: '#718096', marginBottom: '2px' }}>🔧 Tool: {step.toolName}</div>}
+                                  <div style={{ fontSize: '12px', color: '#718096', marginBottom: '2px' }}>📥 Input: {step.inputSummary}</div>
+                                  <div style={{ fontSize: '12px', color: '#718096', marginBottom: '2px' }}>📤 Output: {step.outputSummary}</div>
+                                  <div style={{ fontSize: '12px', color: step.status === 'Blocked' ? '#e53e3e' : '#38a169' }}>✅ Validation: {step.validationResult}</div>
                                 </div>
                               </div>
                             ))}
@@ -361,7 +379,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                           <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #cbd5e1', fontSize: '12.5px', color: '#64748b' }}>
                             <strong>Tools Used:</strong> {aiRecommendation.toolResults || 'Standard tools'}
                             <br/>
-                            <strong>Validation:</strong> {aiRecommendation.validationResults || 'Passed'}
+                            <strong>✅ Validation:</strong> {aiRecommendation.validationResults || 'Passed'}
                           </div>
                           {aiRecommendation.agentSteps?.length > 0 && (
                             <div style={{ marginTop: '12px', fontSize: '12.5px', color: '#475569' }}>
@@ -395,16 +413,51 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                       <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid #e2d9ff' }} />
                       
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <span className="ai-badge" style={{ background: '#d4edda', color: '#155724' }}>TECHNICIAN MATCH</span>
-                          <p style={{ margin: 0, fontSize: '14px' }}>
-                            {aiRecommendation.recommendedTechnicianId ? (
-                              <><strong>Recommended:</strong> Technician ID {aiRecommendation.recommendedTechnicianId}</>
-                            ) : (
-                              <strong>No technicians available with matching skills.</strong>
-                            )}
-                          </p>
-                          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#4a5568' }}>{aiRecommendation.technicianReason}</p>
+                        <div style={{ flex: 1, paddingRight: '20px' }}>
+                          <span className="ai-badge" style={{ background: '#d4edda', color: '#155724', marginBottom: '8px', display: 'inline-block' }}>TECHNICIAN MATCH</span>
+                          
+                          {aiRecommendation.recommendedTechnicianId ? (
+                            <div style={{ marginTop: '4px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14.5px', color: '#1f2937', fontWeight: 600 }}>
+                                <MdPerson size={18} style={{ color: '#4b5563' }} />
+                                {recommendedTech ? recommendedTech.name : `Technician ID ${aiRecommendation.recommendedTechnicianId}`}
+                              </div>
+                              
+                              {recommendedTech && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px', marginLeft: '24px' }}>
+                                  
+                                  {/* Contact Info */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#4b5563' }}>
+                                    <MdPhone size={14} style={{ color: '#6b7280' }} />
+                                    <span>{recommendedTech.contactInformation || 'N/A'}</span>
+                                  </div>
+                                  
+                                  {/* Skills Badges */}
+                                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                                    <MdBuild size={14} style={{ color: '#6b7280', marginTop: '2px' }} />
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                      {recommendedTech.skills ? recommendedTech.skills.split(',').map(skill => (
+                                        <span key={skill} style={{ background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 500, border: '1px solid #e2e8f0' }}>
+                                          {skill.trim()}
+                                        </span>
+                                      )) : <span style={{ fontSize: '12.5px', color: '#64748b' }}>N/A</span>}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* AI Reasoning Box */}
+                              <div style={{ marginTop: '12px', padding: '10px 12px', background: '#f8fafc', borderLeft: '3px solid #94a3b8', borderRadius: '0 6px 6px 0', fontSize: '13px', color: '#475569', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                                <MdAutoAwesome size={16} style={{ color: '#6366f1', flexShrink: 0, marginTop: '2px' }} />
+                                <span>{aiRecommendation.technicianReason}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ marginTop: '10px' }}>
+                              <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#1f2937' }}>No technicians available with matching skills.</p>
+                              <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#4a5568' }}>{aiRecommendation.technicianReason}</p>
+                            </div>
+                          )}
                         </div>
                         
                         {aiRecommendation.recommendedTechnicianId && (
@@ -413,10 +466,26 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                           </button>
                         )}
                       </div>
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                        <button className="action-btn-dark" style={{ background: '#6b7280' }} onClick={handleRevise}>Request Revision</button>
-                        <button className="action-btn-dark" style={{ background: '#b91c1c' }} onClick={handleReject}>Reject</button>
-                      </div>
+                      {!showReviseForm ? (
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                          <button className="action-btn-dark" style={{ background: '#6b7280' }} onClick={() => setShowReviseForm(true)}>Request Revision</button>
+                          <button className="action-btn-dark" style={{ background: '#b91c1c' }} onClick={handleReject}>Reject</button>
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: '16px', background: '#f8f9fa', padding: '16px', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                          <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>Feedback for AI Agent <span style={{ color: '#b91c1c' }}>*</span></label>
+                          <textarea 
+                            value={reviseFeedback}
+                            onChange={e => setReviseFeedback(e.target.value)}
+                            placeholder="e.g. Please assign a different technician or reconsider the priority."
+                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', resize: 'vertical', minHeight: '80px', marginBottom: '10px', fontFamily: 'inherit', fontSize: '14px', boxSizing: 'border-box' }}
+                          />
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button className="action-btn-dark" style={{ background: '#6b7280' }} onClick={() => setShowReviseForm(false)}>Cancel</button>
+                            <button className="action-btn-dark" style={{ background: '#2563eb' }} onClick={submitRevision}>Submit Revision</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
