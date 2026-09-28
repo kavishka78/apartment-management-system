@@ -316,6 +316,59 @@ tr:hover .facility-icon-badge {
   gap: 14px;
 }
 
+
+/* ─── Checkbox Control Styling ──────────────────────────────── */
+.form-checkbox-container {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.form-checkbox-container:hover {
+  border-color: #cbd5e1;
+}
+
+.form-checkbox-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  cursor: pointer;
+  user-select: none;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.form-checkbox-label input[type="checkbox"] {
+  appearance: checkbox !important;
+  -webkit-appearance: checkbox !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+
+.checkbox-text-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.checkbox-text-desc {
+  margin: 6px 0 0 30px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
 @media (max-width: 640px) {
   .form-row {
     grid-template-columns: 1fr;
@@ -325,3 +378,4 @@ tr:hover .facility-icon-badge {
     align-items: flex-start;
   }
 }
+

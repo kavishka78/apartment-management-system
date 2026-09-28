@@ -631,16 +631,20 @@ export default function Facilities() {
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginTop: "12px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={form.isActive}
-                    onChange={handleChange}
-                  />
-                  <span>Active Facility</span>
-                </label>
+              <div className="form-group" style={{ marginTop: "16px" }}>
+                <div className="form-checkbox-container">
+                  <label htmlFor="fac-active" className="form-checkbox-label">
+                    <input
+                      id="fac-active"
+                      type="checkbox"
+                      name="isActive"
+                      checked={form.isActive}
+                      onChange={handleChange}
+                    />
+                    <span className="checkbox-text-title">Active Facility</span>
+                  </label>
+                  <p className="checkbox-text-desc">When active, residents can view and book this facility on the mobile app.</p>
+                </div>
               </div>
 
               <div className="form-actions">
