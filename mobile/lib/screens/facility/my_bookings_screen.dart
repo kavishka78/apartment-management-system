@@ -142,6 +142,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
       } catch (_) {}
     }
 
+    final totalCost = (booking['totalCost'] != null)
+        ? (booking['totalCost'] as num).toDouble()
+        : 0.0;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -251,6 +255,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
               iconColor: const Color(0xFF2563EB),
               title: "Booked Capacity / Guests",
               value: "Capacity: $bookedCapacity ${bookedCapacity == 1 ? 'Spot' : 'Spots'}",
+            ),
+            const SizedBox(height: 12),
+            _buildDetailTile(
+              icon: Icons.payments_outlined,
+              iconColor: const Color(0xFF059669),
+              title: "Total Booking Cost",
+              value: totalCost > 0 ? "LKR ${totalCost.toStringAsFixed(2)}" : "Free of Charge",
             ),
             const SizedBox(height: 12),
             _buildDetailTile(
@@ -688,6 +699,27 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                                   fontSize: 12,
                                   color: Color(0xFF475569),
                                   fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                '•',
+                                style: TextStyle(
+                                  color: Color(0xFFCBD5E1),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                (booking['totalCost'] != null && (booking['totalCost'] as num) > 0)
+                                    ? "LKR ${(booking['totalCost'] as num).toStringAsFixed(2)}"
+                                    : "Free",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: (booking['totalCost'] != null && (booking['totalCost'] as num) > 0)
+                                      ? const Color(0xFF047857)
+                                      : const Color(0xFF2563EB),
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],

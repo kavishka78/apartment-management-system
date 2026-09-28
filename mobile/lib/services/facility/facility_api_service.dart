@@ -97,6 +97,7 @@ class FacilityApiService {
     required String startTime,
     required String endTime,
     int bookedCapacity = 1,
+    double totalCost = 0.0,
   }) async {
     try {
       final response = await http
@@ -110,6 +111,7 @@ class FacilityApiService {
               'startTime': startTime,
               'endTime': endTime,
               'bookedCapacity': bookedCapacity,
+              'totalCost': totalCost,
             }),
           )
           .timeout(timeoutDuration);
