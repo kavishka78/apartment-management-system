@@ -134,7 +134,7 @@ class _DomesticStaffScreenState extends State<DomesticStaffScreen> {
                                   value: r,
                                   child: Text(r, style: const TextStyle(fontSize: 14)),
                                 ))
-                            .toList>,
+                            .toList(),
                         onChanged: (v) {
                           if (v != null) {
                             setSheetState(() => selectedRole = v);
@@ -403,7 +403,7 @@ class _DomesticStaffScreenState extends State<DomesticStaffScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.between,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
                                   children: [
@@ -503,7 +503,7 @@ class _DomesticStaffScreenState extends State<DomesticStaffScreen> {
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     color: s.isActive
-                                        ? Colors.emerald.shade700
+                                        ? Colors.green.shade700
                                         : Colors.redAccent,
                                   ),
                                 ),
