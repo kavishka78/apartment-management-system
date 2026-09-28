@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("http://0.0.0.0:5073");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(

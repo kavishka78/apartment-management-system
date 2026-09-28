@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Json;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace ApartmentManagement.Api.Controllers
 {
@@ -52,6 +54,17 @@ namespace ApartmentManagement.Api.Controllers
         public string Credential { get; set; } = string.Empty;
     }
 
+    public class VerifyContactRequest
+    {
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+    }
+
+    public class FirebaseTokenRequest
+    {
+        public string FirebaseIdToken { get; set; } = string.Empty;
+    }
+
     public class CreateAdminRequest
     {
         public string Name { get; set; } = string.Empty;
@@ -69,13 +82,20 @@ namespace ApartmentManagement.Api.Controllers
         private readonly AppDbContext _db;
         private readonly JwtTokenService _tokens;
         private readonly IConfiguration _config;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly IWebHostEnvironment _environment;
 
-        public PlatformController(AppDbContext db, JwtTokenService tokens, IConfiguration config, IWebHostEnvironment environment)
+        public PlatformController(
+            AppDbContext db,
+            JwtTokenService tokens,
+            IConfiguration config,
+            IHttpClientFactory httpClientFactory,
+            IWebHostEnvironment environment)
         {
             _db = db;
             _tokens = tokens;
             _config = config;
+            _httpClientFactory = httpClientFactory;
             _environment = environment;
         }
 
@@ -181,15 +201,25 @@ namespace ApartmentManagement.Api.Controllers
         [HttpPost("auth/resident/dev-login")]
         public async Task<IActionResult> DevResidentLogin([FromBody] LoginRequest req)
         {
-            if (!_environment.IsDevelopment()) return NotFound();
-            var email = req.Email.Trim().ToLower();
-            // Find resident by email
-            var matches = await _db.Residents.Where(r => r.Email.ToLower() == email && r.Status == "Active")
+            if (!_environment.IsDevelopment())
+                return NotFound();
+
+            var identifier = (req?.Email ?? "").Trim().ToLower();
+            if (string.IsNullOrWhiteSpace(identifier))
+                return Unauthorized("Active resident could not be uniquely resolved.");
+
+            var normalizedPhone = identifier.Replace(" ", "").Replace("-", "");
+            var matches = await _db.Residents.Where(r => r.Status == "Active" &&
+                (r.Email.ToLower() == identifier ||
+                 (normalizedPhone != "" &&
+                  r.PhoneNumber.Replace(" ", "").Replace("-", "") == normalizedPhone)))
                 .Take(2).ToListAsync();
-            if (matches.Count != 1) return Unauthorized("Active resident could not be uniquely resolved.");
+            if (matches.Count != 1)
+                return Unauthorized("Active resident could not be uniquely resolved.");
             var resident = matches[0];
 
             var tokenString = _tokens.CreateResidentToken(resident);
+            var complex = await _db.Complexes.FindAsync(resident.TenantId);
 
             return Ok(new
             {
@@ -199,7 +229,120 @@ namespace ApartmentManagement.Api.Controllers
                 email = resident.Email,
                 phone = resident.PhoneNumber,
                 unitNumber = resident.UnitNumber ?? "",
+                complexName = complex?.Name ?? "Apartment Complex",
                 tenantId = resident.TenantId
+            });
+        }
+
+        // ── Resident: Verify Contact (Step 1 of mobile login) ────
+        [AllowAnonymous]
+        [HttpPost("auth/resident/verify-contact")]
+        public async Task<IActionResult> VerifyResidentContact([FromBody] VerifyContactRequest req)
+        {
+            Resident? resident = null;
+
+            if (!string.IsNullOrWhiteSpace(req.Phone))
+            {
+                var phone = req.Phone.Trim();
+                // Try exact match first, then normalised (strip spaces/dashes)
+                resident = await _db.Residents.FirstOrDefaultAsync(r => r.PhoneNumber == phone && r.Status == "Active")
+                           ?? await _db.Residents.FirstOrDefaultAsync(r =>
+                               r.PhoneNumber.Replace(" ", "").Replace("-", "") ==
+                               phone.Replace(" ", "").Replace("-", "") && r.Status == "Active");
+            }
+            else if (!string.IsNullOrWhiteSpace(req.Email))
+            {
+                var email = req.Email.Trim().ToLower();
+                resident = await _db.Residents.FirstOrDefaultAsync(r => r.Email.ToLower() == email && r.Status == "Active");
+            }
+
+            if (resident == null)
+                return Ok(new { found = false });
+
+            var complex = await _db.Complexes.FindAsync(resident.TenantId);
+            return Ok(new
+            {
+                found = true,
+                residentId = resident.Id,
+                name = resident.FullName,
+                unitNumber = resident.UnitNumber ?? "Unassigned",
+                complexName = complex?.Name ?? "Apartment Complex",
+                entryMethod = !string.IsNullOrWhiteSpace(req.Phone) ? "phone" : "email",
+            });
+        }
+
+        // ── Resident: Exchange Firebase Token (Step 2 of mobile login) ──
+        [AllowAnonymous]
+        [HttpPost("auth/resident/firebase-token")]
+        public async Task<IActionResult> ResidentFirebaseToken([FromBody] FirebaseTokenRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.FirebaseIdToken))
+                return BadRequest("Firebase token is required.");
+
+            var apiKey = _config["Firebase:WebApiKey"];
+            if (string.IsNullOrWhiteSpace(apiKey))
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, "Resident sign-in is not configured.");
+
+            string? firebaseEmail;
+            string? firebasePhone;
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                using var verification = await client.PostAsJsonAsync(
+                    $"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={Uri.EscapeDataString(apiKey)}",
+                    new { idToken = req.FirebaseIdToken });
+
+                if (!verification.IsSuccessStatusCode)
+                    return Unauthorized("Invalid or expired Firebase token.");
+
+                using var result = await verification.Content.ReadFromJsonAsync<JsonDocument>();
+                if (result == null ||
+                    !result.RootElement.TryGetProperty("users", out var users) ||
+                    users.GetArrayLength() == 0)
+                    return Unauthorized("Invalid or expired Firebase token.");
+
+                var firebaseUser = users[0];
+                firebaseEmail = firebaseUser.TryGetProperty("email", out var email)
+                    ? email.GetString()
+                    : null;
+                firebasePhone = firebaseUser.TryGetProperty("phoneNumber", out var phone)
+                    ? phone.GetString()
+                    : null;
+            }
+            catch (HttpRequestException)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, "Firebase verification is unavailable.");
+            }
+            catch (TaskCanceledException)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, "Firebase verification timed out.");
+            }
+
+            Resident? resident = null;
+            if (!string.IsNullOrWhiteSpace(firebaseEmail))
+                resident = await _db.Residents.FirstOrDefaultAsync(r => r.Email.ToLower() == firebaseEmail.ToLower() && r.Status == "Active");
+
+            if (resident == null && !string.IsNullOrWhiteSpace(firebasePhone))
+                resident = await _db.Residents.FirstOrDefaultAsync(r =>
+                    r.PhoneNumber.Replace(" ", "").Replace("-", "") ==
+                    firebasePhone.Replace(" ", "").Replace("-", "") && r.Status == "Active");
+
+            if (resident == null)
+                return Unauthorized("No registered resident found for this identity.");
+
+            var tokenString = _tokens.CreateResidentToken(resident);
+
+            var complex = await _db.Complexes.FindAsync(resident.TenantId);
+            return Ok(new
+            {
+                token = tokenString,
+                residentId = resident.Id,
+                name = resident.FullName,
+                email = resident.Email,
+                phone = resident.PhoneNumber,
+                unitNumber = resident.UnitNumber ?? "",
+                complexName = complex?.Name ?? "",
+                tenantId = resident.TenantId,
             });
         }
 
