@@ -38,7 +38,7 @@ export default function GoogleSignInButton({ onCredential, onError }) {
           theme: "outline",
           size: "large",
           text: "signin_with",
-          width: 336,
+          width: Math.min(336, containerRef.current.clientWidth || 336),
         });
         setReady(true);
       })

@@ -203,6 +203,27 @@
   border: 1px solid #fca5a5;
 }
 
+.google-sign-in {
+  margin-top: 16px;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #9ca3af;
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: #d1d5db;
+}
+
 .demo-info {
   margin-top: 50px;
   text-align: center;

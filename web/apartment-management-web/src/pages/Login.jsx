@@ -1,17 +1,32 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 import { MdLockOutline, MdOutlinePersonOutline, MdKey, MdVisibility, MdVisibilityOff, MdBarChart, MdSecurity } from "react-icons/md";
 import "./Login.css";
 
 export default function Login() {
-  const { currentUser, authLoading, login } = useAuth();
+  const { currentUser, authLoading, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const handleGoogle = useCallback(async (credential) => {
+    setSubmitting(true);
+    setError("");
+    const result = await loginWithGoogle(credential);
+    setSubmitting(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    if (result.role === "SuperAdmin") navigate("/super-admin", { replace: true });
+    else if (result.role === "Technician") navigate("/technician/work-orders", { replace: true });
+    else navigate("/admin", { replace: true });
+  }, [loginWithGoogle, navigate]);
 
   if (authLoading) return null;
 
@@ -105,6 +120,11 @@ export default function Login() {
               {submitting ? "Signing in..." : "Sign In"}
             </button>
           </form>
+
+          <div className="google-sign-in">
+            <div className="login-divider"><span>or continue with</span></div>
+            <GoogleSignInButton onCredential={handleGoogle} onError={setError} />
+          </div>
 
           <div className="demo-info">
             <p style={{ fontWeight: 600, color: '#64748b', marginBottom: '8px' }}>Demo accounts</p>
