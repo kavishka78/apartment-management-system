@@ -388,6 +388,7 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                             leading: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
+                                color: Colors.green.shade50,
                                 color: const Color(0xFF17212B).withOpacity(0.08),
                                 borderRadius: BorderRadius.circular(10),
                               ),

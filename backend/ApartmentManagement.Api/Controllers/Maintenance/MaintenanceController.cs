@@ -412,6 +412,16 @@ maintenance.History.Add(new MaintenanceHistory
 
             var result = await _aiService.TriageComplaintAsync(maintenance.Title, maintenance.Description, availableTechs, activeTickets, slaContext, risk);
             
+            // [Requirement 2 & 4] Deterministic Validation in C#
+            var allowedCats = new[] { "Plumbing", "Electrical", "HVAC", "Cleaning", "Security", "Elevator", "Building", "General" };
+            var allowedPris = new[] { "Low", "Medium", "High", "Urgent" };
+            bool isValid = allowedCats.Contains(result.Category) && allowedPris.Contains(result.Priority);
+
+            // [Requirement 9] Safe Failure mapping
+            string workflowStatus = (result.RecommendedTechnicianId == null || !isValid) ? "SafeFailure" : "PendingApproval";
+            string approvalStatus = (result.RecommendedTechnicianId == null || !isValid) ? "Failed" : "Pending";
+            string currentStep = workflowStatus == "SafeFailure" ? (isValid ? "Safe Failure: No technician available" : "Safe Failure: Validation Rejected AI Output") : "Pending Approval";
+
             // Persist Agent Workflow State
             var workflow = new AgentWorkflow
             {
@@ -421,10 +431,10 @@ maintenance.History.Add(new MaintenanceHistory
                 CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
                 ToolResults = result.ToolResults,
                 ValidationResults = result.ValidationResults,
-                ApprovalStatus = "Pending",
-                Status = "PendingApproval",
-                CurrentStep = "Pending Approval",
-                FinalOutcome = System.Text.Json.JsonSerializer.Serialize(new { result.RecommendedTechnicianId, result.Category, result.Priority, result.SlaRisk }),
+                ApprovalStatus = approvalStatus,
+                Status = workflowStatus,
+                CurrentStep = currentStep,
+                FinalOutcome = System.Text.Json.JsonSerializer.Serialize(new { result.RecommendedTechnicianId, result.Category, result.Priority, result.SlaRisk, Reason = result.TechnicianReason }),
                 Steps = result.AgentSteps.Select(step => new AgentWorkflowStep
                 {
                     Sequence = step.Sequence,
@@ -567,6 +577,14 @@ maintenance.History.Add(new MaintenanceHistory
             var oldWorkflows = await _context.AgentWorkflows.Where(w => w.MaintenanceId == id && w.ApprovalStatus == "Pending").ToListAsync();
             foreach(var ow in oldWorkflows) { ow.ApprovalStatus = "Revised"; }
 
+            var allowedCats = new[] { "Plumbing", "Electrical", "HVAC", "Cleaning", "Security", "Elevator", "Building", "General" };
+            var allowedPris = new[] { "Low", "Medium", "High", "Urgent" };
+            bool isValid = allowedCats.Contains(result.Category) && allowedPris.Contains(result.Priority);
+
+            string workflowStatus = (result.RecommendedTechnicianId == null || !isValid) ? "SafeFailure" : "PendingApproval";
+            string approvalStatus = (result.RecommendedTechnicianId == null || !isValid) ? "Failed" : "Pending";
+            string currentStep = workflowStatus == "SafeFailure" ? (isValid ? "Safe Failure: No technician available" : "Safe Failure: Validation Rejected AI Output") : "Pending Approval";
+
             var workflow = new AgentWorkflow
             {
                 MaintenanceId = id,
@@ -575,10 +593,10 @@ maintenance.History.Add(new MaintenanceHistory
                 CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
                 ToolResults = result.ToolResults,
                 ValidationResults = result.ValidationResults,
-                ApprovalStatus = "Pending",
-                Status = "PendingApproval",
-                CurrentStep = "Pending Approval",
-                FinalOutcome = System.Text.Json.JsonSerializer.Serialize(new { result.RecommendedTechnicianId, result.Category, result.Priority, result.SlaRisk }),
+                ApprovalStatus = approvalStatus,
+                Status = workflowStatus,
+                CurrentStep = currentStep,
+                FinalOutcome = System.Text.Json.JsonSerializer.Serialize(new { result.RecommendedTechnicianId, result.Category, result.Priority, result.SlaRisk, Reason = result.TechnicianReason }),
                 Steps = result.AgentSteps.Select(step => new AgentWorkflowStep
                 {
                     Sequence = step.Sequence,
@@ -703,6 +721,24 @@ maintenance.History.Add(new MaintenanceHistory
             return Ok(MapToDto(maintenance));
         }
 
+        
+        [HttpPost("sync-categories")]
+        public async Task<IActionResult> SyncCategories()
+        {
+            var existing = await _context.MaintenanceCategories.Select(c => c.Name).ToListAsync();
+            var required = new[] { "Cleaning", "Security", "Elevator", "Building" };
+            
+            foreach (var req in required)
+            {
+                if (!existing.Contains(req))
+                {
+                    _context.MaintenanceCategories.Add(new MaintenanceCategory { Name = req });
+                }
+            }
+            await _context.SaveChangesAsync();
+            return Ok("Categories synced.");
+        }
+
         [HttpPost("seed")]
         public async Task<IActionResult> SeedData()
         {
@@ -712,7 +748,7 @@ maintenance.History.Add(new MaintenanceHistory
                     new MaintenanceCategory { Name = "Plumbing" },
                     new MaintenanceCategory { Name = "Electrical" },
                     new MaintenanceCategory { Name = "HVAC" },
-                    new MaintenanceCategory { Name = "General" }
+                    new MaintenanceCategory { Name = "General" }, new MaintenanceCategory { Name = "Cleaning" }, new MaintenanceCategory { Name = "Security" }, new MaintenanceCategory { Name = "Elevator" }, new MaintenanceCategory { Name = "Building" }
                 );
                 await _context.SaveChangesAsync();
             }

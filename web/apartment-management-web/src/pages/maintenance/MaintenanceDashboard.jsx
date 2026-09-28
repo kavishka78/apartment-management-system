@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css'; // Reuse existing styles
+import { MdAssignment, MdPendingActions, MdBuild, MdWarning } from 'react-icons/md';
 
 function MaintenanceDashboard() {
   const [report, setReport] = useState(null);
@@ -40,28 +41,48 @@ function MaintenanceDashboard() {
         </header>
 
         <section className="summary-grid">
-          <div className="summary-card">
-            <p>Total Complaints</p>
-            <h2>{loading ? "..." : report?.total ?? 0}</h2>
-            <span>All recorded issues</span>
+          <div className="summary-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p>Total Complaints</p>
+              <h2>{loading ? "..." : report?.total ?? 0}</h2>
+              <span>All recorded issues</span>
+            </div>
+            <div style={{ color: '#3b82f6', display: 'flex' }}>
+              <MdAssignment size={26} />
+            </div>
           </div>
 
-          <div className="summary-card">
-            <p>Pending / Assigned</p>
-            <h2>{loading ? "..." : ((report?.pending ?? 0) + (report?.assigned ?? 0))}</h2>
-            <span>Requires action</span>
+          <div className="summary-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p>Pending / Assigned</p>
+              <h2>{loading ? "..." : ((report?.pending ?? 0) + (report?.assigned ?? 0))}</h2>
+              <span>Requires action</span>
+            </div>
+            <div style={{ color: '#f59e0b', display: 'flex' }}>
+              <MdPendingActions size={26} />
+            </div>
           </div>
 
-          <div className="summary-card">
-            <p>In Progress</p>
-            <h2>{loading ? "..." : report?.inProgress ?? 0}</h2>
-            <span>Currently being fixed</span>
+          <div className="summary-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p>In Progress</p>
+              <h2>{loading ? "..." : report?.inProgress ?? 0}</h2>
+              <span>Currently being fixed</span>
+            </div>
+            <div style={{ color: '#10b981', display: 'flex' }}>
+              <MdBuild size={26} />
+            </div>
           </div>
 
-          <div className="summary-card">
-            <p>SLA Risks</p>
-            <h2>{loading ? "..." : report?.slaRiskCount ?? 0}</h2>
-            <span>Approaching deadline</span>
+          <div className="summary-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p>SLA Risks</p>
+              <h2>{loading ? "..." : report?.slaRiskCount ?? 0}</h2>
+              <span>Approaching deadline</span>
+            </div>
+            <div style={{ color: '#ef4444', display: 'flex' }}>
+              <MdWarning size={26} />
+            </div>
           </div>
         </section>
 

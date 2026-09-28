@@ -81,7 +81,7 @@ class TechnicianSelectionAgent:
         chosen = candidates[0] if candidates else None
         recommendation_id = chosen["id"] if chosen else None
         reason = f"Selected technician {recommendation_id} with matching skills and lowest workload." if chosen else "No available technician matches the required skills."
-        return recommendation_id, reason, _step(3, self.role, "Found best technician", tool="lookup_eligible_technicians", input_summary=f"Searched for {category} technicians ({len(request.technicians)} available).", output_summary=f"{len(candidates)} match(es) found. Recommending Technician #{recommendation_id}." if chosen else "No matching technician found.", validation="Only searched existing technicians from the system.", duration=int((time.perf_counter() - started) * 1000)), candidates
+        return recommendation_id, reason, _step(3, self.role, "Found best technician", tool="lookup_eligible_technicians", input_summary=f"Searched for {category} technicians ({len(request.technicians)} available).", output_summary=f"{len(candidates)} match(es) found. Recommending {chosen['name']} (technician id {recommendation_id})." if chosen else "No matching technician found.", validation="Only searched existing technicians from the system.", duration=int((time.perf_counter() - started) * 1000)), candidates
 
     @staticmethod
     def _lookup_eligible_technicians(technicians: List[TechnicianInput], category: str) -> List[Dict[str, Any]]:
@@ -91,7 +91,7 @@ class TechnicianSelectionAgent:
         for technician in technicians:
             skills = _normalise_skills(technician.skills)
             if technician.availability.lower() == "available" and any(category.lower() in skill.lower() for skill in skills):
-                matches.append({"id": technician.id, "active_jobs": technician.active_jobs})
+                matches.append({"id": technician.id, "name": technician.name, "active_jobs": technician.active_jobs})
         return sorted(matches, key=lambda item: (item["active_jobs"], item["id"]))
 
 

@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'payment/payment_home_screen.dart';
+import 'facility/facilities_list_screen.dart';
+import 'facility/my_bookings_screen.dart';
+import 'parking/visitor_parking_screen.dart';
+import 'maintenance/maintenance_home_screen.dart';
+import 'auth/login_entry_screen.dart';
+import '../services/auth/auth_service.dart';
 
 import 'payment/payment_home_screen.dart';
 import 'facility/facilities_list_screen.dart';
@@ -16,6 +23,7 @@ import '../services/auth/auth_service.dart';
 /// Moved out of main.dart so SplashScreen can route to it independently.
 /// The Profile tab is currently a placeholder — Part 2 will replace it
 /// with the full Resident Profile Hub screen.
+import 'profile/profile_home_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -281,36 +289,6 @@ class HomeScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                         builder: (context) => const PaymentHomeScreen()),
-                  );
-                },
-              ),
-              ServiceCard(
-                title: 'My Vehicles',
-                subtitle: 'Plates & Slots',
-                icon: Icons.directions_car_rounded,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => VehicleRegistrationScreen(
-                        residentId: session?.residentId ?? 0,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              ServiceCard(
-                title: 'Staff Passes',
-                subtitle: 'Gate Access',
-                icon: Icons.badge_outlined,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DomesticStaffScreen(
-                        residentId: session?.residentId ?? 0,
-                      ),
-                    ),
                   );
                 },
               ),

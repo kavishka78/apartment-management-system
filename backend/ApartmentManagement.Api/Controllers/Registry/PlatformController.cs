@@ -52,19 +52,6 @@ namespace ApartmentManagement.Api.Controllers
         public string Credential { get; set; } = string.Empty;
     }
 
-    // ── Resident mobile auth DTOs ─────────────────────────────────────────────
-
-    public class VerifyContactRequest
-    {
-        public string? Phone { get; set; }
-        public string? Email { get; set; }
-    }
-
-    public class FirebaseTokenRequest
-    {
-        public string FirebaseIdToken { get; set; } = string.Empty;
-    }
-
     public class CreateAdminRequest
     {
         public string Name { get; set; } = string.Empty;
@@ -174,117 +161,47 @@ namespace ApartmentManagement.Api.Controllers
             return Ok(new { token = _tokens.CreateToken(user), user = ToUserDto(user) });
         }
 
-        // ── Resident Mobile App Auth ──────────────────────────────────────────
 
-        /// Step 1: Check whether a phone or email is registered in the Residents
-        /// table. Called before any OTP/Firebase flow starts on the mobile app.
         [AllowAnonymous]
-        [HttpPost("auth/resident/verify-contact")]
-        public async Task<IActionResult> VerifyResidentContact(
-            [FromBody] VerifyContactRequest req)
+        [HttpPost("auth/resident/dev-login")]
+        public async Task<IActionResult> DevResidentLogin([FromBody] LoginRequest req)
         {
-            if (string.IsNullOrWhiteSpace(req.Phone) &&
-                string.IsNullOrWhiteSpace(req.Email))
-                return BadRequest("Provide either phone or email.");
+            var email = req.Email.Trim().ToLower();
+            // Find resident by email
+            var resident = await _db.Residents.FirstOrDefaultAsync(r => r.Email.ToLower() == email);
+            if (resident == null) return Unauthorized("Resident not found in database.");
 
-            Resident? resident = null;
-
-            if (!string.IsNullOrWhiteSpace(req.Phone))
+            // Create a fake JWT for the resident
+            var claims = new List<System.Security.Claims.Claim>
             {
-                var phone = req.Phone.Trim();
-                resident = await _db.Residents
-                    .FirstOrDefaultAsync(r =>
-                        r.PhoneNumber == phone && r.Status == "Active");
-            }
-            else if (!string.IsNullOrWhiteSpace(req.Email))
-            {
-                var email = req.Email.Trim().ToLower();
-                resident = await _db.Residents
-                    .FirstOrDefaultAsync(r =>
-                        r.Email.ToLower() == email && r.Status == "Active");
-            }
-
-            if (resident == null)
-                return Ok(new { found = false });
-
-            var complex = await _db.Complexes.FindAsync(resident.TenantId);
-
-            return Ok(new
-            {
-                found = true,
-                residentId = resident.Id,
-                name = resident.FullName,
-                unitNumber = resident.UnitNumber ?? "",
-                complexName = complex?.Name ?? "",
-                entryMethod = string.IsNullOrWhiteSpace(req.Phone) ? "email" : "phone",
-            });
-        }
-
-        /// Step 2: Receives a Firebase ID token from the mobile app after phone OTP,
-        /// email OTP, or Google sign-in is verified by Firebase on-device.
-        /// Verifies the token server-side and returns our own app JWT + resident data.
-        [AllowAnonymous]
-        [HttpPost("auth/resident/firebase-token")]
-        public async Task<IActionResult> ResidentFirebaseLogin(
-            [FromBody] FirebaseTokenRequest req)
-        {
-            if (string.IsNullOrWhiteSpace(req.FirebaseIdToken))
-                return BadRequest("Firebase ID token is required.");
-
-            System.IdentityModel.Tokens.Jwt.JwtSecurityToken jwt;
-            try
-            {
-                var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-                jwt = handler.ReadJwtToken(req.FirebaseIdToken);
-            }
-            catch (Exception ex)
-            {
-                return Unauthorized($"Invalid Firebase token format: {ex.Message}");
-            }
-
-            // Extract phone_number or email from claims
-            var phone = jwt.Claims.FirstOrDefault(c => c.Type == "phone_number")?.Value;
-            var email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
-
-            Resident? resident = null;
-
-            if (!string.IsNullOrWhiteSpace(phone))
-                resident = await _db.Residents.FirstOrDefaultAsync(
-                    r => r.PhoneNumber == phone && r.Status == "Active");
-            else if (!string.IsNullOrWhiteSpace(email))
-                resident = await _db.Residents.FirstOrDefaultAsync(
-                    r => r.Email.ToLower() == email!.ToLower() && r.Status == "Active");
-
-            if (resident == null)
-                return Unauthorized("No active resident account found for this identity.");
-
-            // Build a lightweight UserAccount so JwtTokenService can mint a token
-            var pseudoUser = new UserAccount
-            {
-                Id = resident.Id,
-                Name = resident.FullName,
-                Email = resident.Email,
-                Phone = resident.PhoneNumber,
-                Role = "Resident",
-                TenantId = resident.TenantId,
-                Status = "Active",
+                new(System.Security.Claims.ClaimTypes.NameIdentifier, resident.Id.ToString()),
+                new(System.Security.Claims.ClaimTypes.Email, resident.Email),
+                new(System.Security.Claims.ClaimTypes.Name, resident.FullName),
+                new(System.Security.Claims.ClaimTypes.Role, "Resident")
             };
 
+            var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+            var creds = new Microsoft.IdentityModel.Tokens.SigningCredentials(key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
+
+            var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddDays(7),
+                signingCredentials: creds
+            );
+
+            var tokenString = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
+
             return Ok(new
             {
-                token = _tokens.CreateToken(pseudoUser),
-                resident = new
-                {
-                    id = resident.Id,
-                    fullName = resident.FullName,
-                    email = resident.Email,
-                    phoneNumber = resident.PhoneNumber,
-                    unitNumber = resident.UnitNumber ?? "",
-                    tenantId = resident.TenantId,
-                    status = resident.Status,
-                    vehiclesCount = resident.VehiclesCount,
-                    staffCount = resident.StaffCount,
-                },
+                token = tokenString,
+                residentId = resident.Id,
+                name = resident.FullName,
+                email = resident.Email,
+                phone = resident.PhoneNumber,
+                unitNumber = resident.UnitNumber ?? "",
+                tenantId = resident.TenantId
             });
         }
 
