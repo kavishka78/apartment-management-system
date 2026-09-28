@@ -3,6 +3,7 @@ using ApartmentManagement.Api.DTOs;
 using ApartmentManagement.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Stripe;
 
 namespace ApartmentManagement.Api.Controllers
 {
@@ -11,11 +12,19 @@ namespace ApartmentManagement.Api.Controllers
     public class PaymentsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public PaymentsController(AppDbContext context)
+        public PaymentsController(
+            AppDbContext context,
+            IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
+
+            StripeConfiguration.ApiKey =
+                _configuration["Stripe:SecretKey"];
         }
+
 
         // POST: api/payments/create
         [HttpPost("create")]
@@ -72,6 +81,10 @@ namespace ApartmentManagement.Api.Controllers
                 });
             }
 
+            
+
+
+
             // Basic demo validation
             var cleanCardNumber = request.CardNumber.Replace(" ", "");
 
@@ -124,6 +137,228 @@ namespace ApartmentManagement.Api.Controllers
                 payment.CardLastFourDigits
             });
         }
+
+
+
+        // POST: api/payments/create-intent
+        [HttpPost("create-intent")]
+        public async Task<IActionResult> CreatePaymentIntent([FromBody] CreatePaymentIntentRequest request)
+        {
+            var invoice = await _context.Invoices
+                .Include(i => i.Payments)
+                .FirstOrDefaultAsync(i => i.Id == request.InvoiceId);
+
+            if (invoice == null)
+            {
+                return NotFound(new
+                {
+                    message = "Invoice not found."
+                });
+            }
+
+            if (invoice.Status == "Paid")
+            {
+                return BadRequest(new
+                {
+                    message = "This invoice has already been paid."
+                });
+            }
+
+            var existingPayment = await _context.Payments
+                .AnyAsync(p =>
+                    p.InvoiceId == request.InvoiceId &&
+                    (p.Status == "Successful" || p.Status == "Verified"));
+
+            if (existingPayment)
+            {
+                return BadRequest(new
+                {
+                    message = "A successful payment already exists for this invoice."
+                });
+            }
+
+            try
+            {
+                var options = new PaymentIntentCreateOptions
+                {
+                    // Stripe expects the smallest currency unit.
+                    Amount = (long)(invoice.TotalAmount * 100),
+                    Currency = "lkr",
+
+                    AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
+                    {
+                        Enabled = true
+                    },
+
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "invoiceId", invoice.Id.ToString() },
+                        { "invoiceNumber", invoice.InvoiceNumber }
+                    }
+                };
+
+                var service = new PaymentIntentService();
+                var paymentIntent = await service.CreateAsync(options);
+
+                return Ok(new
+                {
+                    message = "Stripe PaymentIntent created successfully.",
+                    paymentIntentId = paymentIntent.Id,
+                    clientSecret = paymentIntent.ClientSecret,
+                    invoiceId = invoice.Id,
+                    invoiceNumber = invoice.InvoiceNumber,
+                    amount = invoice.TotalAmount,
+                    currency = "lkr"
+                });
+            }
+            catch (StripeException ex)
+            {
+                return BadRequest(new
+                {
+                    message = "Unable to create Stripe PaymentIntent.",
+                    stripeError = ex.StripeError?.Message
+                });
+            }
+        }
+
+
+
+// POST: api/payments/confirm-stripe
+[HttpPost("confirm-stripe")]
+public async Task<IActionResult> ConfirmStripePayment(
+    [FromBody] ConfirmStripePaymentRequest request)
+{
+    if (string.IsNullOrWhiteSpace(request.PaymentIntentId))
+    {
+        return BadRequest(new
+        {
+            message = "PaymentIntent ID is required."
+        });
+    }
+
+    try
+    {
+        // Get the PaymentIntent directly from Stripe.
+        var service = new PaymentIntentService();
+        var paymentIntent =
+            await service.GetAsync(request.PaymentIntentId);
+
+        // Never trust Flutter alone for payment success.
+        if (paymentIntent.Status != "succeeded")
+        {
+            return BadRequest(new
+            {
+                message = "Stripe payment has not succeeded.",
+                stripeStatus = paymentIntent.Status
+            });
+        }
+
+        // Get invoice ID stored in Stripe metadata.
+        if (!paymentIntent.Metadata.TryGetValue(
+                "invoiceId",
+                out var invoiceIdText) ||
+            !int.TryParse(invoiceIdText, out var invoiceId))
+        {
+            return BadRequest(new
+            {
+                message = "Invoice information is missing from Stripe payment."
+            });
+        }
+
+        var invoice = await _context.Invoices
+            .Include(i => i.Payments)
+            .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+        if (invoice == null)
+        {
+            return NotFound(new
+            {
+                message = "Invoice not found."
+            });
+        }
+
+        // Verify Stripe amount against our own database.
+        var expectedAmount =
+            (long)(invoice.TotalAmount * 100);
+
+        if (paymentIntent.Amount != expectedAmount)
+        {
+            return BadRequest(new
+            {
+                message = "Stripe payment amount does not match the invoice."
+            });
+        }
+
+        if (!string.Equals(
+                paymentIntent.Currency,
+                "lkr",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new
+            {
+                message = "Invalid payment currency."
+            });
+        }
+
+        // Prevent duplicate local payment records.
+        var existingPayment =
+            await _context.Payments
+                .FirstOrDefaultAsync(p =>
+                    p.InvoiceId == invoice.Id &&
+                    (p.Status == "Successful" ||
+                     p.Status == "Verified"));
+
+        if (existingPayment != null)
+        {
+            return Ok(new
+            {
+                message = "Payment already recorded.",
+                paymentId = existingPayment.Id,
+                existingPayment.PaymentReference,
+                existingPayment.Status
+            });
+        }
+
+        var payment = new Payment
+        {
+            InvoiceId = invoice.Id,
+
+            PaymentReference =
+                $"PAY-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
+
+            Amount = invoice.TotalAmount,
+            PaymentMethod = "Stripe Card",
+            Status = "Successful",
+            PaidAt = DateTime.UtcNow
+        };
+
+        _context.Payments.Add(payment);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Stripe payment verified and recorded successfully.",
+            paymentId = payment.Id,
+            payment.PaymentReference,
+            payment.InvoiceId,
+            payment.Amount,
+            payment.PaymentMethod,
+            payment.Status,
+            payment.PaidAt,
+            stripePaymentIntentId = paymentIntent.Id
+        });
+    }
+    catch (StripeException ex)
+    {
+        return BadRequest(new
+        {
+            message = "Unable to verify Stripe payment.",
+            stripeError = ex.StripeError?.Message
+        });
+    }
+}
+
+
 
         // POST: api/payments/1/verify
 [HttpPost("{id}/verify")]

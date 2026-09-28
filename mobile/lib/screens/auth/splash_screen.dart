@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../screens/auth/login_entry_screen.dart';
-import '../screens/main_navigation_screen.dart';
-import '../services/auth/auth_service.dart';
-import '../services/auth/resident_auth_api.dart';
-
+import 'login_entry_screen.dart';
+import '../main_navigation_screen.dart';
+import '../../services/auth/auth_service.dart';
+import '../../services/auth/resident_auth_api.dart';
 /// The first screen shown every time the app launches.
 ///
 /// Logic:

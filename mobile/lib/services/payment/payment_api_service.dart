@@ -88,6 +88,157 @@ class PaymentApiService {
     }
   }
 
+
+      // =========================================================
+    // CREATE STRIPE PAYMENT INTENT
+    // =========================================================
+    static Future<Map<String, dynamic>> createPaymentIntent({
+      required int invoiceId,
+    }) async {
+      try {
+        final url = Uri.parse('$baseUrl/payments/create-intent');
+
+        final response = await http.post(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'invoiceId': invoiceId,
+          }),
+        );
+
+        debugPrint(
+          'STRIPE PAYMENT INTENT STATUS: ${response.statusCode}',
+        );
+
+        dynamic decoded;
+
+        if (response.body.isNotEmpty) {
+          try {
+            decoded = jsonDecode(response.body);
+          } catch (_) {
+            decoded = null;
+          }
+        }
+
+        if (response.statusCode >= 200 &&
+            response.statusCode < 300) {
+          return {
+            'success': true,
+            'data': decoded,
+          };
+        }
+
+        String errorMessage =
+            'Failed to create Stripe payment';
+
+        if (decoded is Map<String, dynamic>) {
+          if (decoded['message'] != null) {
+            errorMessage = decoded['message'].toString();
+          }
+
+          if (decoded['stripeError'] != null) {
+            errorMessage =
+                '${decoded['message']} ${decoded['stripeError']}';
+          }
+        }
+
+        return {
+          'success': false,
+          'message':
+              '$errorMessage (${response.statusCode})',
+        };
+      } catch (e) {
+        debugPrint(
+          'CREATE STRIPE PAYMENT INTENT ERROR: $e',
+        );
+
+        return {
+          'success': false,
+          'message':
+              'Cannot connect to payment server: $e',
+        };
+      }
+    }
+
+// =========================================================
+// CONFIRM STRIPE PAYMENT
+// =========================================================
+static Future<Map<String, dynamic>> confirmStripePayment({
+  required String paymentIntentId,
+}) async {
+  try {
+    final url = Uri.parse(
+      '$baseUrl/payments/confirm-stripe',
+    );
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'paymentIntentId': paymentIntentId,
+      }),
+    );
+
+    debugPrint(
+      'CONFIRM STRIPE PAYMENT STATUS: ${response.statusCode}',
+    );
+
+    debugPrint(
+      'CONFIRM STRIPE PAYMENT RESPONSE: ${response.body}',
+    );
+
+    dynamic decoded;
+
+    if (response.body.isNotEmpty) {
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {
+        decoded = null;
+      }
+    }
+
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
+      return {
+        'success': true,
+        'data': decoded,
+      };
+    }
+
+    String errorMessage =
+        'Failed to confirm Stripe payment';
+
+    if (decoded is Map<String, dynamic> &&
+        decoded['message'] != null) {
+      errorMessage = decoded['message'].toString();
+    }
+
+    return {
+      'success': false,
+      'message':
+          '$errorMessage (${response.statusCode})',
+    };
+  } catch (e) {
+    debugPrint(
+      'CONFIRM STRIPE PAYMENT ERROR: $e',
+    );
+
+    return {
+      'success': false,
+      'message':
+          'Cannot confirm payment with server: $e',
+    };
+  }
+}
+
+
+
+
+
   // =========================================================
   // GET INVOICES
   // =========================================================

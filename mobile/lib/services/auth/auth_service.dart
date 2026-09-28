@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/auth/resident_session.dart';
+import '../../models/auth/resident_session.dart';
 
 /// Manages the resident's local login session.
 ///

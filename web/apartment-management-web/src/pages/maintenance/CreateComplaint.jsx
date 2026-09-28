@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
@@ -26,8 +26,8 @@ function CreateComplaint() {
       .then(res => res.json())
       .then(data => {
         setCategories(data);
-        if (data.length > 0 && !formData.categoryId) {
-          setFormData(prev => ({ ...prev, categoryId: data[0].id.toString() }));
+        if (data.length > 0) {
+          setFormData(prev => prev.categoryId ? prev : { ...prev, categoryId: data[0].id.toString() });
         }
       })
       .catch(err => console.error("Failed to load categories", err));

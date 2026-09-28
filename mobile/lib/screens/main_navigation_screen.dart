@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
-import 'screens/payment/payment_home_screen.dart';
-import 'screens/facility/facilities_list_screen.dart';
-import 'screens/facility/my_bookings_screen.dart';
-import 'screens/parking/visitor_parking_screen.dart';
-import 'screens/maintenance/maintenance_home_screen.dart';
-import 'screens/auth/login_entry_screen.dart';
-import 'services/auth/auth_service.dart';
 
+import 'payment/payment_home_screen.dart';
+import 'facility/facilities_list_screen.dart';
+import 'facility/my_bookings_screen.dart';
+import 'parking/visitor_parking_screen.dart';
+import 'maintenance/maintenance_home_screen.dart';
+import 'auth/login_entry_screen.dart';
+import 'profile/profile_home_screen.dart';
+import 'profile/vehicle_registration_screen.dart';
+import 'profile/domestic_staff_screen.dart';
+
+import '../services/auth/auth_service.dart';
 /// The main bottom navigation shell shown after successful login.
 ///
 /// Moved out of main.dart so SplashScreen can route to it independently.
 /// The Profile tab is currently a placeholder — Part 2 will replace it
 /// with the full Resident Profile Hub screen.
-import 'screens/profile/profile_home_screen.dart';
-import 'screens/profile/vehicle_registration_screen.dart';
-import 'screens/profile/domestic_staff_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});

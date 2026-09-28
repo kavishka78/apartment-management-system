@@ -454,11 +454,11 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                             leading: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.emerald.shade50,
+                                color: Colors.green.shade50,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(Icons.phone_outlined,
-                                  color: Colors.emerald.shade700, size: 20),
+                                  color: Colors.green.shade700, size: 20),
                             ),
                             title: const Text(
                               'Contact Info',
@@ -470,7 +470,7 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                               style: const TextStyle(fontSize: 11, color: Colors.grey),
                             ),
                             trailing: const Icon(Icons.check_circle,
-                                size: 16, color: Colors.emerald),
+                                size: 16, color: Colors.green),
                           ),
                           const Divider(height: 1, indent: 60),
                           ListTile(
