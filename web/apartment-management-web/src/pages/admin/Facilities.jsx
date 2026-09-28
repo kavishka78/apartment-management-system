@@ -495,7 +495,7 @@ export default function Facilities() {
                             </span>
                           </div>
                         </td>
-                        <td>
+                        <td style={{ whiteSpace: "normal", minWidth: "160px", maxWidth: "220px" }}>
                           <span
                             className={`badge ${f.isActive ? "badge--success" : "badge--danger"}`}
                           >
@@ -504,14 +504,18 @@ export default function Facilities() {
                           {!f.isActive && f.deactivationReason && (
                             <div
                               style={{
-                                fontSize: "11px",
-                                color: "#dc2626",
-                                marginTop: "4px",
-                                maxWidth: "170px",
-                                lineHeight: "1.3",
+                                fontSize: "11.5px",
+                                color: "#b91c1c",
+                                marginTop: "6px",
+                                lineHeight: "1.4",
+                                wordBreak: "break-word",
+                                background: "#fef2f2",
+                                padding: "6px 8px",
+                                borderRadius: "6px",
+                                border: "1px solid #fecaca",
                               }}
                             >
-                              Reason: {f.deactivationReason}
+                              <strong>Reason:</strong> {f.deactivationReason}
                             </div>
                           )}
                         </td>
