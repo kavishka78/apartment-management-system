@@ -11,8 +11,6 @@ class MyInvoicesScreen extends StatefulWidget {
 }
 
 class _MyInvoicesScreenState extends State<MyInvoicesScreen> {
-  // Temporary until resident authentication is connected.
-  static const int residentId = 6;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -30,9 +28,7 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen> {
       _errorMessage = null;
     });
 
-    final result = await PaymentApiService.getInvoices(
-      residentId: residentId,
-    );
+    final result = await PaymentApiService.getInvoices();
 
     if (!mounted) return;
 
@@ -115,6 +111,9 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen> {
       return 'Paid';
     }
 
+    if ((invoice['payments'] as List? ?? []).any((p) => p['status'] == 'Successful')) {
+      return 'Awaiting verification';
+    }
     final dueDate = DateTime.tryParse(
       invoice['dueDate']?.toString() ?? '',
     );
@@ -129,7 +128,7 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen> {
   int get _pendingCount {
     return _invoices.where((invoice) {
       final item = Map<String, dynamic>.from(invoice);
-      return _displayStatus(item).toLowerCase() != 'paid';
+      return item['canPay'] == true;
     }).length;
   }
 
@@ -139,7 +138,7 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen> {
     for (final invoice in _invoices) {
       final item = Map<String, dynamic>.from(invoice);
 
-      if (_displayStatus(item).toLowerCase() != 'paid') {
+      if (item['canPay'] == true) {
         total +=
             double.tryParse(item['totalAmount'].toString()) ?? 0;
       }

@@ -49,13 +49,10 @@ _RESPONSE_SCHEMA = {
             "type": "string",
             "enum": ALLOWED_INTENTS,
         },
-        "reply": {
-            "type": "string",
-        },
+
     },
     "required": [
         "intent",
-        "reply",
     ],
 }
 
@@ -86,7 +83,7 @@ greeting:
 The resident is greeting the assistant.
 
 pending_invoices:
-The resident wants to know about unpaid, pending, or current invoices.
+The resident wants to know about unpaid, pending, or current invoices, or wants to pay an invoice.
 
 latest_payment:
 The resident wants information about their most recent payment.
@@ -122,8 +119,8 @@ Important rules:
   passwords, API keys, or other secrets.
 - Financial information must come from the application's
   read-only payment tools, not from your own knowledge.
-- If the resident wants to make a payment, explain that the
-  application will use the secure payment flow.
+- If the resident wants to make a payment, classify as pending_invoices.
+- Return only an intent. Do not generate replies or financial information.
 - Return only the structured JSON response.
 """
 
@@ -179,12 +176,6 @@ async def classify_message(
     intent = result.get("intent")
 
     if intent not in ALLOWED_INTENTS:
-        return {
-            "intent": "unknown",
-            "reply": (
-                "I can help you with apartment "
-                "payments and billing."
-            ),
-        }
+        return {"intent": "unknown"}
 
-    return result
+    return {"intent": intent}

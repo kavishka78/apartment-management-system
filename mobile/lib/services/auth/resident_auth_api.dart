@@ -99,18 +99,9 @@ class ResidentAuthApi {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
 
-        // The existing /auth/google endpoint returns { token, user } where
-        // `user` is a UserAccount (not a Resident). We adapt it here.
-        final user = data['user'] as Map<String, dynamic>;
-        return ResidentSession(
-          token: data['token'] as String,
-          residentId: user['id'] as int,
-          name: user['name'] as String? ?? '',
-          email: user['email'] as String? ?? '',
-          phone: '',
-          unitNumber: '',
-          tenantId: user['tenantId'] as int? ?? 0,
-        );
+        // The backend resolves Resident separately from UserAccount.
+        if (data['resident'] is! Map<String, dynamic>) return null;
+        return ResidentSession.fromJson(data);
       }
       return null;
     } catch (_) {

@@ -1,4 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
+from fastapi.middleware.cors import CORSMiddleware
+import httpx
+import os
+import re
+import asyncio
+from services.payment_api_service import PaymentApiService
 from datetime import datetime
 
 from agent import PaymentAgent
@@ -14,6 +20,13 @@ app = FastAPI(
         "read-only payment tools to retrieve real financial data."
     ),
     version="1.1.0",
+)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in os.getenv("PAYMENT_AGENT_ALLOWED_ORIGINS", "").split(",") if origin.strip()],
+    allow_methods=["POST"], allow_headers=["Authorization", "Content-Type"],
 )
 
 
@@ -126,6 +139,9 @@ def detect_fallback_intent(message: str) -> str:
         "my invoices",
         "unpaid invoice",
         "unpaid invoices",
+        "pay now",
+        "pay my",
+        "make a payment",
     ]
 
     if any(
@@ -133,6 +149,9 @@ def detect_fallback_intent(message: str) -> str:
         for phrase in pending_invoice_phrases
     ):
         return "pending_invoices"
+
+    if any(phrase in message for phrase in ["how do", "how can i pay", "payment help", "verification"]):
+        return "payment_help"
 
     return "unknown"
 
@@ -171,24 +190,26 @@ def create_greeting(local_time: str | None) -> str:
 # Chat Endpoint
 # -------------------------------------------------
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, authorization: str | None = Header(default=None)):
+    if not authorization or not re.fullmatch(r"Bearer [^\s]+", authorization, re.IGNORECASE):
+        raise HTTPException(status_code=401, detail="A Bearer token is required.", headers={"WWW-Authenticate": "Bearer"})
     try:
+        # .NET remains the sole JWT validator, including greeting/help requests.
+        await PaymentApiService.validate_resident(authorization)
         message = request.message.strip()
+        # Reject apparent credentials/card data before anything is sent to Gemini.
+        if re.search(r"(?:\d[ -]?){13,19}|\b(?:cvv|cvc|expiry|expiration|password|bearer|api[_ -]?key|secret[_ -]?key)\b|(?:sk|pk)_(?:live|test)_|AIza|eyJ[A-Za-z0-9_-]+\.", message, re.IGNORECASE):
+            return ChatResponse(message="Please do not share card details or credentials in chat. Use the secure Stripe payment window.")
 
         # -----------------------------------------
         # Step 1: Ask Gemini to understand intent
         # -----------------------------------------
         try:
-            ai_result = await classify_message(message)
+            ai_result = await asyncio.wait_for(classify_message(message), timeout=15)
 
             intent = ai_result.get(
                 "intent",
                 "unknown",
-            )
-
-            ai_reply = ai_result.get(
-                "reply",
-                "",
             )
 
         except Exception as exc:
@@ -200,7 +221,6 @@ async def chat(request: ChatRequest):
             )
 
             intent = detect_fallback_intent(message)
-            ai_reply = ""
 
         # -----------------------------------------
         # Step 2: Execute allow-listed tools
@@ -217,8 +237,7 @@ async def chat(request: ChatRequest):
         # Pending Invoices
         if intent == "pending_invoices":
             result = await PaymentAgent.get_pending_invoices(
-                resident_id=request.resident_id,
-                token=request.token,
+                authorization=authorization,
             )
 
             return ChatResponse(**result)
@@ -226,8 +245,7 @@ async def chat(request: ChatRequest):
         # Latest Payment
         if intent == "latest_payment":
             result = await PaymentAgent.get_latest_payment(
-                resident_id=request.resident_id,
-                token=request.token,
+                authorization=authorization,
             )
 
             return ChatResponse(**result)
@@ -235,8 +253,7 @@ async def chat(request: ChatRequest):
         # Payment History
         if intent == "payment_history":
             result = await PaymentAgent.get_payment_history(
-                resident_id=request.resident_id,
-                token=request.token,
+                authorization=authorization,
             )
 
             return ChatResponse(**result)
@@ -244,8 +261,7 @@ async def chat(request: ChatRequest):
         # Receipts
         if intent == "receipts":
             result = await PaymentAgent.get_receipts(
-                resident_id=request.resident_id,
-                token=request.token,
+                authorization=authorization,
             )
 
             return ChatResponse(**result)
@@ -253,8 +269,7 @@ async def chat(request: ChatRequest):
         # Outstanding Balance
         if intent == "outstanding_balance":
             result = await PaymentAgent.get_outstanding_balance(
-                resident_id=request.resident_id,
-                token=request.token,
+                authorization=authorization,
             )
 
             return ChatResponse(**result)
@@ -263,11 +278,12 @@ async def chat(request: ChatRequest):
         # General Payment Help
         # -----------------------------------------
         if intent == "payment_help":
-            safe_reply = ai_reply or (
+            safe_reply = (
                 "I can help explain invoices, payments, "
                 "receipts, and payment verification. "
                 "Payments are completed through the "
-                "secure payment flow in the application."
+                "Stripe PaymentSheet in the application. Successful payments await "
+                "admin verification before the invoice is Paid and a receipt is issued."
             )
 
             return ChatResponse(
@@ -287,6 +303,16 @@ async def chat(request: ChatRequest):
             )
         )
 
+    except httpx.HTTPStatusError as exc:
+        status = exc.response.status_code
+        if status in (401, 403):
+            raise HTTPException(status_code=status, detail="Please sign in with an active resident account.",
+                                headers={"WWW-Authenticate": "Bearer"} if status == 401 else None) from None
+        raise HTTPException(status_code=502, detail="Payment service is unavailable.") from None
+    except httpx.RequestError:
+        raise HTTPException(status_code=503, detail="Payment service is unavailable.") from None
+    except HTTPException:
+        raise
     except Exception as exc:
         print(
             "Payment agent request failed: "

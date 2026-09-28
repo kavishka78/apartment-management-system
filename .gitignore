@@ -429,3 +429,8 @@ FodyWeavers.xsd
 *.msp
 
 .idea
+
+# Payment agent local environment
+venv/
+.venv/
+.env.*

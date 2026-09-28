@@ -1,3 +1,4 @@
+import { paymentFetch } from "../../services/api";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./PaymentDashboard.css";
@@ -72,8 +73,8 @@ function Invoices() {
       params.append("status", status);
     }
 
-    return fetch(
-      `http://localhost:5073/api/invoices?${params.toString()}`
+    return paymentFetch(
+      `/invoices?${params.toString()}`
     )
       .then((response) => {
         if (!response.ok) {
@@ -114,8 +115,8 @@ function Invoices() {
     setViewLoading(true);
 
     try {
-      const response = await fetch(
-        `http://localhost:5073/api/invoices/${id}`
+      const response = await paymentFetch(
+        `/invoices/${id}`
       );
 
       if (!response.ok) {
@@ -146,8 +147,8 @@ function Invoices() {
     setErrorMessage("");
 
     try {
-      const response = await fetch(
-        `http://localhost:5073/api/invoices/${id}`
+      const response = await paymentFetch(
+        `/invoices/${id}`
       );
 
       if (!response.ok) {
@@ -289,8 +290,8 @@ function Invoices() {
     setSaving(true);
 
     try {
-      const response = await fetch(
-        `http://localhost:5073/api/invoices/${editingInvoice.id}`,
+      const response = await paymentFetch(
+        `/invoices/${editingInvoice.id}`,
         {
           method: "PUT",
           headers: {
@@ -345,8 +346,8 @@ function Invoices() {
     setDeletingId(invoice.id);
 
     try {
-      const response = await fetch(
-        `http://localhost:5073/api/invoices/${invoice.id}`,
+      const response = await paymentFetch(
+        `/invoices/${invoice.id}`,
         {
           method: "DELETE",
         }

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from services.payment_api_service import PaymentApiService
 
 
@@ -8,12 +9,10 @@ class PaymentAgent:
     # -------------------------------------------------
     @staticmethod
     async def get_pending_invoices(
-        resident_id: int,
-        token: str | None = None,
+        authorization: str,
     ):
         invoices = await PaymentApiService.get_pending_invoices(
-            resident_id=resident_id,
-            token=token,
+            authorization=authorization,
         )
 
         if not invoices:
@@ -23,7 +22,7 @@ class PaymentAgent:
                 "data": [],
             }
 
-        payable_invoices = []
+        invoice_cards = []
 
         for invoice in invoices:
             payments = invoice.get("payments", [])
@@ -33,25 +32,32 @@ class PaymentAgent:
                 for payment in payments
             )
 
-            payable_invoices.append({
+            verified = any(payment.get("status") == "Verified" for payment in payments)
+            invoice_cards.append({
                 "id": invoice.get("id"),
                 "invoiceNumber": invoice.get("invoiceNumber"),
                 "billingMonth": invoice.get("billingMonth"),
                 "totalAmount": invoice.get("totalAmount"),
                 "dueDate": invoice.get("dueDate"),
                 "status": invoice.get("status"),
-                "canPay": not has_successful_payment,
+                "canPay": invoice.get("canPay") is True and not has_successful_payment,
+                "paymentStatus": "Verified" if verified else (
+                    "Awaiting admin verification" if has_successful_payment else invoice.get("status")
+                ),
             })
 
+        payable_count = sum(card["canPay"] for card in invoice_cards)
+        awaiting_count = sum(card["paymentStatus"] == "Awaiting admin verification" for card in invoice_cards)
         return {
             "message": (
-                f"You have {len(payable_invoices)} pending invoices."
+                f"You have {payable_count} payable invoice(s) and "
+                f"{awaiting_count} payment(s) awaiting admin verification."
             ),
             "action": {
                 "type": "show_invoices",
                 "label": "View Pending Invoices",
             },
-            "data": payable_invoices,
+            "data": invoice_cards,
         }
 
     # -------------------------------------------------
@@ -59,12 +65,10 @@ class PaymentAgent:
     # -------------------------------------------------
     @staticmethod
     async def get_latest_payment(
-        resident_id: int,
-        token: str | None = None,
+        authorization: str,
     ):
         payments = await PaymentApiService.get_resident_payments(
-            resident_id=resident_id,
-            token=token,
+            authorization=authorization,
         )
 
         if not payments:
@@ -108,12 +112,10 @@ class PaymentAgent:
     # -------------------------------------------------
     @staticmethod
     async def get_payment_history(
-        resident_id: int,
-        token: str | None = None,
+        authorization: str,
     ):
         payments = await PaymentApiService.get_resident_payments(
-            resident_id=resident_id,
-            token=token,
+            authorization=authorization,
         )
 
         if not payments:
@@ -154,12 +156,10 @@ class PaymentAgent:
     # -------------------------------------------------
     @staticmethod
     async def get_receipts(
-        resident_id: int,
-        token: str | None = None,
+        authorization: str,
     ):
         payments = await PaymentApiService.get_resident_payments(
-            resident_id=resident_id,
-            token=token,
+            authorization=authorization,
         )
 
         receipts = []
@@ -200,16 +200,14 @@ class PaymentAgent:
     # -------------------------------------------------
     @staticmethod
     async def get_outstanding_balance(
-        resident_id: int,
-        token: str | None = None,
+        authorization: str,
     ):
         invoices = await PaymentApiService.get_pending_invoices(
-            resident_id=resident_id,
-            token=token,
+            authorization=authorization,
         )
 
         outstanding_invoices = []
-        total_outstanding = 0
+        total_outstanding = Decimal("0")
 
         for invoice in invoices:
             payments = invoice.get("payments", [])
@@ -219,8 +217,8 @@ class PaymentAgent:
                 for payment in payments
             )
 
-            if not has_successful_payment:
-                amount = invoice.get("totalAmount") or 0
+            if invoice.get("canPay") is True and not has_successful_payment:
+                amount = Decimal(str(invoice["totalAmount"]))
 
                 total_outstanding += amount
 
@@ -231,6 +229,7 @@ class PaymentAgent:
                     "totalAmount": amount,
                     "dueDate": invoice.get("dueDate"),
                     "status": invoice.get("status"),
+                    "canPay": True,
                 })
 
         if not outstanding_invoices:

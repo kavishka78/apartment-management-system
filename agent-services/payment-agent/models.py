@@ -1,11 +1,10 @@
 from typing import Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(min_length=1)
-    resident_id: int = Field(gt=0)
-    token: Optional[str] = None
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    message: str = Field(min_length=1, max_length=2000)
     local_time: Optional[str] = None
 
 

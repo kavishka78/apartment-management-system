@@ -21,6 +21,18 @@ export function setAuthToken(token) {
   }
 }
 
+// Payment pages retain their Response-based handling while using the existing session.
+export function paymentFetch(endpoint, options = {}) {
+  const token = getAuthToken();
+  return fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers: {
+      ...options.headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+}
+
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
   const token = getAuthToken();

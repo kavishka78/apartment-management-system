@@ -110,12 +110,6 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
         return;
       }
 
-      final confirmedData = confirmResult['data'];
-
-      debugPrint(
-        'CONFIRMED STRIPE PAYMENT: $confirmedData',
-      );
-
       if (!mounted) return;
 
       // Return to Invoice Details screen.
