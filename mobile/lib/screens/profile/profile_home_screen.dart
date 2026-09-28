@@ -4,6 +4,8 @@ import '../../services/auth/auth_service.dart';
 import '../../services/profile/profile_api_service.dart';
 import '../auth/login_entry_screen.dart';
 import 'household_members_screen.dart';
+import 'vehicle_registration_screen.dart';
+import 'domestic_staff_screen.dart';
 
 class ProfileHomeScreen extends StatefulWidget {
   const ProfileHomeScreen({super.key});
@@ -245,67 +247,93 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFE8ECEF)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(Icons.directions_car_rounded,
-                                    color: Color(0xFF17212B), size: 24),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${_profile?.vehiclesCount ?? 0}',
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () {
+                              final resId = _profile?.id ?? session?.residentId ?? 0;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      VehicleRegistrationScreen(residentId: resId),
                                 ),
-                                const Text(
-                                  'Vehicles Registered',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey,
+                              ).then((_) => _loadProfile());
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFFE8ECEF)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.directions_car_rounded,
+                                      color: Color(0xFF17212B), size: 24),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '${_profile?.vehiclesCount ?? 0}',
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const Text(
+                                    'Vehicles Registered',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFE8ECEF)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(Icons.badge_outlined,
-                                    color: Color(0xFF17212B), size: 24),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${_profile?.staffCount ?? 0}',
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () {
+                              final resId = _profile?.id ?? session?.residentId ?? 0;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      DomesticStaffScreen(residentId: resId),
                                 ),
-                                const Text(
-                                  'Staff Gate Passes',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey,
+                              ).then((_) => _loadProfile());
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFFE8ECEF)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.badge_outlined,
+                                      color: Color(0xFF17212B), size: 24),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '${_profile?.staffCount ?? 0}',
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const Text(
+                                    'Staff Gate Passes',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -351,6 +379,72 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                                 MaterialPageRoute(
                                   builder: (_) =>
                                       HouseholdMembersScreen(residentId: resId),
+                                ),
+                              ).then((_) => _loadProfile());
+                            },
+                          ),
+                          const Divider(height: 1, indent: 60),
+                          ListTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF17212B).withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.directions_car_rounded,
+                                  color: Color(0xFF17212B), size: 20),
+                            ),
+                            title: const Text(
+                              'My Registered Vehicles',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 14),
+                            ),
+                            subtitle: Text(
+                              '${_profile?.vehiclesCount ?? 0} vehicles linked to unit',
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.grey),
+                            onTap: () {
+                              final resId = _profile?.id ?? session?.residentId ?? 0;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      VehicleRegistrationScreen(residentId: resId),
+                                ),
+                              ).then((_) => _loadProfile());
+                            },
+                          ),
+                          const Divider(height: 1, indent: 60),
+                          ListTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.shade50,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(Icons.badge_outlined,
+                                  color: Colors.purple.shade800, size: 20),
+                            ),
+                            title: const Text(
+                              'Domestic Staff & Gate Passes',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 14),
+                            ),
+                            subtitle: Text(
+                              '${_profile?.staffCount ?? 0} helpers authorized',
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.grey),
+                            onTap: () {
+                              final resId = _profile?.id ?? session?.residentId ?? 0;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      DomesticStaffScreen(residentId: resId),
                                 ),
                               ).then((_) => _loadProfile());
                             },

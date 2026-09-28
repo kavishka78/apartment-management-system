@@ -263,5 +263,219 @@ namespace ApartmentManagement.Api.Controllers
             await _db.SaveChangesAsync();
             return Ok(staff);
         }
+        // ── Resident Self-Service Profile & Household (Mobile App) ─────────────
+
+        [HttpGet("resident/profile/{residentId:int}")]
+        [AllowAnonymous] // Authenticated resident access
+        public async Task<ActionResult<Resident>> GetResidentProfile(int residentId)
+        {
+            var res = await _db.Residents
+                .Include(r => r.HouseholdMembers)
+                .FirstOrDefaultAsync(r => r.Id == residentId);
+
+            if (res == null) return NotFound("Resident not found.");
+            return Ok(res);
+        }
+
+        [HttpPut("resident/profile/{residentId:int}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<Resident>> UpdateResidentProfile(
+            int residentId, [FromBody] Resident input)
+        {
+            var res = await _db.Residents.FindAsync(residentId);
+            if (res == null) return NotFound("Resident not found.");
+
+            res.FullName = input.FullName;
+            res.PhoneNumber = input.PhoneNumber;
+            res.EmergencyContact = input.EmergencyContact;
+
+            await _db.SaveChangesAsync();
+            return Ok(res);
+        }
+
+        [HttpGet("resident/{residentId:int}/household")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<HouseholdMember>>> GetHouseholdMembers(int residentId)
+        {
+            var members = await _db.HouseholdMembers
+                .Where(h => h.ResidentId == residentId)
+                .OrderBy(h => h.Id)
+                .ToListAsync();
+            return Ok(members);
+        }
+
+        [HttpPost("resident/{residentId:int}/household")]
+        [AllowAnonymous]
+        public async Task<ActionResult<HouseholdMember>> AddHouseholdMember(
+            int residentId, [FromBody] HouseholdMember member)
+        {
+            var resident = await _db.Residents.FindAsync(residentId);
+            if (resident == null) return NotFound("Resident not found.");
+
+            if (string.IsNullOrWhiteSpace(member.Name))
+                return BadRequest("Member name is required.");
+
+            member.Id = 0;
+            member.ResidentId = residentId;
+            _db.HouseholdMembers.Add(member);
+            await _db.SaveChangesAsync();
+
+            return Ok(member);
+        }
+
+        [HttpDelete("resident/{residentId:int}/household/{memberId:int}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RemoveHouseholdMember(int residentId, int memberId)
+        {
+            var member = await _db.HouseholdMembers
+                .FirstOrDefaultAsync(h => h.Id == memberId && h.ResidentId == residentId);
+            if (member == null) return NotFound("Household member not found.");
+
+            _db.HouseholdMembers.Remove(member);
+            await _db.SaveChangesAsync();
+            return Ok(new { success = true });
+        }
+
+        // ── Resident Self-Service Vehicles (Mobile App) ──────────────────────
+
+        [HttpGet("resident/{residentId:int}/vehicles")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<Vehicle>>> GetResidentVehicles(int residentId)
+        {
+            var vehicles = await _db.Vehicles
+                .Where(v => v.ResidentId == residentId)
+                .OrderByDescending(v => v.Id)
+                .ToListAsync();
+            return Ok(vehicles);
+        }
+
+        [HttpPost("resident/{residentId:int}/vehicles")]
+        [AllowAnonymous]
+        public async Task<ActionResult<Vehicle>> RegisterResidentVehicle(
+            int residentId, [FromBody] Vehicle vehicle)
+        {
+            var resident = await _db.Residents.FindAsync(residentId);
+            if (resident == null) return NotFound("Resident not found.");
+
+            if (string.IsNullOrWhiteSpace(vehicle.PlateNumber))
+                return BadRequest("Plate number is required.");
+
+            vehicle.Id = 0;
+            vehicle.ResidentId = residentId;
+            vehicle.ResidentName = resident.FullName;
+            vehicle.UnitNumber = resident.UnitNumber;
+            vehicle.TenantId = resident.TenantId;
+            vehicle.PlateNumber = vehicle.PlateNumber.Trim().ToUpper();
+            vehicle.RegisteredAt = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            vehicle.Status = "Approved";
+
+            _db.Vehicles.Add(vehicle);
+            resident.VehiclesCount += 1;
+            await _db.SaveChangesAsync();
+
+            return Ok(vehicle);
+        }
+
+        [HttpPut("vehicles/{id:int}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<Vehicle>> UpdateResidentVehicle(
+            int id, [FromBody] Vehicle input)
+        {
+            var vehicle = await _db.Vehicles.FindAsync(id);
+            if (vehicle == null) return NotFound("Vehicle not found.");
+
+            vehicle.PlateNumber = input.PlateNumber.Trim().ToUpper();
+            vehicle.VehicleType = input.VehicleType;
+            vehicle.MakeModel = input.MakeModel;
+            vehicle.ParkingSlot = input.ParkingSlot;
+
+            await _db.SaveChangesAsync();
+            return Ok(vehicle);
+        }
+
+        [HttpDelete("resident/{residentId:int}/vehicles/{vehicleId:int}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RemoveResidentVehicle(int residentId, int vehicleId)
+        {
+            var vehicle = await _db.Vehicles
+                .FirstOrDefaultAsync(v => v.Id == vehicleId && v.ResidentId == residentId);
+            if (vehicle == null) return NotFound("Vehicle not found.");
+
+            _db.Vehicles.Remove(vehicle);
+            var resident = await _db.Residents.FindAsync(residentId);
+            if (resident != null && resident.VehiclesCount > 0)
+                resident.VehiclesCount -= 1;
+
+            await _db.SaveChangesAsync();
+            return Ok(new { success = true });
+        }
+
+        // ── Resident Self-Service Domestic Staff & Passes (Mobile App) ───────
+
+        [HttpGet("resident/{residentId:int}/staff")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<DomesticStaff>>> GetResidentStaff(int residentId)
+        {
+            var staff = await _db.DomesticStaff
+                .Where(s => s.ResidentId == residentId)
+                .OrderByDescending(s => s.Id)
+                .ToListAsync();
+            return Ok(staff);
+        }
+
+        [HttpPost("resident/{residentId:int}/staff")]
+        [AllowAnonymous]
+        public async Task<ActionResult<DomesticStaff>> RegisterResidentStaff(
+            int residentId, [FromBody] DomesticStaff staff)
+        {
+            var resident = await _db.Residents.FindAsync(residentId);
+            if (resident == null) return NotFound("Resident not found.");
+
+            if (string.IsNullOrWhiteSpace(staff.FullName))
+                return BadRequest("Staff member full name is required.");
+
+            staff.Id = 0;
+            staff.ResidentId = residentId;
+            staff.ResidentName = resident.FullName;
+            staff.UnitNumber = resident.UnitNumber;
+            staff.TenantId = resident.TenantId;
+            staff.IsActive = true;
+            staff.AccessPassCode = $"PASS-{Guid.NewGuid().ToString("N")[..4].ToUpper()}-{resident.UnitNumber ?? "UNIT"}";
+
+            _db.DomesticStaff.Add(staff);
+            resident.StaffCount += 1;
+            await _db.SaveChangesAsync();
+
+            return Ok(staff);
+        }
+
+        [HttpPatch("resident/staff/{id:int}/toggle")]
+        [AllowAnonymous]
+        public async Task<ActionResult<DomesticStaff>> ToggleResidentStaffPass(int id)
+        {
+            var staff = await _db.DomesticStaff.FindAsync(id);
+            if (staff == null) return NotFound("Staff member not found.");
+
+            staff.IsActive = !staff.IsActive;
+            await _db.SaveChangesAsync();
+            return Ok(staff);
+        }
+
+        [HttpDelete("resident/{residentId:int}/staff/{staffId:int}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RemoveResidentStaff(int residentId, int staffId)
+        {
+            var staff = await _db.DomesticStaff
+                .FirstOrDefaultAsync(s => s.Id == staffId && s.ResidentId == residentId);
+            if (staff == null) return NotFound("Staff member not found.");
+
+            _db.DomesticStaff.Remove(staff);
+            var resident = await _db.Residents.FindAsync(residentId);
+            if (resident != null && resident.StaffCount > 0)
+                resident.StaffCount -= 1;
+
+            await _db.SaveChangesAsync();
+            return Ok(new { success = true });
+        }
     }
 }

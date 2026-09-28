@@ -7,6 +7,8 @@ import 'parking/visitor_parking_screen.dart';
 import 'maintenance/maintenance_home_screen.dart';
 import 'auth/login_entry_screen.dart';
 import 'profile/profile_home_screen.dart';
+import 'profile/vehicle_registration_screen.dart';
+import 'profile/domestic_staff_screen.dart';
 
 import '../services/auth/auth_service.dart';
 /// The main bottom navigation shell shown after successful login.
@@ -279,6 +281,36 @@ class HomeScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                         builder: (context) => const PaymentHomeScreen()),
+                  );
+                },
+              ),
+              ServiceCard(
+                title: 'My Vehicles',
+                subtitle: 'Plates & Slots',
+                icon: Icons.directions_car_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VehicleRegistrationScreen(
+                        residentId: session?.residentId ?? 0,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ServiceCard(
+                title: 'Staff Passes',
+                subtitle: 'Gate Access',
+                icon: Icons.badge_outlined,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DomesticStaffScreen(
+                        residentId: session?.residentId ?? 0,
+                      ),
+                    ),
                   );
                 },
               ),
