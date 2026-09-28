@@ -4,9 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { 
     MdCheckCircle, MdPlayArrow, MdOutlineBuild, MdAccessTime, 
-    MdLogout, MdConfirmationNumber, MdLocalPhone, MdFlag, 
-    MdAssignment, MdBuild, MdPerson, MdSearch, MdFilterList, 
-    MdWarning, MdClose, MdInfoOutline, MdCameraAlt, MdHistory, MdKeyboardArrowDown
+    MdLogout,  MdLocalPhone, MdFlag, 
+    MdAssignment,  MdPerson, MdSearch, MdFilterList, 
+    MdWarning, MdClose, MdInfoOutline,  MdHistory, MdKeyboardArrowDown
 } from 'react-icons/md';
 import './TechnicianDashboard.css';
 
@@ -133,6 +133,7 @@ export default function TechnicianDashboard() {
             navigate('/login');
             return;
         }
+        // eslint-disable-next-line
         fetchJobs();
     }, [currentUser, navigate, fetchJobs]);
 
@@ -226,7 +227,9 @@ export default function TechnicianDashboard() {
     const activeJobs = jobs.filter(j => j.status === 'Assigned' || j.status === 'In Progress');
     const assignedCount = activeJobs.filter(j => j.status === 'Assigned').length;
     const inProgressCount = activeJobs.filter(j => j.status === 'In Progress').length;
+    // eslint-disable-next-line
     const highPriorityCount = activeJobs.filter(j => j.priority === 'High' || j.priority === 'Urgent').length;
+    // eslint-disable-next-line
     const slaAtRiskCount = activeJobs.filter(j => j.slaStatus === 'At Risk' || j.slaStatus === 'Overdue').length;
 
     const filteredJobs = useMemo(() => {

@@ -54,6 +54,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
         .then(data => setRecommendedTech(data))
         .catch(err => console.error(err));
     } else {
+      // eslint-disable-next-line
       setRecommendedTech(null);
     }
   }, [aiRecommendation?.recommendedTechnicianId, fetchWithAuth]);

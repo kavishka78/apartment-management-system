@@ -75,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
-  void _goToHome() {
+  void _goToLogin() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const LoginEntryScreen()),
     );
