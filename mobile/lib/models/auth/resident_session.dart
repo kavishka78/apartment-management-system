@@ -21,15 +21,26 @@ class ResidentSession {
   /// Create a ResidentSession from the JSON response returned by the backend
   /// after a successful Firebase token exchange.
   factory ResidentSession.fromJson(Map<String, dynamic> json) {
-    final resident = json['resident'] as Map<String, dynamic>;
+    if (json.containsKey('resident') && json['resident'] is Map<String, dynamic>) {
+      final resident = json['resident'] as Map<String, dynamic>;
+      return ResidentSession(
+        token: json['token'] as String? ?? '',
+        residentId: resident['id'] as int? ?? 0,
+        name: resident['fullName'] as String? ?? '',
+        email: resident['email'] as String? ?? '',
+        phone: resident['phoneNumber'] as String? ?? '',
+        unitNumber: resident['unitNumber'] as String? ?? '',
+        tenantId: resident['tenantId'] as int? ?? 0,
+      );
+    }
     return ResidentSession(
-      token: json['token'] as String,
-      residentId: resident['id'] as int,
-      name: resident['fullName'] as String? ?? '',
-      email: resident['email'] as String? ?? '',
-      phone: resident['phoneNumber'] as String? ?? '',
-      unitNumber: resident['unitNumber'] as String? ?? '',
-      tenantId: resident['tenantId'] as int,
+      token: json['token'] as String? ?? '',
+      residentId: json['residentId'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
+      unitNumber: json['unitNumber'] as String? ?? '',
+      tenantId: json['tenantId'] as int? ?? 0,
     );
   }
 

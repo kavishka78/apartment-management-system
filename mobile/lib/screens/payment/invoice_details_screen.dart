@@ -367,7 +367,7 @@ class _InvoiceDetailsScreenState
             const SizedBox(height: 30),
 
         // 1. No payment yet -> show Pay Now
-        if (!_isPaid && !_hasPendingVerification)
+        if (invoice['canPay'] == true)
           SizedBox(
             width: double.infinity,
             height: 54,

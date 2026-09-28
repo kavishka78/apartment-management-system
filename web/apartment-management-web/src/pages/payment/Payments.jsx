@@ -1,3 +1,4 @@
+import { paymentFetch } from "../../services/api";
 import { useCallback, useEffect, useState } from "react";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
@@ -53,8 +54,8 @@ function Payments() {
       params.append("status", status);
     }
 
-    return fetch(
-      `http://localhost:5073/api/payments?${params.toString()}`
+    return paymentFetch(
+      `/payments?${params.toString()}`
     )
       .then((response) => {
         if (!response.ok) {
@@ -93,8 +94,8 @@ function Payments() {
     setVerifyingId(paymentId);
 
     try {
-      const response = await fetch(
-        `http://localhost:5073/api/payments/${paymentId}/verify`,
+      const response = await paymentFetch(
+        `/payments/${paymentId}/verify`,
         {
           method: "POST",
         }
@@ -139,8 +140,8 @@ function Payments() {
     setReceiptLoading(true);
 
     try {
-      const response = await fetch(
-        `http://localhost:5073/api/payments/${paymentId}/receipt`
+      const response = await paymentFetch(
+        `/payments/${paymentId}/receipt`
       );
 
       if (!response.ok) {

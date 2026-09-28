@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../models/profile/profile_models.dart';
+import '../api_config.dart';
 import '../auth/auth_service.dart';
 
 class ProfileApiService {
-  static String get _base => kIsWeb ? 'http://localhost:5073/api/v1' : 'http://10.0.2.2:5073/api/v1';
+  static String get _base => ApiConfig.v1Url;
 
   /// Get the current resident's full profile details
   static Future<ResidentProfileModel?> getProfile(int residentId) async {
