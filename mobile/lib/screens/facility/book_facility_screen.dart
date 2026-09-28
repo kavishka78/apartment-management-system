@@ -185,6 +185,15 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
     final facilityId =
         widget.facility['id'] ?? widget.facility['facilityId'] ?? 1;
 
+    final hourlyRate = (widget.facility['hourlyCost'] != null)
+        ? (widget.facility['hourlyCost'] as num).toDouble()
+        : 0.0;
+    final startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+    double durationHours = (endMinutes - startMinutes) / 60.0;
+    if (durationHours < 0) durationHours = 0;
+    final totalBookingCost = durationHours * hourlyRate * _bookedCapacity;
+
     final result = await FacilityApiService.createBooking(
       facilityId: facilityId,
       residentId: 1, // Valid resident ID (Kamal Perera)
@@ -192,6 +201,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
       startTime: _formatTimeOfDay(_startTime),
       endTime: _formatTimeOfDay(_endTime),
       bookedCapacity: _bookedCapacity,
+      totalCost: totalBookingCost,
     );
 
     if (mounted) {
@@ -235,6 +245,17 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
               ? (b['bookedCapacity'] as int)
               : 1),
     );
+
+    final hourlyRate = (widget.facility['hourlyCost'] != null)
+        ? (widget.facility['hourlyCost'] as num).toDouble()
+        : 0.0;
+
+    final startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+    double durationHours = (endMinutes - startMinutes) / 60.0;
+    if (durationHours < 0) durationHours = 0;
+
+    final totalBookingCost = durationHours * hourlyRate * _bookedCapacity;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F8),
@@ -304,24 +325,58 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        name.toUpperCase(),
-                        style: const TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            name.toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
                         ),
-                      ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: hourlyRate > 0
+                                ? const Color(0xFF059669).withOpacity(0.2)
+                                : Colors.blue.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: hourlyRate > 0
+                                  ? const Color(0xFF34D399)
+                                  : const Color(0xFF60A5FA),
+                            ),
+                          ),
+                          child: Text(
+                            hourlyRate > 0
+                                ? 'LKR ${hourlyRate.toStringAsFixed(2)} / hr'
+                                : 'Free Facility',
+                            style: TextStyle(
+                              color: hourlyRate > 0
+                                  ? const Color(0xFF6EE7B7)
+                                  : const Color(0xFF93C5FD),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     const Text(
@@ -654,6 +709,59 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              // Real-time Cost Estimation Card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: hourlyRate > 0 ? const Color(0xFFECFDF5) : const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: hourlyRate > 0 ? const Color(0xFFA7F3D0) : const Color(0xFFBFDBFE),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Estimated Booking Fee',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: hourlyRate > 0 ? const Color(0xFF047857) : const Color(0xFF1D4ED8),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          hourlyRate > 0
+                              ? '${durationHours.toStringAsFixed(1)} hrs × $_bookedCapacity ${_bookedCapacity == 1 ? 'spot' : 'spots'} @ LKR ${hourlyRate.toStringAsFixed(2)}/hr'
+                              : 'Complimentary resident access',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: hourlyRate > 0 ? const Color(0xFF065F46) : const Color(0xFF1E40AF),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      hourlyRate > 0
+                          ? 'LKR ${totalBookingCost.toStringAsFixed(2)}'
+                          : 'FREE',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: hourlyRate > 0 ? const Color(0xFF047857) : const Color(0xFF1D4ED8),
+                      ),
                     ),
                   ],
                 ),

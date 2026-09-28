@@ -525,7 +525,7 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
             const SizedBox(height: 10),
           ],
 
-          // Details Chip Row (Operating Hours & Capacity)
+          // Details Chip Row (Operating Hours, Capacity & Hourly Rate)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
@@ -535,42 +535,74 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: const Color(0xFFF1F5F9)),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(
-                        Icons.schedule_rounded,
-                        size: 15,
-                        color: Color(0xFF64748B),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.schedule_rounded,
+                            size: 15,
+                            color: Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$openTime – $closeTime',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF334155),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$openTime – $closeTime',
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF334155),
-                        ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.people_outline_rounded,
+                            size: 15,
+                            color: Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Capacity: $capacity',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF334155),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
+                  const SizedBox(height: 6),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(
-                        Icons.people_outline_rounded,
-                        size: 15,
-                        color: Color(0xFF64748B),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Capacity: $capacity',
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF334155),
-                        ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.payments_outlined,
+                            size: 15,
+                            color: Color(0xFF059669),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            (facility['hourlyCost'] != null && (facility['hourlyCost'] as num) > 0)
+                                ? 'LKR ${(facility['hourlyCost'] as num).toStringAsFixed(2)} / hr per spot'
+                                : 'Free of Charge',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              color: (facility['hourlyCost'] != null && (facility['hourlyCost'] as num) > 0)
+                                  ? const Color(0xFF047857)
+                                  : const Color(0xFF2563EB),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

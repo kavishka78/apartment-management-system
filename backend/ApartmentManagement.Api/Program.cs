@@ -102,10 +102,12 @@ using (var scope = app.Services.CreateScope())
     {
         dbContext.Database.ExecuteSqlRaw(@"
             ALTER TABLE ""Facilities""
-            ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text;
+            ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text,
+            ADD COLUMN IF NOT EXISTS ""HourlyCost"" numeric NOT NULL DEFAULT 0.0;
 
             ALTER TABLE ""FacilityBookings""
-            ADD COLUMN IF NOT EXISTS ""BookedCapacity"" integer NOT NULL DEFAULT 1;
+            ADD COLUMN IF NOT EXISTS ""BookedCapacity"" integer NOT NULL DEFAULT 1,
+            ADD COLUMN IF NOT EXISTS ""TotalCost"" numeric NOT NULL DEFAULT 0.0;
 
             CREATE TABLE IF NOT EXISTS ""FacilityAgentWorkflows"" (
                 ""Id"" SERIAL PRIMARY KEY,

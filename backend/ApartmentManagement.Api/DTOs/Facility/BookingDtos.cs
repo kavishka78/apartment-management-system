@@ -12,6 +12,8 @@ namespace ApartmentManagement.Api.DTOs
         public TimeSpan StartTime { get; set; }
         public TimeSpan EndTime { get; set; }
         public int BookedCapacity { get; set; } = 1;
+        public decimal HourlyCost { get; set; }
+        public decimal TotalCost { get; set; }
         public string Status { get; set; } = string.Empty;
     }
 
@@ -33,5 +35,7 @@ namespace ApartmentManagement.Api.DTOs
         public TimeSpan EndTime { get; set; }
 
         public int BookedCapacity { get; set; } = 1;
+
+        public decimal TotalCost { get; set; } = 0.00m;
     }
 }

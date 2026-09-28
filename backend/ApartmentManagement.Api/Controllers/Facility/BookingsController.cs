@@ -38,6 +38,8 @@ namespace ApartmentManagement.Api.Controllers
                         StartTime = b.StartTime,
                         EndTime = b.EndTime,
                         BookedCapacity = b.BookedCapacity > 0 ? b.BookedCapacity : 1,
+                        HourlyCost = b.Facility != null ? b.Facility.HourlyCost : 0,
+                        TotalCost = b.TotalCost,
                         Status = b.Status.ToString()
                     }).ToListAsync();
 
@@ -71,6 +73,8 @@ namespace ApartmentManagement.Api.Controllers
                         StartTime = b.StartTime,
                         EndTime = b.EndTime,
                         BookedCapacity = b.BookedCapacity > 0 ? b.BookedCapacity : 1,
+                        HourlyCost = b.Facility != null ? b.Facility.HourlyCost : 0,
+                        TotalCost = b.TotalCost,
                         Status = b.Status.ToString()
                     }).ToListAsync();
 
@@ -130,6 +134,12 @@ namespace ApartmentManagement.Api.Controllers
                     return Conflict($"Booking request for {requestedCapacity} {(requestedCapacity == 1 ? "spot" : "spots")} exceeds remaining facility capacity ({remainingCapacity} {(remainingCapacity == 1 ? "spot" : "spots")} available for this time slot).");
                 }
 
+                // Calculate Total Cost (Hours * HourlyCost * BookedCapacity)
+                double hours = (dto.EndTime - dto.StartTime).TotalHours;
+                decimal calculatedCost = dto.TotalCost > 0 
+                    ? dto.TotalCost 
+                    : (decimal)hours * facility.HourlyCost * requestedCapacity;
+
                 // Validate Resident Exists or fallback to valid resident in DB
                 var residentExists = await _context.Residents.AnyAsync(r => r.Id == dto.ResidentId);
                 int validResidentId = dto.ResidentId;
@@ -147,14 +157,15 @@ namespace ApartmentManagement.Api.Controllers
                     BookingDate = bookingDateUtc,
                     StartTime = dto.StartTime,
                     EndTime = dto.EndTime,
-                    BookedCapacity = dto.BookedCapacity > 0 ? dto.BookedCapacity : 1,
+                    BookedCapacity = requestedCapacity,
+                    TotalCost = Math.Round(calculatedCost, 2),
                     Status = BookingStatus.Approved
                 };
 
                 _context.FacilityBookings.Add(booking);
                 await _context.SaveChangesAsync();
 
-                return StatusCode(201, new { Message = "Booking confirmed! Spot reserved successfully.", BookingId = booking.BookingId });
+                return StatusCode(201, new { Message = "Booking confirmed! Spot reserved successfully.", BookingId = booking.BookingId, TotalCost = booking.TotalCost });
             }
             catch (Exception ex)
             {

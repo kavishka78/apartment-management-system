@@ -19,6 +19,7 @@ namespace ApartmentManagement.Api.Data
                     FacilityName = "Rooftop Swimming Pool", 
                     FacilityDescription = "Infinity pool with panoramic city views and sun loungers.", 
                     Capacity = 20, 
+                    HourlyCost = 500,
                     OpenTime = new TimeSpan(6, 0, 0), 
                     CloseTime = new TimeSpan(22, 0, 0), 
                     IsActive = true 
@@ -28,6 +29,7 @@ namespace ApartmentManagement.Api.Data
                     FacilityName = "Fitness Center & Gym", 
                     FacilityDescription = "State-of-the-art cardio equipment, free weights, and personal trainers.", 
                     Capacity = 15, 
+                    HourlyCost = 350,
                     OpenTime = new TimeSpan(5, 30, 0), 
                     CloseTime = new TimeSpan(23, 0, 0), 
                     IsActive = true 
@@ -37,6 +39,7 @@ namespace ApartmentManagement.Api.Data
                     FacilityName = "Grand Banquet & Party Hall", 
                     FacilityDescription = "Air-conditioned multi-purpose event hall with sound system and kitchen facility.", 
                     Capacity = 100, 
+                    HourlyCost = 2500,
                     OpenTime = new TimeSpan(8, 0, 0), 
                     CloseTime = new TimeSpan(23, 0, 0), 
                     IsActive = true 
@@ -46,6 +49,7 @@ namespace ApartmentManagement.Api.Data
                     FacilityName = "Tennis & Squash Court", 
                     FacilityDescription = "Professional outdoor floodlit tennis court.", 
                     Capacity = 4, 
+                    HourlyCost = 800,
                     OpenTime = new TimeSpan(6, 0, 0), 
                     CloseTime = new TimeSpan(21, 0, 0), 
                     IsActive = true 

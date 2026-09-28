@@ -24,6 +24,10 @@ namespace ApartmentManagement.Api.Models
         [Required]
         public TimeSpan CloseTime {get;set;}
 
+        [Required]
+        [Range(0, 100000)]
+        public decimal HourlyCost { get; set; } = 0.00m;
+
         public bool IsActive {get;set;} = true;
 
         [MaxLength(255)]
