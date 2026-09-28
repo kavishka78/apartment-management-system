@@ -57,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen>
     final session = await AuthService.getSession();
 
     if (session == null || !session.isValid) {
-      _goToHome();
+      _goToLogin();
       return;
     }
 
@@ -71,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen>
     } else {
       // Token expired or revoked — clear stale data and re-login
       await AuthService.clearSession();
-      _goToHome();
+      _goToLogin();
     }
   }
 
