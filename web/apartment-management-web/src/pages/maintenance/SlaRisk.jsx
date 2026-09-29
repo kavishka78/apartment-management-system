@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MdWarning, MdArrowForward, MdCheckCircle } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
@@ -10,7 +10,10 @@ function SlaRisk() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5073/api/maintenance')
+    const token = localStorage.getItem('ah_token');
+    fetch('http://localhost:5073/api/maintenance', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(res => res.json())
       .then(data => {
         setRisks(data.filter(c => c.status !== 'Resolved' && c.status !== 'Closed' && (c.slaStatus === 'At Risk' || c.slaStatus === 'Overdue')));

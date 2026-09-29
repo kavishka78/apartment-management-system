@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import { MdAssignment, MdAttachMoney, MdPendingActions, MdWarning } from 'react-icons/md';
+import { getAuthToken } from '../../services/api';
 import '../payment/PaymentDashboard.css';
 import '../payment/CollectionReports.css';
 
@@ -11,12 +12,18 @@ function MaintenanceReports() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const token = getAuthToken();
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     Promise.all([
-      fetch('http://localhost:5073/api/reports/maintenance').then(r => r.json()),
-      fetch('http://localhost:5073/api/maintenance').then(r => r.json())
+      fetch('http://localhost:5073/api/reports/maintenance', { headers }).then(r => r.json()),
+      fetch('http://localhost:5073/api/maintenance', { headers }).then(r => r.json())
     ]).then(([reportData, ticketsData]) => {
       setReport(reportData);
       setTickets(ticketsData);
+      setLoading(false);
+    }).catch(err => {
+      console.error("Error fetching reports:", err);
       setLoading(false);
     });
   }, []);

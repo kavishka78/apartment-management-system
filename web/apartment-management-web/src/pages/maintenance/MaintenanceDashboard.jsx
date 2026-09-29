@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
+import { getAuthToken } from '../../services/api';
 import '../payment/PaymentDashboard.css'; // Reuse existing styles
 import { MdAssignment, MdPendingActions, MdBuild, MdWarning } from 'react-icons/md';
 
@@ -10,9 +11,12 @@ function MaintenanceDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const token = getAuthToken();
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     Promise.all([
-      fetch('http://localhost:5073/api/reports/maintenance').then(r => r.json()),
-      fetch('http://localhost:5073/api/maintenance').then(r => r.json())
+      fetch('http://localhost:5073/api/reports/maintenance', { headers }).then(r => r.json()),
+      fetch('http://localhost:5073/api/maintenance', { headers }).then(r => r.json())
     ])
     .then(([reportData, maintenanceData]) => {
       setReport(reportData);

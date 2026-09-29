@@ -23,10 +23,13 @@ function Complaints() {
   const [techs, setTechs] = useState([]);
 
   useEffect(() => {
+    const token = localStorage.getItem('ah_token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     Promise.all([
-      fetch('http://localhost:5073/api/maintenance').then(r => r.json()),
-      fetch('http://localhost:5073/api/maintenance/categories').then(r => r.json()),
-      fetch('http://localhost:5073/api/maintenance/technicians').then(r => r.json())
+      fetch('http://localhost:5073/api/maintenance', { headers }).then(r => r.json()),
+      fetch('http://localhost:5073/api/maintenance/categories', { headers }).then(r => r.json()),
+      fetch('http://localhost:5073/api/maintenance/technicians', { headers }).then(r => r.json())
     ])
     .then(([maintData, catData, techData]) => {
       setComplaints(maintData);

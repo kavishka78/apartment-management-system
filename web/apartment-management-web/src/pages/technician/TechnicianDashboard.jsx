@@ -85,7 +85,10 @@ export default function TechnicianDashboard() {
         if (!currentUser) return;
         try {
             setLoading(true);
-            const res = await fetch('http://localhost:5073/api/maintenance');
+            const token = localStorage.getItem('ah_token');
+            const res = await fetch('http://localhost:5073/api/maintenance', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!res.ok) throw new Error('Failed to fetch');
             const data = await res.json();
             const techJobs = data.filter(j =>
