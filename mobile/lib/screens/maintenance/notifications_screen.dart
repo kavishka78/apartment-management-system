@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'maintenance_home_screen.dart';
 import '../../services/maintenance/maintenance_api_service.dart'; // for CURRENT_RESIDENT_ID
+import '../../services/auth/auth_service.dart';
 import 'my_complaints_screen.dart';
 import 'maintenance_details_screen.dart';
 import '../../models/maintenance/maintenance_model.dart';
@@ -34,7 +35,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
 
     try {
-      final response = await http.get(Uri.parse('http://10.0.2.2:5073/api/Notifications/resident/$CURRENT_RESIDENT_ID'));
+      final resId = AuthService.currentSession?.residentId ?? 0;
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:5073/api/Notifications/resident/$resId'),
+        headers: await AuthService.authHeaders(),
+      );
       if (response.statusCode == 200) {
         setState(() {
           _notifications = json.decode(response.body);
@@ -56,7 +61,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _markAsRead(int id) async {
     try {
-      await http.post(Uri.parse('http://10.0.2.2:5073/api/Notifications/$id/read'));
+      await http.post(
+        Uri.parse('http://10.0.2.2:5073/api/Notifications/$id/read'),
+        headers: await AuthService.authHeaders(),
+      );
       _loadNotifications(); // Reload to update UI
     } catch (e) {
       // Ignore error for now
@@ -65,7 +73,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _markAllAsRead() async {
     try {
-      await http.post(Uri.parse('http://10.0.2.2:5073/api/Notifications/resident/$CURRENT_RESIDENT_ID/read-all'));
+      final resId = AuthService.currentSession?.residentId ?? 0;
+      await http.post(
+        Uri.parse('http://10.0.2.2:5073/api/Notifications/resident/$resId/read-all'),
+        headers: await AuthService.authHeaders(),
+      );
       _loadNotifications();
     } catch (e) {
       // Ignore

@@ -60,6 +60,11 @@ namespace ApartmentManagement.Api.Controllers
         public string? Email { get; set; }
     }
 
+    public class FcmTokenRequest
+    {
+        public string Token { get; set; } = string.Empty;
+    }
+
     public class FirebaseTokenRequest
     {
         public string FirebaseIdToken { get; set; } = string.Empty;
@@ -272,6 +277,27 @@ namespace ApartmentManagement.Api.Controllers
         }
 
         // ── Resident: Exchange Firebase Token (Step 2 of mobile login) ──
+        [Authorize]
+        [HttpPost("auth/resident/fcm-token")]
+        public async Task<IActionResult> UpdateFcmToken([FromBody] FcmTokenRequest req)
+        {
+            if (User.IsInRole("Resident"))
+            {
+                var resStr = User.FindFirst("residentId")?.Value;
+                if (int.TryParse(resStr, out int rId))
+                {
+                    var resident = await _db.Residents.FindAsync(rId);
+                    if (resident != null)
+                    {
+                        resident.FcmToken = req.Token;
+                        await _db.SaveChangesAsync();
+                        return Ok();
+                    }
+                }
+            }
+            return Unauthorized();
+        }
+
         [AllowAnonymous]
         [HttpPost("auth/resident/firebase-token")]
         public async Task<IActionResult> ResidentFirebaseToken([FromBody] FirebaseTokenRequest req)

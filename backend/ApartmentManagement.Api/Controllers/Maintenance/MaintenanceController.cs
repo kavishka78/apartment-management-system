@@ -14,6 +14,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class MaintenanceController : ControllerBase
     {
         private DateTimeOffset ToColomboTime(DateTimeOffset utcTime)
@@ -47,13 +48,23 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MaintenanceDto>>> GetMaintenances()
         {
-            var maintenances = await _context.Maintenances
+            var query = _context.Maintenances
                 .Include(m => m.Category)
+                .Include(m => m.Resident)
                 .Include(m => m.Technician)
                 .Include(m => m.History)
-                .OrderByDescending(m => m.CreatedAt)
-                .ToListAsync();
+                .AsQueryable();
 
+            if (User.IsInRole("Resident"))
+            {
+                var resStr = User.FindFirst("residentId")?.Value;
+                if (int.TryParse(resStr, out int rId))
+                {
+                    query = query.Where(m => m.ResidentId == rId);
+                }
+            }
+
+            var maintenances = await query.OrderByDescending(m => m.CreatedAt).ToListAsync();
             return Ok(maintenances.Select(MapToDto));
         }
 
@@ -77,6 +88,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             var maintenance = await _context.Maintenances
                 .Include(m => m.Category)
                 .Include(m => m.Technician)
+                .Include(m => m.Resident)
                 .Include(m => m.History)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
@@ -92,9 +104,20 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             var category = await _context.MaintenanceCategories.FindAsync(request.CategoryId);
             if (category == null) return BadRequest("Invalid category.");
 
+            int resId = request.ResidentId;
+            if (User.IsInRole("Resident"))
+            {
+                var resStr = User.FindFirst("residentId")?.Value;
+                if (int.TryParse(resStr, out int rId))
+                {
+                    resId = rId;
+                }
+                else return Unauthorized("Invalid resident token.");
+            }
+
             var maintenance = new Models.Maintenance
             {
-                ResidentId = request.ResidentId,
+                ResidentId = resId,
                 CategoryId = request.CategoryId,
                 Title = request.Title,
                 Description = request.Description,
@@ -150,6 +173,69 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                 await _context.SaveChangesAsync();
             }
 
+            // Fire-and-forget Auto-Triage
+            var scopeFactory = HttpContext.RequestServices.GetRequiredService<IServiceScopeFactory>();
+            int newId = maintenance.Id;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var scope = scopeFactory.CreateScope();
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    var ai = scope.ServiceProvider.GetRequiredService<IMaintenanceTriageService>();
+                    
+                    var m = await db.Maintenances.FindAsync(newId);
+                    if (m == null) return;
+
+                    var availableTechs = await db.Technicians.Where(t => t.Status == "Available").ToListAsync();
+                    var activeTickets = await db.Maintenances
+                        .Where(t => t.Status == "Assigned" || t.Status == "In Progress")
+                        .GroupBy(t => t.TechnicianId)
+                        .Where(g => g.Key.HasValue)
+                        .Select(g => new { TechId = g.Key.Value, Count = g.Count() })
+                        .ToDictionaryAsync(x => x.TechId, x => x.Count);
+
+                    var result = await ai.TriageComplaintAsync(m.Title, m.Description, availableTechs, activeTickets, "Not yet assigned", "High");
+                    
+                    var allowedCats = new[] { "Plumbing", "Electrical", "HVAC", "Cleaning", "Security", "Elevator", "Building", "General" };
+                    var allowedPris = new[] { "Low", "Medium", "High", "Urgent" };
+                    bool isValid = allowedCats.Contains(result.Category) && allowedPris.Contains(result.Priority);
+
+                    var workflow = new AgentWorkflow
+                    {
+                        MaintenanceId = newId,
+                        Objective = "Auto-Triage Complaint and Assign Technician",
+                        Plan = System.Text.Json.JsonSerializer.Serialize(result.Plan),
+                        CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
+                        ToolResults = result.ToolResults,
+                        ValidationResults = result.ValidationResults,
+                        ApprovalStatus = (result.RecommendedTechnicianId == null || !isValid) ? "Failed" : "Pending",
+                        Status = (result.RecommendedTechnicianId == null || !isValid) ? "SafeFailure" : "PendingApproval",
+                        CurrentStep = "Pending Approval",
+                        FinalOutcome = System.Text.Json.JsonSerializer.Serialize(new { result.RecommendedTechnicianId, result.Category, result.Priority, result.SlaRisk, Reason = result.TechnicianReason }),
+                        Steps = result.AgentSteps.Select(step => new AgentWorkflowStep
+                        {
+                            Sequence = step.Sequence,
+                            AgentRole = step.AgentRole,
+                            Action = step.Action,
+                            Status = step.Status,
+                            ToolName = step.ToolName,
+                            InputSummary = step.InputSummary,
+                            OutputSummary = step.OutputSummary,
+                            ValidationResult = step.ValidationResult,
+                            DurationMilliseconds = step.DurationMilliseconds
+                        }).ToList()
+                    };
+
+                    db.AgentWorkflows.Add(workflow);
+                    await db.SaveChangesAsync();
+                }
+                catch (Exception)
+                {
+                    // Ignore AI background failure; we don't want to crash the request
+                }
+            });
+
             return CreatedAtAction(nameof(GetMaintenance), new { id = maintenance.Id }, MapToDto(maintenance));
         }
 
@@ -189,7 +275,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
         public async Task<ActionResult<MaintenanceDto>> AssignTechnician(int id, [FromBody] AssignTechnicianRequest request)
         {
-            var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
+            var maintenance = await _context.Maintenances.Include(m => m.History).Include(m => m.Resident).FirstOrDefaultAsync(m => m.Id == id);
             if (maintenance == null) return NotFound();
 
             if (maintenance.Status == "Closed" || maintenance.Status == "Resolved")
@@ -300,6 +386,15 @@ maintenance.History.Add(new MaintenanceHistory
                 Message = $"Your request '{maintenance.Title}' has been resolved by the technician. Please verify the resolution.",
                 CreatedAt = DateTimeOffset.UtcNow
             });
+
+            if (!string.IsNullOrEmpty(maintenance.Resident?.FcmToken))
+            {
+                await _notificationService.SendPushNotificationAsync(
+                    maintenance.Resident.FcmToken,
+                    "Maintenance Resolved",
+                    $"Your request '{maintenance.Title}' has been resolved by the technician."
+                );
+            }
 
             await _context.SaveChangesAsync();
             return Ok(MapToDto(maintenance));
@@ -519,11 +614,24 @@ maintenance.History.Add(new MaintenanceHistory
 
                 maintenance.TechnicianId = technician.Id;
                 maintenance.Status = "Assigned";
+                
+                // Update Priority and Category from AI Recommendation
+                if (!string.IsNullOrEmpty(recommendation.Priority))
+                {
+                    maintenance.Priority = recommendation.Priority;
+                }
+                
+                var newCat = await _context.MaintenanceCategories.FirstOrDefaultAsync(c => c.Name == recommendation.Category);
+                if (newCat != null)
+                {
+                    maintenance.CategoryId = newCat.Id;
+                }
+
                 maintenance.UpdatedAt = DateTimeOffset.UtcNow;
                 maintenance.History.Add(new MaintenanceHistory
                 {
                     Status = "AI Recommendation Approved & Technician Assigned",
-                    Note = $"Approved by {request.ApprovedBy}. {request.Note}".Trim(),
+                    Note = $"Approved by {request.ApprovedBy}. Priority set to {maintenance.Priority}. {request.Note}".Trim(),
                     ChangedBy = request.ApprovedBy
                 });
                 workflow.ApprovalStatus = "Approved";
@@ -739,6 +847,7 @@ maintenance.History.Add(new MaintenanceHistory
             return Ok("Categories synced.");
         }
 
+        [AllowAnonymous]
         [HttpPost("seed")]
         public async Task<IActionResult> SeedData()
         {
@@ -784,6 +893,7 @@ maintenance.History.Add(new MaintenanceHistory
             return Ok("Sample data seeded successfully.");
         }
 
+        [AllowAnonymous]
         [HttpPost("setup-db")]
         public async Task<IActionResult> SetupDb()
         {
@@ -889,6 +999,9 @@ return Ok("Database setup successfully");
             {
                 Id = m.Id,
                 ResidentId = m.ResidentId,
+                ResidentName = m.Resident?.FullName ?? "Unknown Resident",
+                ResidentPhone = m.Resident?.PhoneNumber ?? "No Phone",
+                UnitNumber = m.Resident?.UnitNumber ?? "Unknown Unit",
                 Category = m.Category != null ? new MaintenanceCategoryDto { Id = m.Category.Id, Name = m.Category.Name } : null,
                 Title = m.Title,
                 Description = m.Description,

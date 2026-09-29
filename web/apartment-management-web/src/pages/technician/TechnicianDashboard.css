@@ -189,7 +189,7 @@
 
 .rp-section { margin-bottom: 32px; }
 .rp-section h4 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: #0f172a; }
-.rp-section p { font-size: 14px; color: #475569; line-height: 1.6; }
+.rp-section p { font-size: 14px; color: #475569; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; }
 .rp-info-block { display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #475569; }
 
 .photos-row { display: flex; gap: 12px; }
