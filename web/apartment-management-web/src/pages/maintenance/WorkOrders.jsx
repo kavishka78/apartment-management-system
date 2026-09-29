@@ -8,7 +8,10 @@ function WorkOrders() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5073/api/maintenance')
+    const token = localStorage.getItem('ah_token');
+    fetch('http://localhost:5073/api/maintenance', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(res => res.json())
       .then(data => {
         setOrders(data.filter(c => c.status === 'Assigned' || c.status === 'In Progress' || c.status === 'Resolved'));

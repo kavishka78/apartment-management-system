@@ -292,12 +292,23 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                 </div>
               )}
               
-              <div style={{ padding: '20px', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '24px' }}>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#475569', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Resident & Apartment Details</h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', fontSize: '15px', color: '#1E293B' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MdPerson size={18} color="#64748B" /> <strong>Name:</strong> {ticket.residentName || `Resident ${ticket.residentId}`}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MdHome size={18} color="#64748B" /> <strong>Unit:</strong> {ticket.unitNumber || 'Unknown'}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MdPhone size={18} color="#64748B" /> <strong>Phone:</strong> {ticket.residentPhone || 'Not provided'}</div>
+              <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#F8FAFC', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0', marginBottom: '24px', gap: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', color: '#1D4ED8', fontWeight: '600', flexShrink: 0 }}>
+                  {ticket.residentName ? ticket.residentName.charAt(0).toUpperCase() : 'R'}
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: '40px' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748B', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Resident Name</div>
+                    <div style={{ fontSize: '16px', color: '#0F172A', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}><MdPerson color="#94A3B8" size={18} /> {ticket.residentName || `Resident ${ticket.residentId}`}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748B', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Apartment Unit</div>
+                    <div style={{ fontSize: '16px', color: '#0F172A', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}><MdHome color="#94A3B8" size={18} /> {ticket.unitNumber || 'Unknown'}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#64748B', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Contact Number</div>
+                    <div style={{ fontSize: '16px', color: '#0F172A', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}><MdPhone color="#94A3B8" size={18} /> {ticket.residentPhone || 'Not provided'}</div>
+                  </div>
                 </div>
               </div>
 
