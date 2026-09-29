@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAuthToken } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack, MdBuild, MdFlag, MdPerson, MdAttachMoney, MdPhone } from 'react-icons/md';
+import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack, MdBuild, MdFlag, MdPerson, MdAttachMoney, MdPhone, MdHome } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import { motion } from 'framer-motion';
 import '../payment/PaymentDashboard.css';
@@ -293,8 +293,17 @@ const fetchWithAuth = useCallback((url, options = {}) => {
               )}
               
               <div style={{ padding: '20px', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '24px' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#475569', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Resident & Apartment Details</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', fontSize: '15px', color: '#1E293B' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MdPerson size={18} color="#64748B" /> <strong>Name:</strong> {ticket.residentName || `Resident ${ticket.residentId}`}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MdHome size={18} color="#64748B" /> <strong>Unit:</strong> {ticket.unitNumber || 'Unknown'}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MdPhone size={18} color="#64748B" /> <strong>Phone:</strong> {ticket.residentPhone || 'Not provided'}</div>
+                </div>
+              </div>
+
+              <div style={{ padding: '20px', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '24px', overflow: 'hidden' }}>
                 <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#475569', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</h4>
-                <p style={{ margin: 0, fontSize: '15px', color: '#1E293B', lineHeight: '1.6' }}>{ticket.description}</p>
+                <p style={{ margin: 0, fontSize: '15px', color: '#1E293B', lineHeight: '1.6', wordWrap: 'break-word', wordBreak: 'break-all', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}>{ticket.description}</p>
               </div>
               
               {ticket.photoPath && (

@@ -307,8 +307,8 @@ export default function TechnicianDashboard() {
                                 </div>
 
                                 <div className="rp-meta-bar">
-                                    <span><MdOutlineBuild size={16} /> Unit R-0{selectedJob.residentId || 1}</span>
-                                    <span>⚡ {selectedJob.category?.name || 'Electrical'}</span>
+                                    <span><MdOutlineBuild size={16} /> Unit {selectedJob.unitNumber || `R-0${selectedJob.residentId}`}</span>
+                                    <span><MdListAlt size={16} /> {selectedJob.category?.name || 'Electrical'}</span>
                                     <span className={selectedJob.slaStatus === 'Overdue' ? 'text-red' : ''}><MdAccessTime size={16} /> {new Date(selectedJob.createdAt).toLocaleString()} {selectedJob.slaStatus === 'Overdue' ? '(Overdue)' : ''}</span>
                                 </div>
 
@@ -320,9 +320,9 @@ export default function TechnicianDashboard() {
                                 <div className="rp-section">
                                     <h4><MdPerson size={18} /> Resident Information</h4>
                                     <div className="rp-info-block">
-                                        <p>Name : Resident {selectedJob.residentId || 2}</p>
-                                        <p><MdPhone size={14} style={{marginRight: "6px", marginBottom: "-2px"}} /> +94 77 123 4567</p>
-                                        <p><MdEmail size={14} style={{marginRight: "6px", marginBottom: "-2px"}} /> resident{selectedJob.residentId || 2}@example.com</p>
+                                        <p>Name : {selectedJob.residentName || `Resident ${selectedJob.residentId}`}</p>
+                                        <p><MdPhone size={14} style={{marginRight: "6px", marginBottom: "-2px"}} /> {selectedJob.residentPhone || '+94 77 123 4567'}</p>
+                                        <p><MdEmail size={14} style={{marginRight: "6px", marginBottom: "-2px"}} /> resident{selectedJob.residentId}@example.com</p>
                                     </div>
                                 </div>
 

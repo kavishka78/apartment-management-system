@@ -7,6 +7,7 @@ namespace ApartmentManagement.Api.Models
     {
         public int Id { get; set; }
         public int ResidentId { get; set; }
+        public Resident? Resident { get; set; }
         
         public int CategoryId { get; set; }
         public MaintenanceCategory? Category { get; set; }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../auth/auth_service.dart';
 
 class MaintenanceApiService {
   // Using the exact port and base URL found in the backend analysis
@@ -37,7 +38,7 @@ class MaintenanceApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/maintenance'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await AuthService.authHeaders(),
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -64,7 +65,7 @@ class MaintenanceApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/maintenance/$id'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await AuthService.authHeaders(),
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -83,7 +84,7 @@ class MaintenanceApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/maintenance/categories'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await AuthService.authHeaders(),
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -108,7 +109,7 @@ class MaintenanceApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/maintenance'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await AuthService.authHeaders(),
         body: jsonEncode({
           'residentId': residentId,
           'categoryId': categoryId,
@@ -159,7 +160,7 @@ class MaintenanceApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/maintenance/$maintenanceId/workflows/latest'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await AuthService.authHeaders(),
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -180,7 +181,7 @@ class MaintenanceApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/maintenance/$maintenanceId/verify'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await AuthService.authHeaders(),
         body: jsonEncode({
           'isApproved': isApproved,
           'note': note,
@@ -196,3 +197,4 @@ class MaintenanceApiService {
     }
   }
 }
+

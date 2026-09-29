@@ -24,7 +24,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
   
   List<MaintenanceCategory> _categories = [];
   MaintenanceCategory? _selectedCategory;
-  String _selectedPriority = 'Low';
+  String _selectedPriority = 'Pending Assessment';
   
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
@@ -383,41 +383,8 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
               ),
               validator: (val) => val == null || val.isEmpty ? 'Description is required' : null,
             ),
-            const SizedBox(height: 20),
-            
-            const Text('Priority', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            const SizedBox(height: 8),
-            Row(
-              children: ['Low', 'Medium', 'High'].map((p) {
-                final isSelected = _selectedPriority == p;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: InkWell(
-                      onTap: () => setState(() => _selectedPriority = p),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF1E2532) : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: isSelected ? const Color(0xFF1E2532) : Colors.grey.shade300),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          p, 
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.grey.shade700, 
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500
-                          )
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
             const SizedBox(height: 24),
-
+            
             const Text('Add Photos (Optional)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             const SizedBox(height: 8),
             Row(
@@ -525,8 +492,6 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                 _buildReviewRow(Icons.title, 'Title', _titleController.text),
                 const Divider(height: 32),
                 _buildReviewRow(Icons.description_outlined, 'Description', _descController.text),
-                const Divider(height: 32),
-                _buildReviewRow(Icons.flag_outlined, 'Priority', _selectedPriority),
                 if (_imageFile != null) ...[
                   const Divider(height: 32),
                   Row(

@@ -7,6 +7,9 @@ namespace ApartmentManagement.Api.DTOs.Maintenance
     {
         public int Id { get; set; }
         public int ResidentId { get; set; }
+        public string ResidentName { get; set; } = string.Empty;
+        public string ResidentPhone { get; set; } = string.Empty;
+        public string UnitNumber { get; set; } = string.Empty;
         
         public MaintenanceCategoryDto? Category { get; set; }
 

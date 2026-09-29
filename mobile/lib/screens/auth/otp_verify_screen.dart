@@ -558,7 +558,6 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                             ),
                           ),
                         ),
-                      ],
 
                       // Error banner
                       if (_errorMessage != null) ...[
@@ -603,3 +602,4 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
     );
   }
 }
+

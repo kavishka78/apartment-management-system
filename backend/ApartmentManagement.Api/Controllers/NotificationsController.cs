@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using ApartmentManagement.Api.Models;using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.DTOs.Notification;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagement.Api.Controllers
@@ -20,8 +21,18 @@ namespace ApartmentManagement.Api.Controllers
         }
 
         [HttpGet("resident/{residentId}")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<NotificationDto>>> GetResidentNotifications(int residentId)
         {
+            if (User.IsInRole("Resident"))
+            {
+                var resStr = User.FindFirst("residentId")?.Value;
+                if (!int.TryParse(resStr, out int rId) || rId != residentId)
+                {
+                    return Forbid();
+                }
+            }
+
             var notifications = await _context.Notifications
                 .Where(n => n.ResidentId == residentId)
                 .OrderByDescending(n => n.CreatedAt)
@@ -52,8 +63,18 @@ namespace ApartmentManagement.Api.Controllers
         }
 
         [HttpPost("resident/{residentId}/read-all")]
+        [Authorize]
         public async Task<IActionResult> MarkAllAsRead(int residentId)
         {
+            if (User.IsInRole("Resident"))
+            {
+                var resStr = User.FindFirst("residentId")?.Value;
+                if (!int.TryParse(resStr, out int rId) || rId != residentId)
+                {
+                    return Forbid();
+                }
+            }
+
             var unread = await _context.Notifications
                 .Where(n => n.ResidentId == residentId && !n.IsRead)
                 .ToListAsync();

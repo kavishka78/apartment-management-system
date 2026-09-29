@@ -38,6 +38,8 @@ namespace ApartmentManagement.Api.Models
         public string? MoveInDate { get; set; }
         public int VehiclesCount { get; set; }
         public int StaffCount { get; set; }
+        [MaxLength(500)]
+        public string? FcmToken { get; set; }
         public List<HouseholdMember> HouseholdMembers { get; set; } = new();
     }
 

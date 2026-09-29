@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/auth/resident_session.dart';
+import 'push_notification_service.dart';
 
 /// Manages the resident's local login session.
 ///
@@ -33,6 +34,11 @@ class AuthService {
     await prefs.setString(_kUnitNumber, session.unitNumber);
     await prefs.setInt(_kTenantId, session.tenantId);
     _cachedSession = session;
+    try {
+      PushNotificationService.initialize();
+    } catch (e) {
+      print('Push Notification Init Error: $e');
+    }
   }
 
   // ── Load ───────────────────────────────────────────────────────────────────
