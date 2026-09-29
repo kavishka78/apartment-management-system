@@ -1,8 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'maintenance_home_screen.dart'; // For CURRENT_RESIDENT_ID
+import 'package:intl/intl.dart';
+import 'maintenance_home_screen.dart';
+import '../../services/maintenance/maintenance_api_service.dart'; // for CURRENT_RESIDENT_ID
+import 'my_complaints_screen.dart';
+import 'maintenance_details_screen.dart';
+import '../../models/maintenance/maintenance_model.dart';
+ // IMPORTANT: Import for navigation!
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -27,31 +32,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       _isLoading = true;
       _error = '';
     });
-    
+
     try {
       final response = await http.get(Uri.parse('http://10.0.2.2:5073/api/Notifications/resident/$CURRENT_RESIDENT_ID'));
       if (response.statusCode == 200) {
-        if (mounted) {
-          setState(() {
-            _notifications = json.decode(response.body);
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _error = 'Failed to load notifications';
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
         setState(() {
-          _error = 'Connection error. Please try again.';
+          _notifications = json.decode(response.body);
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = 'Failed to load notifications';
           _isLoading = false;
         });
       }
+    } catch (e) {
+      setState(() {
+        _error = 'Network error. Please try again.';
+        _isLoading = false;
+      });
     }
   }
 
@@ -60,7 +59,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       await http.post(Uri.parse('http://10.0.2.2:5073/api/Notifications/$id/read'));
       _loadNotifications(); // Reload to update UI
     } catch (e) {
-      // Ignore
+      // Ignore error for now
     }
   }
 
@@ -72,7 +71,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       // Ignore
     }
   }
-
 
   String _formatTimeAgo(DateTime date) {
     final diff = DateTime.now().difference(date);
@@ -98,19 +96,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             onPressed: _notifications.any((n) => n['isRead'] == false) ? _markAllAsRead : null,
             child: const Text('Mark all read', style: TextStyle(color: Color(0xFF1E2532), fontWeight: FontWeight.w600)),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF1E2532)))
+          ? const Center(child: CircularProgressIndicator())
           : _error.isNotEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
-                      const SizedBox(height: 16),
-                      Text(_error, style: TextStyle(color: Colors.red.shade400)),
+                      Text(_error, style: const TextStyle(color: Colors.red)),
                       const SizedBox(height: 16),
                       ElevatedButton(onPressed: _loadNotifications, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E2532)), child: const Text('Retry', style: TextStyle(color: Colors.white)))
                     ],
@@ -141,6 +136,49 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           return GestureDetector(
                             onTap: () {
                               if (!isRead) _markAsRead(n['id']);
+                              
+                              if (n['title'] == 'Maintenance Resolved') {
+                                // Extract the title from the message string: "Your request 'TV not working' has been resolved..."
+                                final msg = n['message'] as String;
+                                String? ticketTitle;
+                                if (msg.startsWith("Your request '") && msg.contains("' has been resolved")) {
+                                  ticketTitle = msg.substring(14, msg.indexOf("' has been resolved"));
+                                }
+                                
+                                if (ticketTitle != null) {
+                                  // Show quick loading snackbar while we fetch
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening ticket details...'), duration: Duration(seconds: 1)));
+                                  
+                                  MaintenanceApiService.getComplaints(residentId: CURRENT_RESIDENT_ID).then((result) {
+                                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                    
+                                    if (result['success'] == true) {
+                                      final items = result['data'] as List;
+                                      final tickets = items.map((j) => MaintenanceTicket.fromJson(j)).toList();
+                                      
+                                      try {
+                                        final matchedTicket = tickets.firstWhere(
+                                          (t) => t.title == ticketTitle && (t.status == 'Resolved' || t.status == 'Closed')
+                                        );
+                                        
+                                        Navigator.push(
+                                          context, 
+                                          MaterialPageRoute(builder: (_) => MaintenanceDetailsScreen(ticketId: matchedTicket.id))
+                                        );
+                                      } catch (e) {
+                                        Navigator.push(context, MaterialPageRoute(builder: (_) => const MyComplaintsScreen()));
+                                      }
+                                    } else {
+                                      Navigator.push(context, MaterialPageRoute(builder: (_) => const MyComplaintsScreen()));
+                                    }
+                                  }).catchError((e) {
+                                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => const MyComplaintsScreen()));
+                                  });
+                                } else {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const MyComplaintsScreen()));
+                                }
+                              }
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),

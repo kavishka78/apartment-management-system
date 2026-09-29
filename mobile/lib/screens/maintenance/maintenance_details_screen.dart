@@ -313,11 +313,26 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
                                     border: Border.all(color: const Color(0xFFE8ECEF)),
                                   ),
                                   child: Column(
-                                    children: List.generate(_ticket!.history.length, (index) {
-                                      final h = _ticket!.history[index];
-                                      final isLast = index == _ticket!.history.length - 1;
-                                      return _buildTimelineItem(h, isLast);
-                                    }),
+                                    children: () {
+                                        final visibleHistory = _ticket!.history.where((h) {
+                                          final s = h.status.toLowerCase();
+                                          if (s.contains('technician assigned')) return true;
+                                          if (s.contains('ai ') || s.contains('sla') || s.contains('triage') || s.contains('escalation')) return false;
+                                          return true;
+                                        }).map((h) {
+                                          if (h.status.contains('Technician Assigned')) {
+                                            return MaintenanceHistoryEntry(
+                                              id: h.id, 
+                                              status: 'Assigned', note: h.note,
+                                              changedBy: h.changedBy, createdAt: h.createdAt,
+                                            );
+                                          }
+                                          return h;
+                                        }).toList();
+                                        return List.generate(visibleHistory.length, (index) {
+                                          return _buildTimelineItem(visibleHistory[index], index == visibleHistory.length - 1);
+                                        });
+                                      }(),
                                   ),
                                 ),
                                 const SizedBox(height: 40),
