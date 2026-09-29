@@ -1,30 +1,45 @@
-import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { 
-    MdCheckCircle, MdPlayArrow, MdOutlineBuild, MdAccessTime, 
-    MdLogout,  MdLocalPhone, MdFlag, 
-    MdAssignment,  MdPerson, MdSearch, MdFilterList, 
-    MdWarning, MdClose, MdInfoOutline,  MdHistory, MdKeyboardArrowDown
-} from 'react-icons/md';
+import {
+    MdOutlineBuild, MdAccessTime, MdLogout, MdSearch, MdKeyboardArrowDown,
+    MdPlayArrow, MdCheckCircle, MdHistory, MdPerson, MdOutlineDescription,
+    MdOutlinePhotoCamera, MdOutlineTimer, MdOutlineStickyNote2,
+    MdAssignment, MdTrackChanges, MdOutlineElectricalServices, MdOutlinePlumbing, MdAcUnit,
+    MdChevronRight, MdOutlineBolt, MdWaterDrop, MdListAlt, MdAdd, MdPhone, MdEmail } from 'react-icons/md';
 import './TechnicianDashboard.css';
 
 const statusStyle = (status) => {
     switch (status) {
-        case 'In Progress': return { color: '#4338ca', bg: '#e0e7ff', bar: '#4f46e5', Icon: MdOutlineBuild };
-        case 'Assigned': return { color: '#d97706', bg: '#fef3c7', bar: '#f59e0b', Icon: MdAccessTime };
-        case 'Resolved': return { color: '#15803d', bg: '#dcfce7', bar: '#16a34a', Icon: MdCheckCircle };
-        case 'Closed': return { color: '#475569', bg: '#f1f5f9', bar: '#94a3b8', Icon: MdCheckCircle };
-        default: return { color: '#d97706', bg: '#fef3c7', bar: '#f59e0b', Icon: MdAccessTime };
+        case 'In Progress': return { color: '#3b82f6', bg: '#eff6ff', border: 'transparent' };
+        case 'Assigned': return { color: '#64748b', bg: '#f1f5f9', border: 'transparent' };
+        case 'Resolved': return { color: '#10b981', bg: '#ecfdf5', border: 'transparent' };
+        case 'Closed': return { color: '#64748b', bg: '#f1f5f9', border: 'transparent' };
+        default: return { color: '#64748b', bg: '#f1f5f9', border: 'transparent' };
     }
 };
 
-const priorityColor = (priority) => {
-    if (priority === 'Urgent') return '#991b1b';
-    if (priority === 'High') return '#dc2626';
-    if (priority === 'Medium') return '#d97706';
-    return '#16a34a'; // Low
+const priorityStyle = (priority) => {
+    switch (priority) {
+        case 'Urgent': return { color: '#ef4444', bg: '#fef2f2', border: 'transparent' };
+        case 'High': return { color: '#ef4444', bg: '#fef2f2', border: 'transparent' };
+        case 'Medium': return { color: '#f59e0b', bg: '#fffbeb', border: 'transparent' };
+        default: return { color: '#10b981', bg: '#ecfdf5', border: 'transparent' };
+    }
+};
+
+const getCategoryIconData = (categoryName) => {
+    const name = categoryName?.toLowerCase() || '';
+    if (name.includes('electrical') || name.includes('power') || name.includes('spark')) {
+        return { icon: <MdOutlineBolt size={24} />, color: '#ef4444', bg: '#fee2e2' };
+    }
+    if (name.includes('plumb') || name.includes('water') || name.includes('leak') || name.includes('sink')) {
+        return { icon: <MdWaterDrop size={24} />, color: '#3b82f6', bg: '#dbeafe' };
+    }
+    if (name.includes('ac') || name.includes('hvac') || name.includes('cool')) {
+        return { icon: <MdAcUnit size={24} />, color: '#0ea5e9', bg: '#e0f2fe' };
+    }
+    return { icon: <MdOutlineBuild size={24} />, color: '#64748b', bg: '#f1f5f9' };
 };
 
 function CustomDropdown({ value, options, onChange, label }) {
@@ -32,49 +47,22 @@ function CustomDropdown({ value, options, onChange, label }) {
     return (
         <div className="custom-dropdown">
             <div className="dropdown-trigger" onClick={() => setIsOpen(!isOpen)}>
-                {value === 'All' ? label : value} <MdKeyboardArrowDown size={18} className="dd-icon" />
+                {value === 'All' ? label : value} <MdKeyboardArrowDown size={16} color="#64748b" />
             </div>
             {isOpen && (
                 <>
-                <div style={{position: 'fixed', inset: 0, zIndex: 90}} onClick={() => setIsOpen(false)}></div>
-                <div className="dropdown-menu">
-                    <div className="dropdown-menu-header">
-                        {label} 
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={() => setIsOpen(false)} />
+                    <div className="dropdown-menu">
+                        <div className="dropdown-item" onClick={() => { onChange('All'); setIsOpen(false); }}>All</div>
+                        {options.map(opt => (
+                            <div key={opt} className={`dropdown-item ${value === opt ? 'selected' : ''}`}
+                                onClick={() => { onChange(opt); setIsOpen(false); }}>
+                                {opt}
+                            </div>
+                        ))}
                     </div>
-                    <div className={`dropdown-item ${value === 'All' ? 'selected' : ''}`} onClick={() => { onChange('All'); setIsOpen(false); }}>
-                        All {value === 'All' && <span className="check">✓</span>}
-                    </div>
-                    {options.map(opt => (
-                        <div 
-                            key={opt} 
-                            className={`dropdown-item ${value === opt ? 'selected' : ''}`}
-                            onClick={() => { onChange(opt); setIsOpen(false); }}
-                        >
-                            {opt} {value === opt && <span className="check">✓</span>}
-                        </div>
-                    ))}
-                </div>
                 </>
             )}
-        </div>
-    );
-}
-
-function SkeletonLoader() {
-    return (
-        <div className="jobs-grid">
-            {[1, 2, 3, 4].map(i => (
-                <div key={i} className="job-card skeleton">
-                    <div className="skeleton-bar" />
-                    <div className="skeleton-content">
-                        <div className="skeleton-line short" />
-                        <div className="skeleton-line title" />
-                        <div className="skeleton-line desc" />
-                        <div className="skeleton-line desc" />
-                        <div className="skeleton-footer" />
-                    </div>
-                </div>
-            ))}
         </div>
     );
 }
@@ -82,534 +70,337 @@ function SkeletonLoader() {
 export default function TechnicianDashboard() {
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
-    
+
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    
-    // Modals & Forms
-    const [resolvingJob, setResolvingJob] = useState(null);
-    const [resolutionNotes, setResolutionNotes] = useState('');
-    const [repairCost, setRepairCost] = useState('');
-    
-    const [updatingJob, setUpdatingJob] = useState(null);
-    const [updateNote, setUpdateNote] = useState('');
-    
-    const [viewingJob, setViewingJob] = useState(null);
-    
-    // Filters
+    const [selectedJob, setSelectedJob] = useState(null);
+    const [activeAction, setActiveAction] = useState(null);
+    const [actionNote, setActionNote] = useState('');
+    const [actionCost, setActionCost] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [priorityFilter, setPriorityFilter] = useState('All');
 
     const fetchJobs = useCallback(async () => {
+        if (!currentUser) return;
         try {
             setLoading(true);
-            setError(null);
             const res = await fetch('http://localhost:5073/api/maintenance');
             if (!res.ok) throw new Error('Failed to fetch');
             const data = await res.json();
-
             const techJobs = data.filter(j =>
-                j.technician &&
-                (
+                j.technician && (
                     j.technician.contactInformation === currentUser.phone ||
                     j.technician.name === currentUser.name ||
                     j.technician.contactInformation === currentUser.email
                 )
             );
-
+            techJobs.sort((a, b) => {
+                const pMap = { 'Urgent': 4, 'High': 3, 'Medium': 2, 'Low': 1 };
+                const pDiff = (pMap[b.priority] || 0) - (pMap[a.priority] || 0);
+                if (pDiff !== 0) return pDiff;
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            });
             setJobs(techJobs);
-        } catch (err) {
-            console.error('Error fetching jobs:', err);
-            setError('Unable to load work orders');
-        } finally {
-            setLoading(false);
-        }
+            if (techJobs.length > 0) {
+                setSelectedJob(prev => {
+                    if (prev) { const u = techJobs.find(t => t.id === prev.id); return u || techJobs[0]; }
+                    return techJobs[0];
+                });
+            } else { setSelectedJob(null); }
+        } catch (err) { console.error(err); } finally { setLoading(false); }
     }, [currentUser]);
 
     useEffect(() => {
-        if (currentUser?.role !== 'Technician') {
-            navigate('/login');
-            return;
-        }
-        // eslint-disable-next-line
+        if (!currentUser || currentUser.role !== 'Technician') { navigate('/login'); return; }
         fetchJobs();
+        const interval = setInterval(fetchJobs, 30000);
+        return () => clearInterval(interval);
     }, [currentUser, navigate, fetchJobs]);
+
+    if (!currentUser) return null;
 
     const handleStartWork = async (id) => {
         try {
             const res = await fetch(`http://localhost:5073/api/maintenance/${id}/start`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('ah_token')}` }
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('ah_token')}`, 'Content-Type': 'application/json' }
             });
-            if (res.ok) {
-                fetchJobs();
-            } else {
-                alert('Failed to start work.');
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Error starting work');
-        }
+            if (res.ok) fetchJobs(); else alert('Failed to start work');
+        } catch (err) { console.error(err); alert('Error starting work'); }
     };
 
-    const handleResolve = async (e) => {
-        e.preventDefault();
-        if (!resolvingJob) return;
-        const cost = parseFloat(repairCost);
-        if (isNaN(cost) || cost < 0) {
-            alert('Please enter a valid repair cost (0 or more).');
-            return;
-        }
-
+    const submitInlineAction = async () => {
+        if (!selectedJob || !activeAction || !actionNote.trim()) { alert('Please enter a note'); return; }
         try {
-            const res = await fetch(`http://localhost:5073/api/maintenance/${resolvingJob.id}/resolve`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('ah_token')}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    note: resolutionNotes,
-                    repairCost: cost
-                })
-            });
-            
-            if (res.ok) {
-                setResolvingJob(null);
-                setResolutionNotes('');
-                setRepairCost('');
-                fetchJobs();
+            if (activeAction === 'resolve') {
+                const cost = parseFloat(actionCost) || 0;
+                const res = await fetch(`http://localhost:5073/api/maintenance/${selectedJob.id}/resolve`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('ah_token')}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ note: actionNote, repairCost: cost })
+                });
+                if (res.ok) { setActiveAction(null); fetchJobs(); } else alert('Failed to resolve');
             } else {
-                alert('Failed to resolve ticket.');
+                const res = await fetch(`http://localhost:5073/api/maintenance/${selectedJob.id}/comments`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('ah_token')}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ note: actionNote, role: 'Technician' })
+                });
+                if (res.ok) { setActiveAction(null); fetchJobs(); } else alert('Failed to add note');
             }
-        } catch (err) {
-            console.error(err);
-            alert('Error resolving ticket');
-        }
+        } catch (err) { console.error(err); alert('Error submitting'); }
     };
 
-    const handleUpdateNote = async (e) => {
-        e.preventDefault();
-        if (!updatingJob || !updateNote.trim()) return;
-        try {
-            const res = await fetch(`http://localhost:5073/api/maintenance/${updatingJob.id}/comments`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('ah_token')}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    note: updateNote,
-                    role: 'Technician'
-                })
-            });
-            
-            if (res.ok) {
-                setUpdatingJob(null);
-                setUpdateNote('');
-                fetchJobs();
-            } else {
-                alert('Failed to add note.');
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Error adding note');
-        }
-    };
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
-    const activeJobs = jobs.filter(j => j.status === 'Assigned' || j.status === 'In Progress');
-    const assignedCount = activeJobs.filter(j => j.status === 'Assigned').length;
-    const inProgressCount = activeJobs.filter(j => j.status === 'In Progress').length;
-    // eslint-disable-next-line
-    const highPriorityCount = activeJobs.filter(j => j.priority === 'High' || j.priority === 'Urgent').length;
-    // eslint-disable-next-line
-    const slaAtRiskCount = activeJobs.filter(j => j.slaStatus === 'At Risk' || j.slaStatus === 'Overdue').length;
+    const handleLogout = () => { logout(); navigate('/login'); };
 
     const filteredJobs = useMemo(() => {
         let result = [...jobs];
-        
         if (searchTerm) {
             const lower = searchTerm.toLowerCase();
-            result = result.filter(j => 
-                j.title.toLowerCase().includes(lower) || 
-                j.id.toString().includes(lower) ||
-                j.description.toLowerCase().includes(lower) ||
-                (j.category?.name || '').toLowerCase().includes(lower)
-            );
+            result = result.filter(j => j.title?.toLowerCase().includes(lower) || j.id?.toString().includes(lower) || j.description?.toLowerCase().includes(lower));
         }
-        
-        if (statusFilter !== 'All') {
-            result = result.filter(j => j.status === statusFilter);
-        }
-        
-        if (priorityFilter !== 'All') {
-            result = result.filter(j => j.priority === priorityFilter);
-        }
-        
-        result.sort((a, b) => {
-            const slaMap = { "Overdue": 3, "At Risk": 2, "Normal": 1 };
-            const slaA = slaMap[a.slaStatus] || 1;
-            const slaB = slaMap[b.slaStatus] || 1;
-            if (slaA !== slaB) return slaB - slaA;
-            
-            const prioMap = { "Urgent": 4, "High": 3, "Medium": 2, "Low": 1 };
-            const prioA = prioMap[a.priority] || 1;
-            const prioB = prioMap[b.priority] || 1;
-            if (prioA !== prioB) return prioB - prioA;
-            
-            const statMap = { "In Progress": 3, "Assigned": 2, "Resolved": 1, "Closed": 0 };
-            const statA = statMap[a.status] || 0;
-            const statB = statMap[b.status] || 0;
-            if (statA !== statB) return statB - statA;
-            
-            return new Date(b.createdAt) - new Date(a.createdAt);
-        });
-        
+        if (statusFilter !== 'All') result = result.filter(j => j.status === statusFilter);
+        if (priorityFilter !== 'All') result = result.filter(j => j.priority === priorityFilter);
         return result;
     }, [jobs, searchTerm, statusFilter, priorityFilter]);
 
-    return (
-        <motion.div className="technician-page" initial={{opacity:0, y:15}} animate={{opacity:1, y:0}} transition={{duration:0.25, ease:"easeInOut"}}>
-            <div className="ah-container">
+    const assignedCount = jobs.filter(j => j.status === 'Assigned').length;
+    const inProgressCount = jobs.filter(j => j.status === 'In Progress').length;
 
-                <div className="ah-header">
-                    <div className="profile-section">
-                        <div className="profile-avatar">
-                            {currentUser?.photo ? (
-                                <img src={currentUser.photo} alt={currentUser?.name} />
+    return (
+        <div className="technician-dashboard">
+            {/* ===== WHITE TOP BAR ===== */}
+            <header className="tech-topbar">
+                <div className="topbar-left">
+                    <div className="topbar-avatar">
+                        <MdPerson size={24} />
+                    </div>
+                    <div className="topbar-info">
+                        <h2>Welcome, {currentUser?.name || currentUser?.email}</h2>
+                        <span><MdListAlt size={15} style={{marginBottom: '-3px', marginRight: '4px'}}/> My work orders</span>
+                    </div>
+                </div>
+                <div className="topbar-right">
+                    <span className="pill-badge pill-yellow">{assignedCount} assigned</span>
+                    <span className="pill-badge pill-amber">{inProgressCount} in progress</span>
+                    <button onClick={handleLogout} className="pill-badge pill-red">
+                        <MdLogout size={16} /> Sign out
+                    </button>
+                </div>
+            </header>
+
+            {/* ===== DARK HERO BANNER ===== */}
+            <section className="tech-hero">
+                <div className="hero-left">
+                    <span className="hero-label">TECHNICIAN PORTAL</span>
+                    <h1>Manage your<br />assigned work orders.</h1>
+                    <p>Access your daily maintenance tickets, track your repair progress, and ensure residents receive fast and reliable service.</p>
+                </div>
+                <div className="hero-cards">
+                    <div className="hero-card">
+                        <div className="hc-icon"><MdAssignment size={28} /></div>
+                        <strong>VIEW ASSIGNMENTS</strong>
+                        <p>Instantly see all maintenance tickets routed to you.</p>
+                    </div>
+                    <div className="hero-card">
+                        <div className="hc-icon"><MdTrackChanges size={28} /></div>
+                        <strong>TRACK PROGRESS</strong>
+                        <p>Start repairs and update your ongoing jobs.</p>
+                    </div>
+                    <div className="hero-card">
+                        <div className="hc-icon"><MdCheckCircle size={28} /></div>
+                        <strong>RESOLVE TICKETS</strong>
+                        <p>Mark completed jobs as resolved quickly.</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* ===== SPLIT VIEW ===== */}
+            <main className="tech-main">
+                <div className="split-container">
+
+                    {/* LEFT PANE */}
+                    <div className="left-pane">
+                        <div className="lp-header">
+                            <h2>My Work Orders</h2>
+                            <div className="search-box">
+                                <MdSearch size={20} color="#94a3b8" />
+                                <input type="text" placeholder="Search tickets, keywords..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                            </div>
+                            <div className="filter-selects">
+                                <CustomDropdown value={statusFilter} options={['Assigned', 'In Progress', 'Resolved', 'Closed']} onChange={setStatusFilter} label="All Status" />
+                                <CustomDropdown value={priorityFilter} options={['Low', 'Medium', 'High', 'Urgent']} onChange={setPriorityFilter} label="All Priority" />
+                            </div>
+                        </div>
+                        <div className="compact-list">
+                            {loading && jobs.length === 0 ? (
+                                <div className="empty-state">Loading work orders...</div>
+                            ) : filteredJobs.length === 0 ? (
+                                <div className="empty-state">No work orders found.</div>
                             ) : (
-                                <MdPerson size={24} color="#fff" />
+                                filteredJobs.map(job => {
+                                    const isSelected = selectedJob?.id === job.id;
+                                    const sStyle = statusStyle(job.status);
+                                    const pStyle = priorityStyle(job.priority);
+                                    const catData = getCategoryIconData(job.category?.name);
+                                    return (
+                                        <div key={job.id} className={`list-card ${isSelected ? 'active' : ''}`} onClick={() => setSelectedJob(job)}>
+                                            <div className="lc-icon" style={{ backgroundColor: catData.bg, color: catData.color }}>
+                                                {catData.icon}
+                                            </div>
+                                            <div className="lc-content">
+                                                <div className="lc-top">
+                                                    <span className="lc-id">#{String(job.id).padStart(3, '0')}</span>
+                                                    <div className="lc-badges">
+                                                        <span className="rect-badge" style={{ color: pStyle.color, background: pStyle.bg }}>{job.priority}</span>
+                                                        <span className="rect-badge" style={{ color: sStyle.color, background: sStyle.bg }}>{job.status}</span>
+                                                    </div>
+                                                </div>
+                                                <h4 className="lc-title">{job.title}</h4>
+                                                <div className="lc-meta-row">
+                                                    <span className="lc-unit">Unit R-0{job.residentId || 1} • {job.category?.name || 'General'}</span>
+                                                    <span className={`lc-date ${job.slaStatus === 'Overdue' ? 'text-red' : ''}`}>
+                                                        <MdAccessTime size={14} style={{marginBottom: '-2px', marginRight: '2px'}}/> 
+                                                        {new Date(job.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                                <p className="lc-desc">{job.description}</p>
+                                            </div>
+                                            <div className="lc-chevron"><MdChevronRight size={24} /></div>
+                                        </div>
+                                    );
+                                })
                             )}
                         </div>
-
-                        <div>
-                            <h1>Welcome, {currentUser?.name}</h1>
-                            <div className="user-info">
-                                <span>My Work Orders</span>
-                                {currentUser?.phone && (
-                                    <>
-                                        <span className="divider">|</span>
-                                        <MdLocalPhone size={14} />
-                                        <span>{currentUser.phone}</span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
                     </div>
 
-                    <div className="header-right">
-                        <span className="stat-pill yellow">{assignedCount} assigned</span>
-                        <span className="stat-pill purple">{inProgressCount} in progress</span>
-                        <button onClick={handleLogout} className="signout-btn">
-                            <MdLogout size={16} /> Sign out
-                        </button>
-                    </div>
-                </div>
+                    {/* RIGHT PANE */}
+                    <div className="right-pane">
+                        {!selectedJob ? (
+                            <div className="empty-selection"><p>Select a work order to view details</p></div>
+                        ) : (
+                            <div className="details-view">
+                                {/* Header */}
+                                <div className="rp-top">
+                                    <div className="rp-ticket-id">
+                                        <strong>Ticket #{String(selectedJob.id).padStart(3, '0')}</strong>
+                                        <span className="rect-badge" style={{ color: statusStyle(selectedJob.status).color, background: statusStyle(selectedJob.status).bg }}>{selectedJob.status}</span>
+                                    </div>
+                                    <div className="rp-actions">
+                                        {selectedJob.status === 'Assigned' && (
+                                            <button onClick={() => handleStartWork(selectedJob.id)} className="rect-btn rect-btn-green"><MdPlayArrow size={16} /> Start Repair</button>
+                                        )}
+                                        {selectedJob.status === 'In Progress' && (
+                                            <>
+                                                <button onClick={() => { setActiveAction('update'); setActionNote(''); }} className="rect-btn rect-btn-outline">Update</button>
+                                                <button onClick={() => { setActiveAction('resolve'); setActionNote(''); setActionCost(''); }} className="rect-btn rect-btn-green"><MdCheckCircle size={16} /> Mark Resolved</button>
+                                            </>
+                                        )}
+                                        {/* "More" Button explicitly removed per user request */}
+                                    </div>
+                                </div>
 
-                                <div className="hero-section">
-                    <div className="hero-text">
-                        <h4>TECHNICIAN PORTAL</h4>
-                        <h2>Manage your assigned work orders.</h2>
-                        <p>View assigned maintenance tickets, track work progress, update repairs, and resolve completed jobs.</p>
-                    </div>
-                    
-                    <div className="feature-grid">
-                        <div className="feature-card">
-                            <div className="feature-icon"><MdAssignment size={20} /></div>
-                            <h3>View Assignments</h3>
-                            <p>Instantly see all maintenance tickets routed to you.</p>
-                        </div>
-                        <div className="feature-card">
-                            <div className="feature-icon"><MdOutlineBuild size={20} /></div>
-                            <h3>Track Progress</h3>
-                            <p>Start repairs and update your ongoing jobs.</p>
-                        </div>
-                        <div className="feature-card">
-                            <div className="feature-icon"><MdCheckCircle size={20} /></div>
-                            <h3>Resolve Tickets</h3>
-                            <p>Mark completed jobs as resolved quickly.</p>
-                        </div>
-                    </div>
-                </div>
+                                <div className="rp-title-row">
+                                    <h1>{selectedJob.title}</h1>
+                                    <span className="rect-badge" style={{ color: priorityStyle(selectedJob.priority).color, background: priorityStyle(selectedJob.priority).bg }}>{selectedJob.priority}</span>
+                                </div>
 
-<div className="filters-bar">
-                    <div className="search-box">
-                        <MdSearch size={20} className="search-icon" />
-                        <input 
-                            type="text" 
-                            placeholder="Search complaints by title..." 
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
-                        <MdFilterList size={20} className="filter-icon" />
-                    </div>
-                    <div className="filter-selects">
-                        <CustomDropdown 
-                            label="All Statuses" 
-                            value={statusFilter} 
-                            onChange={setStatusFilter} 
-                            options={['Assigned', 'In Progress', 'Resolved', 'Closed']} 
-                        />
-                        <CustomDropdown 
-                            label="All Priorities" 
-                            value={priorityFilter} 
-                            onChange={setPriorityFilter} 
-                            options={['Low', 'Medium', 'High', 'Urgent']} 
-                        />
-                    </div>
-                </div>
+                                <div className="rp-meta-bar">
+                                    <span><MdOutlineBuild size={16} /> Unit R-0{selectedJob.residentId || 1}</span>
+                                    <span>⚡ {selectedJob.category?.name || 'Electrical'}</span>
+                                    <span className={selectedJob.slaStatus === 'Overdue' ? 'text-red' : ''}><MdAccessTime size={16} /> {new Date(selectedJob.createdAt).toLocaleString()} {selectedJob.slaStatus === 'Overdue' ? '(Overdue)' : ''}</span>
+                                </div>
 
-                {loading ? (
-                    <SkeletonLoader />
-                ) : error ? (
-                    <div className="error-state">
-                        <MdWarning size={40} color="#dc2626" />
-                        <h3>{error}</h3>
-                        <button onClick={fetchJobs} className="retry-btn">Try Again</button>
-                    </div>
-                ) : filteredJobs.length === 0 ? (
-                    <div className="empty-state">
-                        <MdAssignment size={48} color="#94a3b8" />
-                        <h3>No work orders found</h3>
-                        <p>You currently have no maintenance jobs matching these filters.</p>
-                    </div>
-                ) : (
-                    <div className="jobs-grid">
-                        <AnimatePresence>
-                            {filteredJobs.map(job => {
-                                const s = statusStyle(job.status);
-                                const StatusIcon = s.Icon;
-                                const pColor = priorityColor(job.priority);
-                                const isSlaRisk = job.slaStatus === 'At Risk' || job.slaStatus === 'Overdue';
+                                <div className="rp-section">
+                                    <h4><MdOutlineDescription size={18} /> Description</h4>
+                                    <p>{selectedJob.description}</p>
+                                </div>
 
-                                return (
-                                    <motion.div 
-                                        key={job.id} 
-                                        className="job-card"
-                                        initial={{opacity: 0, scale: 0.95}}
-                                        animate={{opacity: 1, scale: 1}}
-                                        exit={{opacity: 0, scale: 0.95}}
-                                        layout
-                                    >
-                                        <div className="status-bar" style={{ backgroundColor: s.bar }} />
+                                <div className="rp-section">
+                                    <h4><MdPerson size={18} /> Resident Information</h4>
+                                    <div className="rp-info-block">
+                                        <p>Name : Resident {selectedJob.residentId || 2}</p>
+                                        <p><MdPhone size={14} style={{marginRight: "6px", marginBottom: "-2px"}} /> +94 77 123 4567</p>
+                                        <p><MdEmail size={14} style={{marginRight: "6px", marginBottom: "-2px"}} /> resident{selectedJob.residentId || 2}@example.com</p>
+                                    </div>
+                                </div>
 
-                                        <div className="job-content">
-                                            <div className="job-meta">
-                                                <span className="status-badge" style={{ backgroundColor: s.bg, color: s.color }}>
-                                                    <StatusIcon size={12} /> {job.status}
-                                                </span>
-                                                <span className="priority-badge" style={{ color: pColor, backgroundColor: pColor + '15' }}>
-                                                    <MdFlag size={12} /> {job.priority}
-                                                </span>
-                                                <span className="ticket-number">Ticket #{job.id}</span>
-                                            </div>
+                                <div className="rp-section">
+                                    <h4><MdOutlinePhotoCamera size={18} /> Photos</h4>
+                                    <div className="photos-row">
+                                        {selectedJob.photoPath && <img src={`http://localhost:5073${selectedJob.photoPath}`} alt="Photo" className="photo-thumb" />}
+                                        <button className="add-photo-btn">
+                                            <MdAdd size={24} /> 
+                                            <span>Photo</span>
+                                        </button>
+                                    </div>
+                                </div>
 
-                                            <h3 className="job-title">{job.title}</h3>
-                                            
-                                            <div className="job-details-compact">
-                                                <span><strong>Category:</strong> {job.category?.name || 'General'}</span>
-                                                <span className="divider">•</span>
-                                                <span><strong>Unit:</strong> Resident {job.residentId}</span>
-                                            </div>
+                                <div className="rp-section">
+                                    <h4><MdOutlineTimer size={18} /> SLA Information</h4>
+                                    <div className="sla-grid">
+                                        <div>
+                                            <label><MdAccessTime size={14} style={{marginBottom: '-2px', marginRight: '4px'}}/> Due Date</label>
+                                            <p>{selectedJob.slaDueDate ? new Date(selectedJob.slaDueDate).toLocaleString() : 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <label><MdCheckCircle size={14} style={{marginBottom: '-2px', marginRight: '4px'}}/> Status</label>
+                                            <span className={`rect-badge ${selectedJob.slaStatus === 'Overdue' ? 'overdue' : ''}`}>{selectedJob.slaStatus || 'Normal'}</span>
+                                        </div>
+                                        <div>
+                                            <label><MdOutlineTimer size={14} style={{marginBottom: '-2px', marginRight: '4px'}}/> Time Remaining</label>
+                                            <p className={selectedJob.slaStatus === 'Overdue' ? 'text-red' : ''}>—</p>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                            <p className="job-desc">{job.description}</p>
-
-                                            {job.photoPath && (
-                                                <div className="job-photo-preview">
-                                                    <img src={`http://localhost:5073${job.photoPath}`} alt="Complaint" />
-                                                </div>
-                                            )}
-
-                                            <div className="job-footer">
-                                                <div className={`sla-indicator ${isSlaRisk ? 'risk' : ''}`}>
-                                                    <MdAccessTime size={14} />
-                                                    SLA: {job.slaDueDate ? new Date(job.slaDueDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'}
-                                                    {isSlaRisk && <span className="sla-tag">({job.slaStatus})</span>}
-                                                </div>
-
-                                                <div className="job-actions">
-                                                    <button onClick={() => setViewingJob(job)} className="action-btn view-btn">
-                                                        <MdInfoOutline size={16} /> Details
-                                                    </button>
-                                                    
-                                                    {job.status === 'Assigned' && (
-                                                        <button onClick={() => handleStartWork(job.id)} className="action-btn start-btn">
-                                                            <MdPlayArrow size={16} /> Start Work
-                                                        </button>
-                                                    )}
-                                                    
-                                                    {job.status === 'In Progress' && (
-                                                        <>
-                                                            <button onClick={() => setUpdatingJob(job)} className="action-btn update-btn">
-                                                                <MdHistory size={16} /> Update
-                                                            </button>
-                                                            <button onClick={() => setResolvingJob(job)} className="action-btn resolve-btn">
-                                                                <MdCheckCircle size={16} /> Mark resolved
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </div>
+                                <div className="rp-section">
+                                    <h4><MdOutlineStickyNote2 size={18} /> Notes</h4>
+                                    {activeAction ? (
+                                        <div className="inline-form">
+                                            <textarea rows="3" placeholder={activeAction === 'resolve' ? 'Resolution notes...' : 'Add notes about this work order...'} value={actionNote} onChange={e => setActionNote(e.target.value)} autoFocus />
+                                            {activeAction === 'resolve' && <input type="number" placeholder="Repair cost in Rs." value={actionCost} onChange={e => setActionCost(e.target.value)} />}
+                                            <div className="form-actions">
+                                                <button onClick={() => setActiveAction(null)} className="rect-btn rect-btn-outline">Cancel</button>
+                                                <button onClick={submitInlineAction} className="rect-btn rect-btn-dark">Submit</button>
                                             </div>
                                         </div>
-                                    </motion.div>
-                                );
-                            })}
-                        </AnimatePresence>
-                    </div>
-                )}
-            </div>
-
-            <AnimatePresence>
-                {resolvingJob && (
-                    <div className="modal-overlay" onClick={() => setResolvingJob(null)}>
-                        <motion.div className="modal-content" onClick={e => e.stopPropagation()} initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} exit={{opacity:0, y:20}}>
-                            <div className="modal-header">
-                                <h2>Resolve Ticket #{resolvingJob.id}</h2>
-                                <button className="close-btn" onClick={() => setResolvingJob(null)}><MdClose size={20}/></button>
-                            </div>
-                            <form onSubmit={handleResolve} className="modal-body">
-                                <div className="form-group">
-                                    <label>Resolution Notes</label>
-                                    <textarea 
-                                        required
-                                        rows={4}
-                                        value={resolutionNotes}
-                                        onChange={e => setResolutionNotes(e.target.value)}
-                                        placeholder="Describe the repairs made..."
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Repair Cost (Rs.)</label>
-                                    <input 
-                                        type="number"
-                                        required
-                                        min="0"
-                                        step="0.01"
-                                        value={repairCost}
-                                        onChange={e => setRepairCost(e.target.value)}
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                                <div className="modal-footer">
-                                    <button type="button" className="btn-cancel" onClick={() => setResolvingJob(null)}>Cancel</button>
-                                    <button type="submit" className="btn-confirm"><MdCheckCircle size={16}/> Mark Resolved</button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-                {updatingJob && (
-                    <div className="modal-overlay" onClick={() => setUpdatingJob(null)}>
-                        <motion.div className="modal-content" onClick={e => e.stopPropagation()} initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} exit={{opacity:0, y:20}}>
-                            <div className="modal-header">
-                                <h2>Update Ticket #{updatingJob.id}</h2>
-                                <button className="close-btn" onClick={() => setUpdatingJob(null)}><MdClose size={20}/></button>
-                            </div>
-                            <form onSubmit={handleUpdateNote} className="modal-body">
-                                <div className="form-group">
-                                    <label>Work Note</label>
-                                    <textarea 
-                                        required
-                                        rows={4}
-                                        value={updateNote}
-                                        onChange={e => setUpdateNote(e.target.value)}
-                                        placeholder="Add an update to the timeline..."
-                                    />
-                                </div>
-                                <div className="modal-footer">
-                                    <button type="button" className="btn-cancel" onClick={() => setUpdatingJob(null)}>Cancel</button>
-                                    <button type="submit" className="btn-confirm update-btn"><MdHistory size={16}/> Add Note</button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-                {viewingJob && (
-                    <div className="modal-overlay" onClick={() => setViewingJob(null)}>
-                        <motion.div className="modal-content details-modal" onClick={e => e.stopPropagation()} initial={{opacity:0, scale:0.95}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:0.95}}>
-                            <div className="modal-header">
-                                <div>
-                                    <span className="ticket-number-large">Ticket #{viewingJob.id}</span>
-                                    <h2>{viewingJob.title}</h2>
-                                </div>
-                                <button className="close-btn" onClick={() => setViewingJob(null)}><MdClose size={20}/></button>
-                            </div>
-                            <div className="modal-body details-body">
-                                <div className="details-grid">
-                                    <div className="detail-item">
-                                        <label>Status</label>
-                                        <div className="val"><span className="status-badge" style={{ backgroundColor: statusStyle(viewingJob.status).bg, color: statusStyle(viewingJob.status).color }}>{viewingJob.status}</span></div>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Priority</label>
-                                        <div className="val"><span className="priority-badge" style={{ color: priorityColor(viewingJob.priority), backgroundColor: priorityColor(viewingJob.priority) + '15' }}>{viewingJob.priority}</span></div>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Category</label>
-                                        <div className="val">{viewingJob.category?.name || 'General'}</div>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Resident ID</label>
-                                        <div className="val">{viewingJob.residentId}</div>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>SLA Due</label>
-                                        <div className={`val ${viewingJob.slaStatus === 'Overdue' ? 'text-red' : ''}`}>{viewingJob.slaDueDate ? new Date(viewingJob.slaDueDate).toLocaleString() : 'N/A'}</div>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>SLA Status</label>
-                                        <div className={`val ${viewingJob.slaStatus === 'Overdue' ? 'text-red' : ''}`}>{viewingJob.slaStatus}</div>
-                                    </div>
-                                </div>
-                                
-                                <div className="detail-section">
-                                    <label>Description</label>
-                                    <p className="val-desc">{viewingJob.description}</p>
+                                    ) : (
+                                        <div className="notes-placeholder" onClick={() => setActiveAction('update')}>Add notes about this work order...</div>
+                                    )}
                                 </div>
 
-                                {viewingJob.photoPath && (
-                                    <div className="detail-section">
-                                        <label>Attached Photo</label>
-                                        <img className="val-img" src={`http://localhost:5073${viewingJob.photoPath}`} alt="Complaint Evidence" />
+                                {/* Timeline */}
+                                {(selectedJob.history || []).length > 0 && (
+                                    <div className="rp-section">
+                                        <h4><MdHistory size={18} /> Timeline</h4>
+                                        <div className="timeline">
+                                            {selectedJob.history.map((h, i) => (
+                                                <div key={i} className="tl-item">
+                                                    <div className="tl-dot" />
+                                                    <div className="tl-content">
+                                                        <div className="tl-head">
+                                                            <strong>{h.status}</strong>
+                                                            <span>{new Date(h.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                                        </div>
+                                                        {h.note && <p>{h.note}</p>}
+                                                        <span className="tl-by">BY {h.changedBy?.toUpperCase()}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
-
-                                <div className="detail-section timeline-section">
-                                    <label>Timeline & History</label>
-                                    <div className="timeline">
-                                        {(viewingJob.history || []).map((h, i) => (
-                                            <div key={i} className="timeline-item">
-                                                <div className="timeline-dot" />
-                                                <div className="timeline-content">
-                                                    <div className="timeline-head">
-                                                        <strong>{h.status}</strong>
-                                                        <span className="timeline-date">{new Date(h.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
-                                                    </div>
-                                                    {h.note && <p className="timeline-note">{h.note}</p>}
-                                                    <span className="timeline-by">By {h.changedBy}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
                             </div>
-                        </motion.div>
+                        )}
                     </div>
-                )}
-            </AnimatePresence>
-        </motion.div>
+                </div>
+            </main>
+        </div>
     );
 }
+
+
+
+

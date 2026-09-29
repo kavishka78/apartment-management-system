@@ -26,11 +26,12 @@ function SubscriptionBlocked({ status, complex, onLogout }) {
 }
 
 export default function AdminLayout() {
-  const { currentUser, authLoading, isSuperAdmin, currentComplex, subscriptionStatus, subscriptionActive, logout } = useAuth();
+  const { currentUser, authLoading, isSuperAdmin, isApartmentAdmin, currentComplex, subscriptionStatus, subscriptionActive, logout } = useAuth();
 
   if (authLoading) return null;
   if (!currentUser) return <Navigate to="/login" replace />;
   if (isSuperAdmin) return <Navigate to="/super-admin" replace />;
+  if (!isApartmentAdmin) return <Navigate to="/login" replace />;
 
   if (!subscriptionActive) {
     return <SubscriptionBlocked status={subscriptionStatus} complex={currentComplex} onLogout={logout} />;
