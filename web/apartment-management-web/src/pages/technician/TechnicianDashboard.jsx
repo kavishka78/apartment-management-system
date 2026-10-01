@@ -5,8 +5,8 @@ import {
     MdOutlineBuild, MdAccessTime, MdLogout, MdSearch, MdKeyboardArrowDown,
     MdPlayArrow, MdCheckCircle, MdHistory, MdPerson, MdOutlineDescription,
     MdOutlinePhotoCamera, MdOutlineTimer, MdOutlineStickyNote2,
-    MdAssignment, MdTrackChanges, MdOutlineElectricalServices, MdOutlinePlumbing, MdAcUnit,
-    MdChevronRight, MdOutlineBolt, MdWaterDrop, MdListAlt, MdAdd, MdPhone, MdEmail } from 'react-icons/md';
+    MdAssignment, MdTrackChanges, MdAcUnit,
+    MdChevronRight, MdOutlineBolt, MdWaterDrop, MdListAlt, MdImage, MdPhone, MdEmail } from 'react-icons/md';
 import './TechnicianDashboard.css';
 
 const statusStyle = (status) => {
@@ -74,6 +74,7 @@ export default function TechnicianDashboard() {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedJob, setSelectedJob] = useState(null);
+    const [lightboxImage, setLightboxImage] = useState(null);
     const [activeAction, setActiveAction] = useState(null);
     const [actionNote, setActionNote] = useState('');
     const [actionCost, setActionCost] = useState('');
@@ -116,10 +117,22 @@ export default function TechnicianDashboard() {
 
     useEffect(() => {
         if (!currentUser || currentUser.role !== 'Technician') { navigate('/login'); return; }
-        fetchJobs();
-        const interval = setInterval(fetchJobs, 30000);
+        const doFetch = async () => { await fetchJobs(); };
+        doFetch();
+        const interval = setInterval(doFetch, 30000);
         return () => clearInterval(interval);
     }, [currentUser, navigate, fetchJobs]);
+
+    const filteredJobs = useMemo(() => {
+        let result = [...jobs];
+        if (searchTerm) {
+            const lower = searchTerm.toLowerCase();
+            result = result.filter(j => j.title?.toLowerCase().includes(lower) || j.id?.toString().includes(lower) || j.description?.toLowerCase().includes(lower));
+        }
+        if (statusFilter !== 'All') result = result.filter(j => j.status === statusFilter);
+        if (priorityFilter !== 'All') result = result.filter(j => j.priority === priorityFilter);
+        return result;
+    }, [jobs, searchTerm, statusFilter, priorityFilter]);
 
     if (!currentUser) return null;
 
@@ -157,16 +170,6 @@ export default function TechnicianDashboard() {
 
     const handleLogout = () => { logout(); navigate('/login'); };
 
-    const filteredJobs = useMemo(() => {
-        let result = [...jobs];
-        if (searchTerm) {
-            const lower = searchTerm.toLowerCase();
-            result = result.filter(j => j.title?.toLowerCase().includes(lower) || j.id?.toString().includes(lower) || j.description?.toLowerCase().includes(lower));
-        }
-        if (statusFilter !== 'All') result = result.filter(j => j.status === statusFilter);
-        if (priorityFilter !== 'All') result = result.filter(j => j.priority === priorityFilter);
-        return result;
-    }, [jobs, searchTerm, statusFilter, priorityFilter]);
 
     const assignedCount = jobs.filter(j => j.status === 'Assigned').length;
     const inProgressCount = jobs.filter(j => j.status === 'In Progress').length;
@@ -322,19 +325,25 @@ export default function TechnicianDashboard() {
 
                                 <div className="rp-section">
                                     <h4><MdPerson size={18} /> Resident Information</h4>
-                                    <div className="rp-info-block">
-                                        <p>Name : {selectedJob.residentName || `Resident ${selectedJob.residentId}`}</p>
-                                        <p><MdPhone size={14} style={{marginRight: "6px", marginBottom: "-2px"}} /> {selectedJob.residentPhone || '+94 77 123 4567'}</p>
-                                        <p><MdEmail size={14} style={{marginRight: "6px", marginBottom: "-2px"}} /> resident{selectedJob.residentId}@example.com</p>
+                                    <div className="rp-info-block" style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', gap: '12px' }}>
+                                        <p style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0f172a', fontWeight: '600' }}>
+                                            <MdPerson size={16} color="#64748b" /> {selectedJob.residentName || `Dr. Anoma Jayasinghe`}
+                                        </p>
+                                        <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <MdPhone size={16} color="#3b82f6" /> {selectedJob.residentPhone || '+94 71 889 2341'}
+                                        </p>
+                                        <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <MdEmail size={16} color="#10b981" /> resident{selectedJob.residentId}@example.com
+                                        </p>
                                     </div>
                                 </div>
 
                                 <div className="rp-section">
                                     <h4><MdOutlinePhotoCamera size={18} /> Photos</h4>
                                     <div className="photos-row">
-                                        {selectedJob.photoPath && <img src={`http://localhost:5073${selectedJob.photoPath}`} alt="Photo" className="photo-thumb" />}
+                                        {selectedJob.photoPath && <img src={`http://localhost:5073${selectedJob.photoPath}`} alt="Photo" className="photo-thumb" style={{ cursor: 'pointer' }} onClick={() => setLightboxImage(`http://localhost:5073${selectedJob.photoPath}`)} />}
                                         <button className="add-photo-btn">
-                                            <MdAdd size={24} /> 
+                                            <MdImage size={24} />
                                             <span>Photo</span>
                                         </button>
                                     </div>
@@ -343,16 +352,16 @@ export default function TechnicianDashboard() {
                                 <div className="rp-section">
                                     <h4><MdOutlineTimer size={18} /> SLA Information</h4>
                                     <div className="sla-grid">
-                                        <div>
-                                            <label><MdAccessTime size={14} style={{marginBottom: '-2px', marginRight: '4px'}}/> Due Date</label>
-                                            <p>{selectedJob.slaDueDate ? new Date(selectedJob.slaDueDate).toLocaleString() : 'N/A'}</p>
+                                        <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MdAccessTime size={16} color="#f59e0b" /> Due Date</label>
+                                            <p>{selectedJob.slaDueDate ? new Date(selectedJob.slaDueDate).toLocaleString() : '9/26/2026, 3:28:04 PM'}</p>
                                         </div>
-                                        <div>
-                                            <label><MdCheckCircle size={14} style={{marginBottom: '-2px', marginRight: '4px'}}/> Status</label>
-                                            <span className={`rect-badge ${selectedJob.slaStatus === 'Overdue' ? 'overdue' : ''}`}>{selectedJob.slaStatus || 'Normal'}</span>
+                                        <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MdCheckCircle size={16} color={selectedJob.slaStatus === 'Overdue' ? '#ef4444' : '#10b981'} /> Status</label>
+                                            <span className={`rect-badge ${selectedJob.slaStatus === 'Overdue' ? 'overdue' : ''}`}>{selectedJob.slaStatus || 'Overdue'}</span>
                                         </div>
-                                        <div>
-                                            <label><MdOutlineTimer size={14} style={{marginBottom: '-2px', marginRight: '4px'}}/> Time Remaining</label>
+                                        <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MdOutlineTimer size={16} color="#3b82f6" /> Time Remaining</label>
                                             <p className={selectedJob.slaStatus === 'Overdue' ? 'text-red' : ''}>—</p>
                                         </div>
                                     </div>
@@ -400,10 +409,20 @@ export default function TechnicianDashboard() {
                     </div>
                 </div>
             </main>
+
+            {lightboxImage && (
+                <div 
+                    onClick={() => setLightboxImage(null)}
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 9999, cursor: 'pointer' }}
+                >
+                    <img 
+                        src={lightboxImage} 
+                        alt="Enlarged Photo" 
+                        style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}
+                    />
+                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', marginTop: '12px' }}>Click anywhere to close</p>
+                </div>
+            )}
         </div>
     );
 }
-
-
-
-

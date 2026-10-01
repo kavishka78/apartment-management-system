@@ -240,7 +240,7 @@ children: [
                                                   Container(
                                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                     decoration: BoxDecoration(
-                                                      color: t.status == 'Resolved' ? Colors.green.shade50 : Colors.grey.shade100,
+                                                      color: t.status == 'Resolved' ? Colors.green.shade50 : (t.status == 'Closed' ? Colors.red.shade50 : Colors.grey.shade100),
                                                       borderRadius: BorderRadius.circular(6),
                                                     ),
                                                     child: Text(
@@ -248,7 +248,7 @@ children: [
                                                       style: TextStyle(
                                                         fontSize: 11,
                                                         fontWeight: FontWeight.w600,
-                                                        color: t.status == 'Resolved' ? Colors.green.shade700 : Colors.grey.shade700,
+                                                        color: t.status == 'Resolved' ? Colors.green.shade700 : (t.status == 'Closed' ? Colors.red.shade700 : Colors.grey.shade700),
                                                       ),
                                                     ),
                                                   ),

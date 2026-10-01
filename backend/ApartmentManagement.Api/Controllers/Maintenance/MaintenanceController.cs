@@ -271,11 +271,43 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             return NoContent();
         }
 
+        [HttpPost("{id}/priority")]
+        [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
+        public async Task<ActionResult<MaintenanceDto>> UpdatePriority(int id, [FromBody] UpdatePriorityRequest request)
+        {
+            var maintenance = await _context.Maintenances.Include(m => m.History).Include(m => m.Resident).Include(m => m.Category).Include(m => m.Technician).FirstOrDefaultAsync(m => m.Id == id);
+            if (maintenance == null) return NotFound();
+
+            if (maintenance.Status == "Closed" || maintenance.Status == "Resolved")
+                return BadRequest("Cannot change priority on a resolved or closed ticket.");
+
+            var oldPriority = maintenance.Priority;
+            maintenance.Priority = request.Priority;
+            maintenance.UpdatedAt = DateTimeOffset.UtcNow;
+            
+            // Remove previous manual priority updates to prevent timeline spam
+            var previousUpdates = maintenance.History.Where(h => h.Status == "Priority Updated").ToList();
+            foreach (var update in previousUpdates)
+            {
+                _context.Remove(update);
+            }
+
+            maintenance.History.Add(new MaintenanceHistory
+            {
+                Status = "Priority Updated",
+                Note = $"Priority changed to {maintenance.Priority} by Admin.",
+                ChangedBy = "Manager"
+            });
+
+            await _context.SaveChangesAsync();
+            return Ok(MapToDto(maintenance));
+        }
+
         [HttpPost("{id}/assign")]
         [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
         public async Task<ActionResult<MaintenanceDto>> AssignTechnician(int id, [FromBody] AssignTechnicianRequest request)
         {
-            var maintenance = await _context.Maintenances.Include(m => m.History).Include(m => m.Resident).FirstOrDefaultAsync(m => m.Id == id);
+            var maintenance = await _context.Maintenances.Include(m => m.History).Include(m => m.Resident).Include(m => m.Category).Include(m => m.Technician).FirstOrDefaultAsync(m => m.Id == id);
             if (maintenance == null) return NotFound();
 
             if (maintenance.Status == "Closed" || maintenance.Status == "Resolved")
@@ -312,7 +344,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         [Authorize(Roles = "Technician,ApartmentAdmin,SuperAdmin")]
         public async Task<ActionResult<MaintenanceDto>> StartWork(int id)
         {
-            var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
+            var maintenance = await _context.Maintenances.Include(m => m.History).Include(m => m.Resident).Include(m => m.Category).Include(m => m.Technician).FirstOrDefaultAsync(m => m.Id == id);
             if (maintenance == null) return NotFound();
 
             if (maintenance.Status != "Assigned")
@@ -336,7 +368,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         [Authorize(Roles = "Technician,ApartmentAdmin,SuperAdmin")]
         public async Task<ActionResult<MaintenanceDto>> ResolveMaintenance(int id, [FromBody] ResolveMaintenanceRequest request)
         {
-            var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
+            var maintenance = await _context.Maintenances.Include(m => m.History).Include(m => m.Resident).Include(m => m.Category).Include(m => m.Technician).FirstOrDefaultAsync(m => m.Id == id);
             if (maintenance == null) return NotFound();
 
             if (maintenance.Status != "In Progress" && maintenance.Status != "Assigned")
@@ -404,7 +436,7 @@ maintenance.History.Add(new MaintenanceHistory
         [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
         public async Task<ActionResult<MaintenanceDto>> CloseMaintenance(int id)
         {
-            var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
+            var maintenance = await _context.Maintenances.Include(m => m.History).Include(m => m.Resident).Include(m => m.Category).Include(m => m.Technician).FirstOrDefaultAsync(m => m.Id == id);
             if (maintenance == null) return NotFound();
 
             if (maintenance.Status != "Resolved")
@@ -792,7 +824,7 @@ maintenance.History.Add(new MaintenanceHistory
         [HttpPost("{id}/comments")]
         public async Task<IActionResult> AddComment(int id, [FromBody] AddCommentRequest request)
         {
-            var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
+            var maintenance = await _context.Maintenances.Include(m => m.History).Include(m => m.Resident).Include(m => m.Category).Include(m => m.Technician).FirstOrDefaultAsync(m => m.Id == id);
             if (maintenance == null) return NotFound();
 
             maintenance.History.Add(new MaintenanceHistory
@@ -808,7 +840,7 @@ maintenance.History.Add(new MaintenanceHistory
         [HttpPost("{id}/verify")]
         public async Task<IActionResult> VerifyResolution(int id, [FromBody] VerifyResolutionRequest request)
         {
-            var maintenance = await _context.Maintenances.Include(m => m.History).FirstOrDefaultAsync(m => m.Id == id);
+            var maintenance = await _context.Maintenances.Include(m => m.History).Include(m => m.Resident).Include(m => m.Category).Include(m => m.Technician).FirstOrDefaultAsync(m => m.Id == id);
             if (maintenance == null) return NotFound();
             if (maintenance.Status != "Resolved") return BadRequest("Only resolved tickets can be verified.");
 

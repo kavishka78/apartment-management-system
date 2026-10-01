@@ -168,7 +168,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
         backgroundColor: const Color(0xFFF8F9FA),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 22),
           onPressed: _prevStep,
         ),
       ),
@@ -234,9 +234,9 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF1E2532) : Colors.white,
+            color: isActive ? const Color(0xFF10B981) : Colors.white,
             shape: BoxShape.circle,
-            border: Border.all(color: isActive ? const Color(0xFF1E2532) : Colors.grey.shade300, width: 2),
+            border: Border.all(color: isActive ? const Color(0xFF10B981) : Colors.grey.shade300, width: 2),
           ),
           child: Center(
             child: isActive && _currentStep > stepIndex
@@ -256,7 +256,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-            color: isActive ? const Color(0xFF1E2532) : Colors.grey.shade500,
+            color: isActive ? const Color(0xFF10B981) : Colors.grey.shade500,
           ),
         )
       ],
@@ -269,7 +269,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
       child: Container(
         height: 2,
         margin: const EdgeInsets.only(bottom: 24, left: 8, right: 8),
-        color: isActive ? const Color(0xFF1E2532) : Colors.grey.shade300,
+        color: isActive ? const Color(0xFF10B981) : Colors.grey.shade300,
       ),
     );
   }
@@ -487,18 +487,18 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
             ),
             child: Column(
               children: [
-                _buildReviewRow(Icons.category_outlined, 'Category', _selectedCategory?.name ?? ''),
+                _buildReviewRow(Icons.category, 'Category', _selectedCategory?.name ?? ''),
                 const Divider(height: 32),
                 _buildReviewRow(Icons.title, 'Title', _titleController.text),
                 const Divider(height: 32),
-                _buildReviewRow(Icons.description_outlined, 'Description', _descController.text),
+                _buildReviewRow(Icons.description, 'Description', _descController.text),
                 if (_imageFile != null) ...[
                   const Divider(height: 32),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.image_outlined, color: Colors.grey, size: 20),
-                      const SizedBox(width: 12),
+                      const Icon(Icons.image, color: Color(0xFF10B981), size: 24),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -506,7 +506,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                             const Text('Photo', style: TextStyle(fontSize: 12, color: Colors.grey)),
                             const SizedBox(height: 8),
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                               child: Image.file(_imageFile!, height: 100, width: 100, fit: BoxFit.cover),
                             ),
                           ],
@@ -527,8 +527,8 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Colors.grey.shade500, size: 20),
-        const SizedBox(width: 12),
+        Icon(icon, color: const Color(0xFF10B981), size: 24),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
