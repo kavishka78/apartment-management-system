@@ -15,6 +15,7 @@ import 'facility/facilities_list_screen.dart';
 import 'facility/my_bookings_screen.dart';
 import 'parking/visitor_parking_screen.dart';
 import 'maintenance/maintenance_home_screen.dart';
+import 'maintenance/notifications_screen.dart';
 import 'auth/login_entry_screen.dart';
 import 'profile/profile_home_screen.dart';
 import 'profile/vehicle_registration_screen.dart';
@@ -197,12 +198,165 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
 // ── Home Screen (unchanged from original main.dart) ─────────────────────────
 
-class HomeScreen extends StatelessWidget {
+
+class RecentActivity {
+  final String title;
+  final String idStr;
+  final String status;
+  final String subtitle;
+  final IconData icon;
+  final Color iconColor;
+  final Color bgColor;
+  final Color statusBg;
+  final Color statusText;
+  final DateTime date;
+
+  RecentActivity({
+    required this.title,
+    required this.idStr,
+    required this.status,
+    required this.subtitle,
+    required this.icon,
+    required this.iconColor,
+    required this.bgColor,
+    required this.statusBg,
+    required this.statusText,
+    required this.date,
+  });
+}
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List<RecentActivity> _recentActivities = [];
+  bool _isLoadingActivities = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentActivities();
+  }
+
+  Future<void> _loadRecentActivities() async {
+    try {
+      final headers = await AuthService.authHeaders();
+      final List<RecentActivity> activities = [];
+
+      // Fetch maintenance
+      try {
+        final mRes = await http.get(Uri.parse('http://10.0.2.2:5073/api/maintenance'), headers: headers);
+        if (mRes.statusCode == 200) {
+          final List<dynamic> mList = json.decode(mRes.body);
+          for (var m in mList) {
+            activities.add(RecentActivity(
+              title: 'Maintenance Request',
+              idStr: '#MNT-${m["id"]} • ${m["status"]}',
+              status: m["status"] ?? 'Pending',
+              subtitle: '${m["createdAt"].toString().substring(0, 10)} • ${m["title"]}',
+              icon: Icons.build_rounded,
+              iconColor: Colors.orange.shade800,
+              bgColor: Colors.orange.shade50,
+              statusBg: m["status"] == 'Resolved' ? Colors.green.shade50 : (m["status"] == 'Closed' ? Colors.red.shade50 : Colors.blue.shade50),
+              statusText: m["status"] == 'Resolved' ? Colors.green.shade700 : (m["status"] == 'Closed' ? Colors.red.shade700 : Colors.blue.shade700),
+              date: DateTime.parse(m["createdAt"]),
+            ));
+          }
+        }
+      } catch (_) {}
+
+      // Fetch visitors
+      try {
+        final vRes = await http.get(Uri.parse('http://10.0.2.2:5073/api/visitors/active'), headers: headers);
+        if (vRes.statusCode == 200) {
+          final List<dynamic> vList = json.decode(vRes.body);
+          for (var v in vList) {
+            activities.add(RecentActivity(
+              title: 'Visitor Pass',
+              idStr: '#VIS-${v["id"]} • ${v["status"]}',
+              status: v["status"] ?? 'Approved',
+              subtitle: '${v["expectedArrival"]?.toString().substring(0, 10)} • ${v["visitorName"]}',
+              icon: Icons.local_parking_rounded,
+              iconColor: Colors.green.shade700,
+              bgColor: Colors.green.shade50,
+              statusBg: Colors.green.shade50,
+              statusText: Colors.green.shade700,
+              date: DateTime.parse(v["createdAt"] ?? v["expectedArrival"] ?? DateTime.now().toIso8601String()),
+            ));
+          }
+        }
+      } catch (_) {}
+      
+      // Fetch bookings
+      try {
+        final bRes = await http.get(Uri.parse('http://10.0.2.2:5073/api/bookings'), headers: headers);
+        if (bRes.statusCode == 200) {
+          final List<dynamic> bList = json.decode(bRes.body);
+          for (var b in bList) {
+            activities.add(RecentActivity(
+              title: 'Facility Booking',
+              idStr: '#BKG-${b["id"]} • ${b["status"]}',
+              status: b["status"] ?? 'Confirmed',
+              subtitle: '${b["bookingDate"]?.toString().substring(0, 10) ?? ''} • ${b["facilityName"]}',
+              icon: Icons.bookmark_outline_rounded,
+              iconColor: Colors.teal.shade700,
+              bgColor: Colors.teal.shade50,
+              statusBg: b["status"] == 'Cancelled' ? Colors.red.shade50 : Colors.green.shade50,
+              statusText: b["status"] == 'Cancelled' ? Colors.red.shade700 : Colors.green.shade700,
+              date: DateTime.parse(b["createdAt"] ?? b["bookingDate"] ?? DateTime.now().toIso8601String()),
+            ));
+          }
+        }
+      } catch (_) {}
+      
+      // Fetch invoices
+      try {
+        final pRes = await http.get(Uri.parse('http://10.0.2.2:5073/api/invoices?page=1&pageSize=20'), headers: headers);
+        if (pRes.statusCode == 200) {
+          final Map<String, dynamic> pData = json.decode(pRes.body);
+          if (pData['items'] != null) {
+            final List<dynamic> pList = pData['items'];
+            for (var p in pList) {
+              activities.add(RecentActivity(
+                title: 'Invoice',
+                idStr: '${p["invoiceNumber"]} • ${p["status"]}',
+                status: p["status"] ?? 'Pending',
+                subtitle: '${p["dueDate"]?.toString().substring(0, 10) ?? ''} • Rs. ${p["totalAmount"]}',
+                icon: Icons.credit_card_rounded,
+                iconColor: Colors.purple.shade700,
+                bgColor: Colors.purple.shade50,
+                statusBg: p["status"] == 'Paid' ? Colors.green.shade50 : Colors.orange.shade50,
+                statusText: p["status"] == 'Paid' ? Colors.green.shade700 : Colors.orange.shade700,
+                date: DateTime.parse(p["createdAt"] ?? DateTime.now().toIso8601String()),
+              ));
+            }
+          }
+        }
+      } catch (_) {}
+
+      activities.sort((a, b) => b.date.compareTo(a.date));
+      
+      if (mounted) {
+        setState(() {
+          _recentActivities = activities.take(5).toList();
+          _isLoadingActivities = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingActivities = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Get the resident's name from the saved session for the greeting
     final session = AuthService.currentSession;
     final firstName = session?.name.split(' ').first ?? 'Resident';
 
@@ -231,7 +385,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Welcome back',
+                      'Welcome back,',
                       style: TextStyle(
                         color: Colors.grey,
                         fontSize: 14,
@@ -248,7 +402,12 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                  );
+                },
                 icon: const Icon(Icons.notifications_none_rounded),
               ),
             ],
@@ -256,16 +415,39 @@ class HomeScreen extends StatelessWidget {
 
           const SizedBox(height: 30),
 
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: double.infinity,
               color: const Color(0xFF17212B),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 200,
+                    child: ShaderMask(
+                      shaderCallback: (rect) {
+                        return const LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [Colors.transparent, Colors.black],
+                          stops: [0.0, 0.4],
+                        ).createShader(rect);
+                      },
+                      blendMode: BlendMode.dstIn,
+                      child: Image.asset(
+                        'assets/images/apartment.jpg',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(22),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                 const Text(
                   'SMART APARTMENT LIVING',
                   style: TextStyle(
@@ -274,7 +456,7 @@ class HomeScreen extends StatelessWidget {
                     letterSpacing: 1.2,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 const Text(
                   'Everything you need,\nin one place.',
                   style: TextStyle(
@@ -284,17 +466,45 @@ class HomeScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  session != null
-                      ? 'Unit ${session.unitNumber} · ${session.name}'
-                      : 'Manage facilities, visitor passes, & payments.',
-                  style: const TextStyle(
-                    color: Color(0xFFD5DADF),
-                    fontSize: 14,
-                  ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Icon(Icons.home, color: Colors.white70, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      session != null
+                          ? 'Unit ${session.unitNumber} • ${session.name}'
+                          : 'Manage facilities & passes.',
+                      style: const TextStyle(
+                        color: Color(0xFFD5DADF),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
+                if (session != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.circle, color: Colors.greenAccent, size: 8),
+                        const SizedBox(width: 6),
+                        const Text('Active Resident', style: TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ]
               ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -321,7 +531,9 @@ class HomeScreen extends StatelessWidget {
               ServiceCard(
                 title: 'Facilities',
                 subtitle: 'Book amenities',
-                icon: Icons.apartment_rounded,
+                icon: Icons.business_rounded,
+                iconColor: Colors.blue.shade700,
+                bgColor: Colors.blue.shade50,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -333,7 +545,9 @@ class HomeScreen extends StatelessWidget {
               ServiceCard(
                 title: 'Maintenance',
                 subtitle: 'Report issues',
-                icon: Icons.build_circle_outlined,
+                icon: Icons.build_rounded,
+                iconColor: Colors.orange.shade800,
+                bgColor: Colors.orange.shade50,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -344,8 +558,10 @@ class HomeScreen extends StatelessWidget {
               ),
               ServiceCard(
                 title: 'Visitor & Parking',
-                subtitle: 'Passes & Slots',
+                subtitle: 'Passes & slots',
                 icon: Icons.local_parking_rounded,
+                iconColor: Colors.green.shade700,
+                bgColor: Colors.green.shade50,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -358,6 +574,8 @@ class HomeScreen extends StatelessWidget {
                 title: 'Payments',
                 subtitle: 'Pay your bills',
                 icon: Icons.credit_card_rounded,
+                iconColor: Colors.purple.shade700,
+                bgColor: Colors.purple.shade50,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -370,6 +588,8 @@ class HomeScreen extends StatelessWidget {
                 title: 'My Bookings',
                 subtitle: 'Facility status',
                 icon: Icons.bookmark_outline_rounded,
+                iconColor: Colors.teal.shade700,
+                bgColor: Colors.teal.shade50,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -380,19 +600,129 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
+          
+          const SizedBox(height: 30),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Recent Activity',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'View All >',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 15),
+          
+          if (_isLoadingActivities)
+            const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+          else if (_recentActivities.isEmpty)
+            const Text('No recent activity.', style: TextStyle(color: Colors.grey))
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _recentActivities.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final activity = _recentActivities[index];
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE8ECEF)),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {},
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: activity.bgColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(activity.icon, color: activity.iconColor, size: 24),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              activity.title,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              activity.idStr,
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              activity.subtitle,
+                              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: activity.statusBg,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              activity.status,
+                              style: TextStyle(color: activity.statusText, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
+                        ],
+                      ),
+                    ],
+                  ),
+                        ),
+                      ),
+                    ),
+                );
+              },
+            ),
+            
+          const SizedBox(height: 30),
         ],
       ),
     );
   }
 }
 
-// ── Reusable widgets (unchanged) ─────────────────────────────────────────────
-
 class ServiceCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
   final VoidCallback? onTap;
+  final Color iconColor;
+  final Color bgColor;
 
   const ServiceCard({
     super.key,
@@ -400,6 +730,8 @@ class ServiceCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     this.onTap,
+    this.iconColor = const Color(0xFF17212B),
+    this.bgColor = const Color(0xFFEEF1F2),
   });
 
   @override
@@ -420,16 +752,23 @@ class ServiceCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEEF1F2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: const Color(0xFF17212B),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: iconColor,
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
+              ],
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

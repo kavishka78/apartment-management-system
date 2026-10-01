@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSave, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck, MdVpnKey } from 'react-icons/md';
+import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck, MdVpnKey } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
 import './Complaints.css';
@@ -713,7 +713,7 @@ function TechniciansList() {
                   onClick={handleSave}
                   style={{ padding: '10px 26px', border: 'none', borderRadius: '50px', background: '#000', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  <MdSave size={18} /> Save Technician
+                  Save Technician
                 </button>
               </div>
             </div>

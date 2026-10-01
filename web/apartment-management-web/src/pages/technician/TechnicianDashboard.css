@@ -167,7 +167,7 @@
 
 /* ── Rectangular Buttons ── */
 .rect-btn {
-    padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
     border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
     transition: all 0.15s ease; font-family: 'Inter', sans-serif;
 }
@@ -195,7 +195,7 @@
 .photos-row { display: flex; gap: 12px; }
 .photo-thumb { width: 100px; height: 100px; border-radius: 8px; object-fit: cover; border: 1px solid #e2e8f0; }
 .add-photo-btn {
-    width: 100px; height: 100px; border-radius: 8px; border: 2px dashed #cbd5e1;
+    width: 100px; height: 100px; border-radius: 16px; border: 2px dashed #cbd5e1;
     background: #fff; color: #64748b; display: flex; flex-direction: column;
     align-items: center; justify-content: center; cursor: pointer; font-size: 12px; font-weight: 600;
 }
@@ -238,4 +238,61 @@
 
 
 
+
+
+
+/* ========================================================
+   MOBILE RESPONSIVENESS
+======================================================== */
+@media (max-width: 1024px) {
+    .tech-hero {
+        flex-direction: column;
+        padding: 24px;
+        margin: 16px;
+    }
+    .hero-cards {
+        flex-direction: column;
+        width: 100%;
+    }
+    .hero-card {
+        width: 100%;
+    }
+    .split-container {
+        flex-direction: column;
+    }
+    .left-pane {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .compact-list {
+        padding: 0 16px 24px 16px;
+    }
+    .right-pane {
+        width: 100%;
+        position: static;
+        height: auto;
+        overflow-y: visible;
+    }
+    .details-view {
+        padding: 24px 16px;
+    }
+    .tech-topbar {
+        padding: 16px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .sla-grid {
+        grid-template-columns: 1fr;
+    }
+    .rp-title-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .rp-meta-bar {
+        flex-direction: column;
+        gap: 12px;
+    }
+}
 

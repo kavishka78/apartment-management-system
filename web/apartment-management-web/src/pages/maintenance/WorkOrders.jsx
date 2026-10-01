@@ -79,9 +79,9 @@ function WorkOrders() {
                       )}
                     </td>
                     <td>
-                      <button className="primary-btn" style={{ padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => window.location.href=`/maintenance/${o.id}`}>
-                        {o.status === 'Assigned' ? <MdPlayArrow size={14}/> : o.status === 'In Progress' ? <MdCheckCircle size={14}/> : 'Manage'} 
-                        {o.status === 'Assigned' ? 'Start' : o.status === 'In Progress' ? 'Resolve' : 'View'}
+                      <button className="primary-btn" style={{ padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => window.location.href=`/maintenance/complaints/${o.id}`}>
+                        {o.status === 'Assigned' ? <MdPlayArrow size={14}/> : o.status === 'In Progress' ? <MdCheckCircle size={14}/> : <MdCheckCircle size={14}/>} 
+                        {o.status === 'Assigned' ? 'Start' : o.status === 'In Progress' ? 'Resolve' : 'Manage'}
                       </button>
                     </td>
                   </tr>
