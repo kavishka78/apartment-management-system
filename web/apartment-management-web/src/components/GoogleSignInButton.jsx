@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 const CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-  "481070239328-k504bom8et4jd6d5h1qtgah8cd7un1uu.apps.googleusercontent.com";
+  "775386915415-22il525gfa91f75ks7pammtesfhik1um.apps.googleusercontent.com";
 const SCRIPT_SRC = "https://accounts.google.com/gsi/client";
 
 function loadGoogleScript() {

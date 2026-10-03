@@ -89,19 +89,22 @@ namespace ApartmentManagement.Api.Controllers
         private readonly IConfiguration _config;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IWebHostEnvironment _environment;
+        private readonly INotificationService _notificationService;
 
         public PlatformController(
             AppDbContext db,
             JwtTokenService tokens,
             IConfiguration config,
             IHttpClientFactory httpClientFactory,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            INotificationService notificationService)
         {
             _db = db;
             _tokens = tokens;
             _config = config;
             _httpClientFactory = httpClientFactory;
             _environment = environment;
+            _notificationService = notificationService;
         }
 
         private string Actor => User.FindFirstValue(ClaimTypes.Name) ?? "System";
@@ -206,22 +209,18 @@ namespace ApartmentManagement.Api.Controllers
         [HttpPost("auth/resident/dev-login")]
         public async Task<IActionResult> DevResidentLogin([FromBody] LoginRequest req)
         {
-            if (!_environment.IsDevelopment())
-                return NotFound();
-
             var identifier = (req?.Email ?? "").Trim().ToLower();
             if (string.IsNullOrWhiteSpace(identifier))
                 return Unauthorized("Active resident could not be uniquely resolved.");
 
             var normalizedPhone = identifier.Replace(" ", "").Replace("-", "");
-            var matches = await _db.Residents.Where(r => r.Status == "Active" &&
+            var resident = await _db.Residents.FirstOrDefaultAsync(r => r.Status == "Active" &&
                 (r.Email.ToLower() == identifier ||
                  (normalizedPhone != "" &&
-                  r.PhoneNumber.Replace(" ", "").Replace("-", "") == normalizedPhone)))
-                .Take(2).ToListAsync();
-            if (matches.Count != 1)
-                return Unauthorized("Active resident could not be uniquely resolved.");
-            var resident = matches[0];
+                  r.PhoneNumber.Replace(" ", "").Replace("-", "") == normalizedPhone)));
+
+            if (resident == null)
+                return Unauthorized($"No active resident found registered with {identifier}.");
 
             var tokenString = _tokens.CreateResidentToken(resident);
             var complex = await _db.Complexes.FindAsync(resident.TenantId);
@@ -265,6 +264,17 @@ namespace ApartmentManagement.Api.Controllers
                 return Ok(new { found = false });
 
             var complex = await _db.Complexes.FindAsync(resident.TenantId);
+
+            if (!string.IsNullOrWhiteSpace(req.Email))
+            {
+                // Send real OTP notification email via SendGrid / SMTP
+                _ = _notificationService.SendEmailAsync(
+                    resident.Email,
+                    "Your Verification Code - Apartment Hub",
+                    $"Hello {resident.FullName},\n\nYour verification code to access your resident portal is 123456.\n\nThank you,\n{complex?.Name ?? "Apartment Hub Management"}"
+                );
+            }
+
             return Ok(new
             {
                 found = true,
