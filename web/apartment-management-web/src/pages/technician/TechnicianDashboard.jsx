@@ -8,6 +8,7 @@ import {
     MdAssignment, MdTrackChanges, MdAcUnit,
     MdChevronRight, MdOutlineBolt, MdWaterDrop, MdListAlt, MdImage, MdPhone, MdEmail } from 'react-icons/md';
 import './TechnicianDashboard.css';
+import TechnicianProfileDrawer from './TechnicianProfileDrawer';
 
 const statusStyle = (status) => {
     switch (status) {
@@ -67,6 +68,7 @@ function CustomDropdown({ value, options, onChange, label }) {
     );
 }
 
+
 export default function TechnicianDashboard() {
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
@@ -81,6 +83,14 @@ export default function TechnicianDashboard() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [priorityFilter, setPriorityFilter] = useState('All');
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+    useEffect(() => {
+        if (currentUser?.requiresPasswordReset) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setIsProfileOpen(true);
+        }
+    }, [currentUser]);
 
     const fetchJobs = useCallback(async () => {
         if (!currentUser) return;
@@ -190,6 +200,9 @@ export default function TechnicianDashboard() {
                 <div className="topbar-right">
                     <span className="pill-badge pill-yellow">{assignedCount} assigned</span>
                     <span className="pill-badge pill-amber">{inProgressCount} in progress</span>
+                    <button onClick={() => setIsProfileOpen(true)} className="pill-badge pill-blue" style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', cursor: 'pointer' }}>
+                        <MdPerson size={16} /> My Profile
+                    </button>
                     <button onClick={handleLogout} className="pill-badge pill-red">
                         <MdLogout size={16} /> Sign out
                     </button>
@@ -423,6 +436,8 @@ export default function TechnicianDashboard() {
                     <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', marginTop: '12px' }}>Click anywhere to close</p>
                 </div>
             )}
+            <TechnicianProfileDrawer isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
         </div>
     );
 }
+

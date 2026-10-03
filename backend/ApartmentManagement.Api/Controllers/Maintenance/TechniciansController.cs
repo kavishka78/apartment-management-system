@@ -23,7 +23,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         public async Task<IActionResult> GetTechnicians()
         {
             // We want to return technicians with their active workload count
-            var techs = await _context.Technicians.ToListAsync();
+            var techs = await _context.Technicians.Where(t => t.Status != "Inactive").ToListAsync();
             
             var workloads = await _context.Maintenances
                 .Where(m => m.Status == "Assigned" || m.Status == "In Progress")
@@ -63,6 +63,19 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         [HttpPost]
                 public async Task<IActionResult> CreateTechnician([FromBody] Technician technician)
         {
+            string email = !string.IsNullOrWhiteSpace(technician.Email) 
+                ? technician.Email.Trim().ToLower()
+                : $"tech{Guid.NewGuid().ToString().Substring(0, 4)}@apartment.lk";
+                
+            // Check if email already exists in UserAccounts
+            if (await _context.UserAccounts.AnyAsync(u => u.Email.ToLower() == email))
+            {
+                return BadRequest(new { message = "That email address is already in use by another account." });
+            }
+
+            // Ensure technician email is set
+            technician.Email = email;
+
             _context.Technicians.Add(technician);
             await _context.SaveChangesAsync();
             
@@ -70,9 +83,9 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             technician.AccessPassCode = $"TECH-{technician.Id:D3}";
             
             // Create a matching UserAccount so the technician can log in
-            string email = !string.IsNullOrWhiteSpace(technician.Email) 
-                ? technician.Email.Trim().ToLower()
-                : $"tech{technician.Id}@apartment.lk";
+
+            
+            var generatedPassword = Guid.NewGuid().ToString().Substring(0, 8);
 
             var userAccount = new UserAccount
             {
@@ -81,16 +94,26 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                 Phone = technician.ContactInformation,
                 Role = "Technician",
                 Status = "Active",
-                AssignedAt = DateTime.UtcNow.ToString("O")
+                AssignedAt = DateTime.UtcNow.ToString("O"),
+                RequiresPasswordReset = true
             };
             var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<UserAccount>();
-            userAccount.PasswordHash = hasher.HashPassword(userAccount, "tech12345"); // Default password
+            userAccount.PasswordHash = hasher.HashPassword(userAccount, generatedPassword); 
             
             _context.UserAccounts.Add(userAccount);
             
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetTechnician), new { id = technician.Id }, technician);
+            return CreatedAtAction(nameof(GetTechnician), new { id = technician.Id }, new { 
+                technician.Id,
+                technician.Name,
+                technician.Email,
+                technician.ContactInformation,
+                technician.Skills,
+                technician.Status,
+                technician.WorkingHours,
+                TemporaryPassword = generatedPassword
+            });
         }
 
         // PUT: api/technicians/5

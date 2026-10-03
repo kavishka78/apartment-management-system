@@ -9,6 +9,7 @@ import '../admin/DomesticStaff.css';
 function TechniciansList() {
   const [techs, setTechs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [createdPassword, setCreatedPassword] = useState(null);
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -116,6 +117,12 @@ function TechniciansList() {
     }
   };
 
+  const copyPasswordToClipboard = () => {
+    if (createdPassword) {
+      navigator.clipboard.writeText(createdPassword);
+    }
+  };
+
   const handleSave = async () => {
     if (!formData.name || !formData.skills || !formData.contactInformation || !formData.nicNumber || !formData.email) {
       alert('Please fill in all required fields (Name, Contact, Skills, NIC).');
@@ -178,12 +185,19 @@ function TechniciansList() {
             setLoading(false);
             return;
           }
+          const createdData = await res.json();
+          const tempPass = createdData.temporaryPassword || createdData.TemporaryPassword;
+          if (tempPass) {
+            setCreatedPassword(tempPass);
+          } else {
+            setCreatedPassword("tech12345 (Restart backend to enable random passwords)");
+          }
         }
         setShowModal(false);
         fetchTechs();
       } catch (e) {
         console.error('Save failed', e);
-        alert('An unexpected network error occurred.');
+        alert('Error: ' + e.message + '\nIf this says Failed to fetch, the C# backend is completely down. Did you restart it?');
         setLoading(false);
       }
   };
@@ -684,26 +698,7 @@ function TechniciansList() {
                   </div>
                 </div>
 
-                {/* Status */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700', color: '#68727c', marginBottom: '12px' }}>Status</label>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    {['Available', 'Busy', 'Offline'].map(status => (
-                      <button
-                        key={status}
-                        onClick={() => setFormData({ ...formData, status })}
-                        style={{
-                          flex: 1, padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-                          border: formData.status === status ? (status === 'Available' ? '2px solid #38a169' : status === 'Busy' ? '2px solid #d69e2e' : '2px solid #718096') : '1px solid #e0e0e0',
-                          background: formData.status === status ? (status === 'Available' ? '#f0fff4' : status === 'Busy' ? '#fffff0' : '#f7fafc') : '#fff',
-                          color: formData.status === status ? (status === 'Available' ? '#22543d' : status === 'Busy' ? '#744210' : '#4a5568') : '#a0aec0'
-                        }}
-                      >
-                        {status}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
               </div>
 
               {/* Actions */}
@@ -719,6 +714,40 @@ function TechniciansList() {
             </div>
           </div>
         )}
+
+      
+        {/* Password Success Modal */}
+        {createdPassword && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              style={{ background: '#fff', borderRadius: '16px', padding: '40px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', textAlign: 'center' }}
+            >
+              <div style={{ width: '60px', height: '60px', background: '#ecfdf5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', margin: '0 auto 20px auto' }}>
+                <MdCheck size={32} />
+              </div>
+              <h2 style={{ margin: '0 0 10px 0', color: '#0f172a', fontSize: '22px', fontWeight: '700' }}>Technician Created!</h2>
+              <p style={{ color: '#64748b', fontSize: '14px', margin: '0 0 25px 0', lineHeight: '1.5' }}>
+                The new technician account has been created successfully. Please provide them with this temporary password:
+              </p>
+              
+              <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '20px', marginBottom: '25px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#1e3a8a', letterSpacing: '2px', fontFamily: 'monospace' }}>
+                  {createdPassword}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
+                <button onClick={() => { copyPasswordToClipboard(); setCreatedPassword(null); }} style={{ padding: '12px 36px', borderRadius: '50px', border: 'none', background: '#1e3a8a', color: '#fff', fontWeight: '600', cursor: 'pointer', fontSize: '15px', display: 'inline-block' }}>
+                  Copy & Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+
 
       </motion.main>
 </div>

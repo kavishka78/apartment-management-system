@@ -11,6 +11,13 @@ using System.Text.Json;
 
 namespace ApartmentManagement.Api.Controllers
 {
+    
+    public class ChangePasswordRequest
+    {
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
     public class LoginRequest
     {
         public string Email { get; set; } = string.Empty;
@@ -131,6 +138,7 @@ namespace ApartmentManagement.Api.Controllers
             role = u.Role,
             tenantId = u.TenantId,
             avatar = Initials(u.Name),
+            requiresPasswordReset = u.RequiresPasswordReset
         };
 
         private void Log(Complex c, string action, string detail) =>
@@ -155,6 +163,34 @@ namespace ApartmentManagement.Api.Controllers
             return Ok(new { token = _tokens.CreateResidentToken(resident), user = ToUserDto(user),
                 resident = new { resident.Id, resident.FullName, resident.Email,
                     resident.PhoneNumber, resident.UnitNumber, resident.TenantId } });
+        }
+
+
+        [Authorize]
+        [HttpPost("auth/change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req)
+        {
+            var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value 
+                        ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+            if (string.IsNullOrEmpty(email)) return Unauthorized();
+
+            var user = await _db.UserAccounts.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+            if (user == null) return NotFound(new { message = "User not found." });
+
+            var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<UserAccount>();
+            var result = hasher.VerifyHashedPassword(user, user.PasswordHash, req.CurrentPassword);
+
+            if (result == Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed)
+            {
+                return BadRequest(new { message = "Invalid current temporary password." });
+            }
+
+            user.PasswordHash = hasher.HashPassword(user, req.NewPassword);
+            user.RequiresPasswordReset = false;
+            
+            await _db.SaveChangesAsync();
+
+            return Ok(new { message = "Password updated successfully." });
         }
 
         [AllowAnonymous]
