@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../auth/auth_service.dart';
 
 class FacilityApiService {
   // Use 10.0.2.2 for Android Emulator, localhost for iOS/Web/Desktop
@@ -36,12 +37,18 @@ class FacilityApiService {
   }
 
   // GET ALL BOOKINGS FOR RESIDENT
-  static Future<Map<String, dynamic>> getBookings() async {
+  static Future<Map<String, dynamic>> getBookings([int? residentId]) async {
     try {
+      final session = AuthService.currentSession;
+      final targetResidentId = residentId ?? session?.residentId;
+      final uri = targetResidentId != null && targetResidentId > 0
+          ? Uri.parse('$baseUrl/bookings?residentId=$targetResidentId')
+          : Uri.parse('$baseUrl/bookings');
+
       final response = await http
           .get(
-            Uri.parse('$baseUrl/bookings'),
-            headers: {'Content-Type': 'application/json'},
+            uri,
+            headers: await AuthService.authHeaders(),
           )
           .timeout(timeoutDuration);
 

@@ -1,17 +1,23 @@
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../auth/auth_service.dart';
 
 class ParkingApiService {
   static const String baseUrl = 'http://10.0.2.2:5073/api';
 
-  // GET ACTIVE VISITORS / PASSES
-  static Future<Map<String, dynamic>> getActiveVisitors() async {
+  // GET ACTIVE VISITORS / PASSES (FILTERED BY RESIDENT)
+  static Future<Map<String, dynamic>> getActiveVisitors([int? residentId]) async {
     try {
+      final session = AuthService.currentSession;
+      final targetResidentId = residentId ?? session?.residentId;
+      final uri = targetResidentId != null && targetResidentId > 0
+          ? Uri.parse('$baseUrl/visitors/active?residentId=$targetResidentId')
+          : Uri.parse('$baseUrl/visitors/active');
+
       final response = await http.get(
-        Uri.parse('$baseUrl/visitors/active'),
-        headers: {'Content-Type': 'application/json'},
+        uri,
+        headers: await AuthService.authHeaders(),
       );
 
       debugPrint('GET VISITORS STATUS: ${response.statusCode}');
