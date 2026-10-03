@@ -32,6 +32,7 @@ namespace ApartmentManagement.Api.Models
         public int? TenantId { get; set; }
         [MaxLength(30)] public string Status { get; set; } = "Active";
         public string AssignedAt { get; set; } = string.Empty;
+        public bool RequiresPasswordReset { get; set; } = false;
     }
 
     public class SubscriptionHistory

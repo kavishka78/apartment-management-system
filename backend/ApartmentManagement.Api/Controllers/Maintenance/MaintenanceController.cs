@@ -63,6 +63,15 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                     query = query.Where(m => m.ResidentId == rId);
                 }
             }
+            else if (User.IsInRole("Technician"))
+            {
+                var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                var technician = await _context.Technicians.FirstOrDefaultAsync(t => t.Email != null && t.Email.ToLower() == email.ToLower());
+                if (technician != null)
+                {
+                    query = query.Where(m => m.TechnicianId == technician.Id);
+                }
+            }
 
             var maintenances = await query.OrderByDescending(m => m.CreatedAt).ToListAsync();
             return Ok(maintenances.Select(MapToDto));
@@ -94,6 +103,21 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
 
             if (maintenance == null)
                 return NotFound();
+
+            // Data Privacy Check
+            if (User.IsInRole("Resident"))
+            {
+                var resStr = User.FindFirst("residentId")?.Value;
+                if (int.TryParse(resStr, out int rId) && maintenance.ResidentId != rId)
+                    return StatusCode(403, "You cannot view other residents' tickets.");
+            }
+            else if (User.IsInRole("Technician"))
+            {
+                var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                var technician = await _context.Technicians.FirstOrDefaultAsync(t => t.Email != null && t.Email.ToLower() == email.ToLower());
+                if (technician == null || maintenance.TechnicianId != technician.Id)
+                    return StatusCode(403, "You cannot view tickets assigned to other technicians.");
+            }
 
             return Ok(MapToDto(maintenance));
         }
@@ -347,6 +371,17 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             var maintenance = await _context.Maintenances.Include(m => m.History).Include(m => m.Resident).Include(m => m.Category).Include(m => m.Technician).FirstOrDefaultAsync(m => m.Id == id);
             if (maintenance == null) return NotFound();
 
+            // Resource-Based Authorization Check: Technicians can only modify their own assigned jobs
+            if (User.IsInRole("Technician"))
+            {
+                var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                var technician = await _context.Technicians.FirstOrDefaultAsync(t => t.Email != null && t.Email.ToLower() == email.ToLower());
+                if (technician == null || maintenance.TechnicianId != technician.Id)
+                {
+                    return StatusCode(403, "You are not authorized to modify a job assigned to another technician.");
+                }
+            }
+
             if (maintenance.Status != "Assigned")
                 return BadRequest("Work can only be started on an assigned ticket.");
 
@@ -370,6 +405,17 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         {
             var maintenance = await _context.Maintenances.Include(m => m.History).Include(m => m.Resident).Include(m => m.Category).Include(m => m.Technician).FirstOrDefaultAsync(m => m.Id == id);
             if (maintenance == null) return NotFound();
+
+            // Resource-Based Authorization Check: Technicians can only modify their own assigned jobs
+            if (User.IsInRole("Technician"))
+            {
+                var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                var technician = await _context.Technicians.FirstOrDefaultAsync(t => t.Email != null && t.Email.ToLower() == email.ToLower());
+                if (technician == null || maintenance.TechnicianId != technician.Id)
+                {
+                    return StatusCode(403, "You are not authorized to modify a job assigned to another technician.");
+                }
+            }
 
             if (maintenance.Status != "In Progress" && maintenance.Status != "Assigned")
                 return BadRequest("Invalid status transition.");
