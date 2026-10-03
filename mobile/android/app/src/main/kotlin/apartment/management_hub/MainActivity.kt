@@ -1,4 +1,4 @@
-package com.example.mobile
+package apartment.management_hub
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

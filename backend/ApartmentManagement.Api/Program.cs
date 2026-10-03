@@ -130,6 +130,14 @@ using (var scope = app.Services.CreateScope())
                 ""ManagerNotes"" text NULL
             );
 
+            CREATE TABLE IF NOT EXISTS ""ResidentOtps"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""Email"" varchar(150) NOT NULL,
+                ""OtpCode"" varchar(10) NOT NULL,
+                ""ExpiresAt"" timestamp without time zone NOT NULL,
+                ""CreatedAt"" timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
             UPDATE ""FacilityAgentWorkflows"" SET ""Status"" = 'PendingApproval' WHERE ""Status"" = 'AutoApproved';
         ");
     }

@@ -1,33 +1,41 @@
 {
   "project_info": {
-    "project_number": "414056943213",
-    "project_id": "apartment-hub-861ec",
-    "storage_bucket": "apartment-hub-861ec.firebasestorage.app"
+    "project_number": "775386915415",
+    "project_id": "apartment-management-sef",
+    "storage_bucket": "apartment-management-sef.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:414056943213:android:7fc31c7d0e4012b8947964",
+        "mobilesdk_app_id": "1:775386915415:android:44266750b4bd43406b7912",
         "android_client_info": {
-          "package_name": "com.example.mobile"
+          "package_name": "apartment.management_hub"
         }
       },
       "oauth_client": [
         {
-          "client_id": "414056943213-3pd3450umj94cu8l0sicv1orgmjpo3pk.apps.googleusercontent.com",
+          "client_id": "775386915415-46haie73ec93rvsan5db36nhkgh077qb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "apartment.management_hub",
+            "certificate_hash": "26a6eda7753d7c91ca0700265a8007f85c6a805f"
+          }
+        },
+        {
+          "client_id": "775386915415-22il525gfa91f75ks7pammtesfhik1um.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCx157p8NZblz0pa-fP1NSIWbzYIYzXNRg"
+          "current_key": "AIzaSyCWBf47oqAbqqegNunaamRjSnztbOJ-xeQ"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "414056943213-3pd3450umj94cu8l0sicv1orgmjpo3pk.apps.googleusercontent.com",
+              "client_id": "775386915415-22il525gfa91f75ks7pammtesfhik1um.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

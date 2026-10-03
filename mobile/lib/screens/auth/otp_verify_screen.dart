@@ -126,28 +126,12 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
   }
 
   Future<void> _sendEmailOtp() async {
-    // Firebase email OTP via email link (passwordless)
     try {
-      await FirebaseAuth.instance.sendSignInLinkToEmail(
-        email: widget.contact,
-        actionCodeSettings: ActionCodeSettings(
-          url:
-              'https://smartapartment.page.link/login', // Deep-link configured in Firebase console
-          handleCodeInApp: true,
-          androidPackageName: 'com.example.mobile',
-          androidInstallApp: true,
-          iOSBundleId: 'com.example.mobile',
-        ),
-      );
+      // Trigger backend API to send email via SendGrid
+      await ResidentAuthApi.verifyContact(widget.contact);
+    } catch (_) {
+    } finally {
       if (mounted) setState(() => _isSending = false);
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isSending = false;
-          _errorMessage =
-              'Email service notice: Enter evaluation code 123456 to continue.';
-        });
-      }
     }
   }
 
@@ -173,51 +157,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
       _errorMessage = null;
     });
 
-    // 1. Universal Evaluation / Demo code bypass (123456 or 000000)
-    // Allows seamless testing on emulators and non-registered test devices
-    if (code == '123456' || code == '000000') {
-      final session = await ResidentAuthApi.devLogin(widget.contact);
-      if (session != null && session.isValid) {
-        await AuthService.saveSession(session);
-        if (!mounted) return;
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-          (_) => false,
-        );
-        return;
-      }
-    }
-
     try {
-      if (widget.contactType == 'phone') {
-        if (_verificationId == null || _verificationId!.isEmpty) {
-          final session = await ResidentAuthApi.devLogin(widget.contact);
-          if (session != null && session.isValid) {
-            await AuthService.saveSession(session);
-            if (!mounted) return;
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-              (_) => false,
-            );
-            return;
-          }
-        }
-        final credential = PhoneAuthProvider.credential(
-          verificationId: _verificationId ?? '',
-          smsCode: code,
-        );
-        await _signInWithCredential(credential);
-      } else {
-        // Email OTP: treat the 6-digit code as a sign-in OTP
-        final credential = EmailAuthProvider.credentialWithLink(
-          email: widget.contact,
-          emailLink: code,
-        );
-        await _signInWithCredential(credential);
-      }
-    } on FirebaseAuthException catch (e) {
-      // Fallback for academic testing
-      final session = await ResidentAuthApi.devLogin(widget.contact);
+      // Verify randomly generated 6-digit OTP code with backend API
+      final session = await ResidentAuthApi.verifyOtp(widget.contact, code);
       if (session != null && session.isValid) {
         await AuthService.saveSession(session);
         if (!mounted) return;
@@ -231,28 +173,17 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
       if (mounted) {
         setState(() {
           _isVerifying = false;
-          _errorMessage = e.code == 'invalid-verification-code'
-              ? 'Incorrect OTP. Use test code 123456 to verify.'
-              : 'Verification notice: ${e.message}. Enter 123456 to verify.';
+          _errorMessage = 'Invalid verification code. Please check your email and try again.';
         });
         _pinController.clear();
       }
     } catch (_) {
-      final session = await ResidentAuthApi.devLogin(widget.contact);
-      if (session != null && session.isValid) {
-        await AuthService.saveSession(session);
-        if (!mounted) return;
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-          (_) => false,
-        );
-        return;
-      }
       if (mounted) {
         setState(() {
           _isVerifying = false;
-          _errorMessage = 'Could not verify code. Enter test code 123456 to continue.';
+          _errorMessage = 'Verification failed. Please try again.';
         });
+        _pinController.clear();
       }
     }
   }

@@ -45,9 +45,9 @@ class _EmailAuthOptionsScreenState extends State<EmailAuthOptionsScreen> {
 
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn(
-        // Web client ID from Firebase project (apartment-hub-861ec)
-        clientId:
-            '414056943213-3pd3450umj94cu8l0sicv1orgmjpo3pk.apps.googleusercontent.com',
+        // Web client ID (serverClientId) from Firebase project (apartment-management-sef)
+        serverClientId:
+            '775386915415-22il525gfa91f75ks7pammtesfhik1um.apps.googleusercontent.com',
       );
 
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
