@@ -235,279 +235,293 @@ class _LoginEntryScreenState extends State<LoginEntryScreen>
     return Scaffold(
       backgroundColor: const Color(0xFF17212B),
       body: SafeArea(
-        child: Column(
-          children: [
-            // ── Header ──────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(28, 48, 28, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.apartment_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  const Text(
-                    'Welcome back',
-                    style: TextStyle(
-                      color: Color(0xFFB8C2CC),
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Sign in to your\napartment account',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Use the phone number or email that your\nbuilding admin registered you with.',
-                    style: TextStyle(
-                      color: Color(0xFF8A9BAB),
-                      fontSize: 13,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 36),
-
-            // ── Card area ────────────────────────────────────────────
-            Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF5F7F8),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                ),
-                child: Column(
-                  children: [
-                    // Tab bar
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8ECEF),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: TabBar(
-                          controller: _tabController,
-                          indicator: BoxDecoration(
-                            color: const Color(0xFF17212B),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          dividerColor: Colors.transparent,
-                          labelColor: Colors.white,
-                          unselectedLabelColor: const Color(0xFF5A6A77),
-                          labelStyle: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                          tabs: const [
-                            Tab(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.phone_rounded, size: 16),
-                                  SizedBox(width: 6),
-                                  Text('Phone Number'),
-                                ],
+        bottom: false,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Header ──────────────────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(28, 24, 28, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                Icons.apartment_rounded,
+                                color: Colors.white,
+                                size: 24,
                               ),
                             ),
-                            Tab(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.email_outlined, size: 16),
-                                  SizedBox(width: 6),
-                                  Text('Email Address'),
-                                ],
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Welcome back',
+                              style: TextStyle(
+                                color: Color(0xFFB8C2CC),
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Sign in to your\napartment account',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Use the phone number or email that your\nbuilding admin registered you with.',
+                              style: TextStyle(
+                                color: Color(0xFF8A9BAB),
+                                fontSize: 12.5,
+                                height: 1.4,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
 
-                    // Input fields
-                    Expanded(
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildPhoneInput(),
-                          _buildEmailInput(),
-                        ],
-                      ),
-                    ),
+                      const SizedBox(height: 24),
 
-                    // Error banner
-                    if (_errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                      // ── Card area (Expands to fill entire bottom space) ─────
+                      Expanded(
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFEEEE),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFFFCCCC)),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF5F7F8),
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
                           ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Column(
                             children: [
-                              const Icon(Icons.info_outline_rounded,
-                                  color: Color(0xFFCC4444), size: 18),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  _errorMessage!,
-                                  style: const TextStyle(
-                                    color: Color(0xFFCC4444),
-                                    fontSize: 13,
-                                    height: 1.4,
+                              // Tab bar
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE8ECEF),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: TabBar(
+                                    controller: _tabController,
+                                    indicator: BoxDecoration(
+                                      color: const Color(0xFF17212B),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    dividerColor: Colors.transparent,
+                                    labelColor: Colors.white,
+                                    unselectedLabelColor: const Color(0xFF5A6A77),
+                                    labelStyle: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                    tabs: const [
+                                      Tab(
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.phone_rounded, size: 16),
+                                            SizedBox(width: 6),
+                                            Text('Phone Number'),
+                                          ],
+                                        ),
+                                      ),
+                                      Tab(
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.email_outlined, size: 16),
+                                            SizedBox(width: 6),
+                                            Text('Email Address'),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
 
-                    // Continue button
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 54,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _onContinue,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF17212B),
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor:
-                                const Color(0xFF17212B).withOpacity(0.6),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
+                              // Input fields view
+                              AnimatedBuilder(
+                                animation: _tabController,
+                                builder: (context, _) {
+                                  return _isPhoneTab ? _buildPhoneInput() : _buildEmailInput();
+                                },
+                              ),
+
+                              // Error banner
+                              if (_errorMessage != null)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFEEEE),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: const Color(0xFFFFCCCC)),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(Icons.info_outline_rounded,
+                                            color: Color(0xFFCC4444), size: 18),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            _errorMessage!,
+                                            style: const TextStyle(
+                                              color: Color(0xFFCC4444),
+                                              fontSize: 13,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                )
-                              : const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                ),
+
+                              const Spacer(),
+
+                              // Continue button
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  height: 52,
+                                  child: ElevatedButton(
+                                    onPressed: _isLoading ? null : _onContinue,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF17212B),
+                                      foregroundColor: Colors.white,
+                                      disabledBackgroundColor:
+                                          const Color(0xFF17212B).withOpacity(0.6),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    child: _isLoading
+                                        ? const SizedBox(
+                                            width: 22,
+                                            height: 22,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              valueColor: AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
+                                            ),
+                                          )
+                                        : const Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                'Continue',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              SizedBox(width: 8),
+                                              Icon(Icons.arrow_forward_rounded, size: 18),
+                                            ],
+                                          ),
+                                  ),
+                                ),
+                              ),
+
+                              // Developer & Demo Quick Access
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                                child: Column(
                                   children: [
-                                    Text(
-                                      'Continue',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
+                                    Row(
+                                      children: [
+                                        const Expanded(child: Divider(color: Color(0xFFDDE2E7))),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                                          child: Text(
+                                            'DEVELOPER / DEMO ACCESS',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.blueGrey.shade400,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ),
+                                        const Expanded(child: Divider(color: Color(0xFFDDE2E7))),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    OutlinedButton.icon(
+                                      onPressed: _isLoading ? null : () => _onDevQuickLogin('kamal.perera@gmail.com'),
+                                      icon: const Icon(Icons.bolt_rounded, color: Color(0xFF10B981), size: 20),
+                                      label: const Text(
+                                        'Instant Login as Kamal Perera (A-101)',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF17212B),
+                                        ),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        minimumSize: const Size.fromHeight(46),
+                                        side: const BorderSide(color: Color(0xFF10B981), width: 1.2),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        backgroundColor: const Color(0xFFF0FDF4),
                                       ),
                                     ),
-                                    SizedBox(width: 8),
-                                    Icon(Icons.arrow_forward_rounded, size: 18),
+                                    const SizedBox(height: 10),
+                                    InkWell(
+                                      onTap: _showServerSettingsDialog,
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.dns_outlined, size: 14, color: Colors.blueGrey.shade400),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Host: ${ApiConfig.baseUrl}',
+                                              style: TextStyle(fontSize: 11, color: Colors.blueGrey.shade600),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            const Icon(Icons.tune_rounded, size: 12, color: Color(0xFF6366F1)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
-                        ),
-                      ),
-                    ),
-
-                    // Developer & Demo Quick Access (For smooth evaluation & team dev)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              const Expanded(child: Divider(color: Color(0xFFDDE2E7))),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                                child: Text(
-                                  'DEVELOPER / DEMO ACCESS',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blueGrey.shade400,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
                               ),
-                              const Expanded(child: Divider(color: Color(0xFFDDE2E7))),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed: _isLoading ? null : () => _onDevQuickLogin('kamal.perera@gmail.com'),
-                            icon: const Icon(Icons.bolt_rounded, color: Color(0xFF10B981), size: 20),
-                            label: const Text(
-                              'Instant Login as Kamal Perera (A-101)',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF17212B),
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(46),
-                              side: const BorderSide(color: Color(0xFF10B981), width: 1.2),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              backgroundColor: const Color(0xFFF0FDF4),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          InkWell(
-                            onTap: _showServerSettingsDialog,
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.dns_outlined, size: 14, color: Colors.blueGrey.shade400),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Host: ${ApiConfig.baseUrl}',
-                                    style: TextStyle(fontSize: 11, color: Colors.blueGrey.shade600),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Icon(Icons.tune_rounded, size: 12, color: Color(0xFF6366F1)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
