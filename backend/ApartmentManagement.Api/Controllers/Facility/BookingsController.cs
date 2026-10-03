@@ -19,13 +19,20 @@ namespace ApartmentManagement.Api.Controllers
             _logger = logger;
         }
 
-        // Get All Bookings
+        // Get Bookings (Filtered by ResidentId if provided)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookings()
+        public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookings([FromQuery] int? residentId)
         {
             try
             {
-                var bookings = await _context.FacilityBookings
+                var query = _context.FacilityBookings.AsQueryable();
+
+                if (residentId.HasValue && residentId.Value > 0)
+                {
+                    query = query.Where(b => b.ResidentId == residentId.Value);
+                }
+
+                var bookings = await query
                     .Include(b => b.Facility)
                     .OrderByDescending(b => b.BookingDate)
                     .Select(b => new BookingResponseDto

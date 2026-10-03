@@ -57,13 +57,20 @@ namespace ApartmentManagement.Api.Controllers
             }
         }
 
-        // Get Active Visitors / App Dashboard
+        // Get Active Visitors / App Dashboard (Filtered by ResidentId if provided)
         [HttpGet("active")]
-        public async Task<ActionResult<IEnumerable<VisitorPassResponseDto>>> GetActiveVisitors()
+        public async Task<ActionResult<IEnumerable<VisitorPassResponseDto>>> GetActiveVisitors([FromQuery] int? residentId)
         {
             try
             {
-                var activePasses = await _context.VisitorPasses
+                var query = _context.VisitorPasses.AsQueryable();
+
+                if (residentId.HasValue && residentId.Value > 0)
+                {
+                    query = query.Where(v => v.ResidentId == residentId.Value);
+                }
+
+                var activePasses = await query
                     .Include(v => v.Resident)
                     .Include(v => v.AssignedParkingSlot)
                     .Where(v => v.Status == PassStatus.CheckedIn || v.Status == PassStatus.Pending || v.Status == PassStatus.Active)
