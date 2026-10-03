@@ -16,6 +16,27 @@ import '../api_config.dart';
 class ResidentAuthApi {
   static String get _base => ApiConfig.v1Url;
 
+  /// Verify 6-digit OTP code against backend
+  static Future<ResidentSession?> verifyOtp(String identifier, String otp) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$_base/auth/resident/verify-otp'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'identifier': identifier.trim(), 'otp': otp.trim()}),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return ResidentSession.fromJson(data);
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Instant developer / demo login without waiting for SMS OTP
   static Future<ResidentSession?> devLogin([String identifier = 'kamal.perera@gmail.com']) async {
     try {

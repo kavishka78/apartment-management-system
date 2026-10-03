@@ -43,6 +43,7 @@ namespace ApartmentManagement.Api.Data
         public DbSet<Complex> Complexes { get; set; }
         public DbSet<UserAccount> UserAccounts { get; set; }
         public DbSet<SubscriptionHistory> SubscriptionHistory { get; set; }
+        public DbSet<ResidentOtp> ResidentOtps { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

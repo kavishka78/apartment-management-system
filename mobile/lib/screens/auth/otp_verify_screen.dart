@@ -157,72 +157,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
       _errorMessage = null;
     });
 
-    // 1. Universal Evaluation / Demo code bypass (123456 or 000000)
-    // Allows seamless testing on emulators and non-registered test devices
-    if (code == '123456' || code == '000000') {
-      final session = await ResidentAuthApi.devLogin(widget.contact);
-      if (session != null && session.isValid) {
-        await AuthService.saveSession(session);
-        if (!mounted) return;
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-          (_) => false,
-        );
-        return;
-      } else {
-        if (mounted) {
-          setState(() {
-            _isVerifying = false;
-            _errorMessage = 'Could not establish session for ${widget.contact}. Please check backend server.';
-          });
-        }
-        return;
-      }
-    }
-
     try {
-      if (widget.contactType == 'phone') {
-        if (_verificationId == null || _verificationId!.isEmpty) {
-          final session = await ResidentAuthApi.devLogin(widget.contact);
-          if (session != null && session.isValid) {
-            await AuthService.saveSession(session);
-            if (!mounted) return;
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-              (_) => false,
-            );
-            return;
-          }
-        }
-        final credential = PhoneAuthProvider.credential(
-          verificationId: _verificationId ?? '',
-          smsCode: code,
-        );
-        await _signInWithCredential(credential);
-      } else {
-        // Email OTP: Firebase email links require opening a link or an OOB code token rather than raw digits.
-        // For 6-digit OTP verification, we check against backend authentication.
-        final session = await ResidentAuthApi.devLogin(widget.contact);
-        if (session != null && session.isValid) {
-          await AuthService.saveSession(session);
-          if (!mounted) return;
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-            (_) => false,
-          );
-          return;
-        } else {
-          if (mounted) {
-            setState(() {
-              _isVerifying = false;
-              _errorMessage = 'Invalid verification code or unverified email account.';
-            });
-          }
-        }
-      }
-    } on FirebaseAuthException catch (e) {
-      // Fallback for testing environments
-      final session = await ResidentAuthApi.devLogin(widget.contact);
+      // Verify randomly generated 6-digit OTP code with backend API
+      final session = await ResidentAuthApi.verifyOtp(widget.contact, code);
       if (session != null && session.isValid) {
         await AuthService.saveSession(session);
         if (!mounted) return;
@@ -236,28 +173,17 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
       if (mounted) {
         setState(() {
           _isVerifying = false;
-          _errorMessage = e.code == 'invalid-verification-code'
-              ? 'Incorrect OTP. Use test code 123456 to verify.'
-              : 'Verification notice: ${e.message}. Enter 123456 to verify.';
+          _errorMessage = 'Invalid verification code. Please check your email and try again.';
         });
         _pinController.clear();
       }
     } catch (_) {
-      final session = await ResidentAuthApi.devLogin(widget.contact);
-      if (session != null && session.isValid) {
-        await AuthService.saveSession(session);
-        if (!mounted) return;
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-          (_) => false,
-        );
-        return;
-      }
       if (mounted) {
         setState(() {
           _isVerifying = false;
-          _errorMessage = 'Could not verify code. Enter test code 123456 to continue.';
+          _errorMessage = 'Verification failed. Please try again.';
         });
+        _pinController.clear();
       }
     }
   }
