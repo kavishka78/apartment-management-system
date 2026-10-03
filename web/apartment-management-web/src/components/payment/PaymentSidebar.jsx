@@ -69,7 +69,7 @@ function PaymentSidebar({ activePage }) {
       </nav>
 
       <div className="sidebar-bottom">
-        <a href="/">← Back to Home</a>
+        <a href="/admin">← Back to Home</a>
       </div>
     </aside>
   );

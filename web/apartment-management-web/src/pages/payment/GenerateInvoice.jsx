@@ -1,3 +1,4 @@
+import { paymentFetch } from "../../services/api";
 import { useState } from "react";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
@@ -47,8 +48,8 @@ function GenerateInvoice() {
   };
 
   try {
-    const response = await fetch(
-      "http://localhost:5073/api/invoices/generate-monthly",
+    const response = await paymentFetch(
+      "/invoices/generate-monthly",
       {
         method: "POST",
         headers: {

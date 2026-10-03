@@ -1,0 +1,42 @@
+.skeleton {
+  background: #f1f5f9;
+  background-image: linear-gradient(
+    90deg,
+    #f1f5f9 0px,
+    #e2e8f0 40px,
+    #f1f5f9 80px
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 4px;
+}
+
+.skeleton-text {
+  height: 16px;
+  margin: 4px 0;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.skeleton-card {
+  padding: 24px;
+  background-color: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  height: 100%;
+}
