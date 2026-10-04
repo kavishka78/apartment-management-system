@@ -5,13 +5,15 @@ import 'package:http/http.dart' as http;
 
 import '../auth/auth_service.dart';
 
+import '../api_config.dart';
+
 class PaymentApiService {
   static String get baseUrl => const String.fromEnvironment(
     'PAYMENT_API_URL',
-    defaultValue: kIsWeb
-        ? 'http://localhost:5073/api'
-        : 'http://10.0.2.2:5073/api',
-  );
+    defaultValue: '',
+  ).isNotEmpty
+      ? const String.fromEnvironment('PAYMENT_API_URL')
+      : ApiConfig.baseUrl;
   static String get agentUrl => const String.fromEnvironment(
     'PAYMENT_AGENT_URL',
     defaultValue: kIsWeb ? 'http://localhost:8001' : 'http://10.0.2.2:8001',
