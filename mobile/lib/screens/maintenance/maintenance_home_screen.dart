@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
 import '../../services/maintenance/maintenance_api_service.dart';
 import 'create_complaint_screen.dart';
 import 'my_complaints_screen.dart';
@@ -33,15 +36,23 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
 
   Future<void> _loadStats() async {
     setState(() => _isLoading = true);
-    final result = await MaintenanceApiService.getComplaints(residentId: CURRENT_RESIDENT_ID);
-    
+    final result = await MaintenanceApiService.getComplaints(
+      residentId: CURRENT_RESIDENT_ID,
+    );
+
     try {
-      final notifRes = await http.get(Uri.parse('http://10.0.2.2:5073/api/Notifications/resident/$CURRENT_RESIDENT_ID'));
+      final notifRes = await http.get(
+        Uri.parse(
+          'http://10.0.2.2:5073/api/Notifications/resident/$CURRENT_RESIDENT_ID',
+        ),
+      );
       if (notifRes.statusCode == 200) {
         final List<dynamic> notifs = json.decode(notifRes.body);
         if (mounted) {
           setState(() {
-            _unreadNotifications = notifs.where((n) => n['isRead'] == false).length;
+            _unreadNotifications = notifs
+                .where((n) => n['isRead'] == false)
+                .length;
           });
         }
       }
@@ -52,15 +63,18 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
     if (mounted) {
       if (result['success'] == true) {
         final List<dynamic> ticketsData = result['data'];
-        final List<MaintenanceTicket> parsedTickets = ticketsData.map((e) => MaintenanceTicket.fromJson(e)).toList();
-        
+        final List<MaintenanceTicket> parsedTickets = ticketsData
+            .map((e) => MaintenanceTicket.fromJson(e))
+            .toList();
+
         int open = 0;
         int inProgress = 0;
-        
+
         for (var t in ticketsData) {
           if (t['status'] == 'Pending' || t['status'] == 'Assigned') {
             open++;
-          } else if (t['status'] == 'In Progress' || (t['status'] == 'Resolved' && t['residentVerified'] == false)) {
+          } else if (t['status'] == 'In Progress' ||
+              (t['status'] == 'Resolved' && t['residentVerified'] == false)) {
             inProgress++;
           }
         }
@@ -81,7 +95,14 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Apartment Maintenance', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w700, fontSize: 18)),
+        title: const Text(
+          'Apartment Maintenance',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
         backgroundColor: const Color(0xFFF8F9FA),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
@@ -101,14 +122,23 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                     top: 2,
                     child: Container(
                       padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                      constraints: const BoxConstraints(minWidth: 8, minHeight: 8),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 8,
+                        minHeight: 8,
+                      ),
                     ),
                   ),
               ],
             ),
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())).then((_) => _loadStats());
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              ).then((_) => _loadStats());
             },
           ),
           const SizedBox(width: 8),
@@ -120,7 +150,7 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 48),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -133,7 +163,11 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                     color: const Color(0xFFF4F9FF),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 8)),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
+                      ),
                     ],
                   ),
                   child: Stack(
@@ -185,17 +219,43 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                           children: [
                             const Text(
                               'KEEP OUR COMMUNITY BETTER',
-                              style: TextStyle(color: Color(0xFF1E2532), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+                              style: TextStyle(
+                                color: Color(0xFF1E2532),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1,
+                              ),
                             ),
                             const SizedBox(height: 12),
-                            const Text('Need a', style: TextStyle(color: Colors.black, fontSize: 26, fontWeight: FontWeight.w900, height: 1.1)),
-                            const Text('Repair?', style: TextStyle(color: Color(0xFF1E88E5), fontSize: 26, fontWeight: FontWeight.w900, height: 1.1)),
+                            const Text(
+                              'Need a',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                height: 1.1,
+                              ),
+                            ),
+                            const Text(
+                              'Repair?',
+                              style: TextStyle(
+                                color: Color(0xFF1E88E5),
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                height: 1.1,
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             SizedBox(
                               width: 200,
                               child: const Text(
                                 'Submit maintenance requests for plumbing, electrical, AC, or any general issues. We\'ll take care of it.',
-                                style: TextStyle(color: Colors.black87, fontSize: 11, height: 1.3, fontWeight: FontWeight.w500),
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 11,
+                                  height: 1.3,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
@@ -204,7 +264,7 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
 
                 // Stat Cards (Colored but reduced height by moving arrow up)
@@ -218,7 +278,12 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                         Icons.description_outlined,
                         const Color(0xFFFFF0E6), // Peach bg
                         const Color(0xFFFF7043), // Deep orange icon
-                        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyComplaintsScreen())),
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MyComplaintsScreen(),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -230,7 +295,12 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                         Icons.settings_outlined,
                         const Color(0xFFE3F2FD), // Light blue bg
                         const Color(0xFF1E88E5), // Deep blue icon
-                        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyComplaintsScreen())),
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MyComplaintsScreen(),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -239,35 +309,60 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                 const SizedBox(height: 32),
 
                 // Services List (Original Navy Style)
-                const Text('Maintenance Services', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E2532))),
+                const Text(
+                  'Maintenance Services',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1E2532),
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text('Quick access to all maintenance features', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                Text(
+                  'Quick access to all maintenance features',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
                 const SizedBox(height: 16),
-                
+
                 _buildServiceListItem(
                   'Report Issue',
                   'Submit a new maintenance request',
                   Icons.edit_note,
-                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateComplaintScreen())),
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CreateComplaintScreen(),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 _buildServiceListItem(
                   'My Complaints',
                   'View and track your active requests',
                   Icons.assignment_outlined,
-                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyComplaintsScreen())),
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MyComplaintsScreen(),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 _buildServiceListItem(
                   'Maintenance History',
                   'View your completed and closed requests',
                   Icons.history,
-                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MaintenanceHistoryScreen())),
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MaintenanceHistoryScreen(),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 _buildServiceListItem(
                   'Cost Analysis',
                   'Track and analyze repair expenditures',
@@ -279,12 +374,18 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                       backgroundColor: Colors.transparent,
                       isScrollControlled: true,
                       builder: (context) => RepairCostsBottomSheet(
-                        tickets: _allTickets.where((t) => t.status == 'Resolved' || t.status == 'Closed').toList(),
+                        tickets: _allTickets
+                            .where(
+                              (t) =>
+                                  t.status == 'Resolved' ||
+                                  t.status == 'Closed',
+                            )
+                            .toList(),
                       ),
                     );
                   },
                 ),
-                
+
                 const SizedBox(height: 40),
               ],
             ),
@@ -294,7 +395,15 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String count, String subtitle, IconData icon, Color bgColor, Color iconColor, VoidCallback onTap) {
+  Widget _buildStatCard(
+    String title,
+    String count,
+    String subtitle,
+    IconData icon,
+    Color bgColor,
+    Color iconColor,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -311,29 +420,61 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: iconColor, borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: iconColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Icon(icon, color: Colors.white, size: 20),
                 ),
                 Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                  child: const Icon(Icons.chevron_right, size: 16, color: Colors.black),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.chevron_right,
+                    size: 16,
+                    color: Colors.black,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            Text(count, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF1E2532))),
+            Text(
+              count,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF1E2532),
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E2532))),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1E2532),
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildServiceListItem(String title, String subtitle, IconData icon, VoidCallback onTap) {
+  Widget _buildServiceListItem(
+    String title,
+    String subtitle,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -343,7 +484,11 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 5, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.01),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Row(
@@ -354,9 +499,19 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1E2532))),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E2532),
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  ),
                 ],
               ),
             ),

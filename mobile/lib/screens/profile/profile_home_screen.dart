@@ -344,12 +344,14 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
 
                     // Registry Subsystem Navigation Options
                     Container(
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
-                        color: Colors.white,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(color: const Color(0xFFE8ECEF)),
                       ),
-                      child: Column(
+                      child: Material(
+                        color: Colors.white,
+                        child: Column(
                         children: [
                           ListTile(
                             leading: Container(
@@ -500,27 +502,29 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                      ),
+const SizedBox(height: 24),
 
                     // Logout Button
                     SizedBox(
                       width: double.infinity,
                       height: 50,
-                      child: OutlinedButton.icon(
+                      child: ElevatedButton.icon(
                         onPressed: _handleLogout,
                         icon: const Icon(Icons.logout_rounded,
-                            size: 18, color: Colors.redAccent),
+                            size: 18, color: Colors.white),
                         label: const Text(
                           'Sign Out',
                           style: TextStyle(
-                            color: Colors.redAccent,
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 15,
                           ),
                         ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFFFD4D4)),
-                          backgroundColor: Colors.white,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE53935),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
                           shape: const StadiumBorder(),
                         ),
                       ),
