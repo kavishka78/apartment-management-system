@@ -7,10 +7,10 @@ Output : TriageResponse (returned to ASP.NET Core)
 
 from __future__ import annotations
 from typing import List, Optional
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 # â”€â”€â”€ Allowed enum values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-ALLOWED_CATEGORIES = ["Plumbing", "Electrical", "HVAC", "Cleaning", "Security", "Elevator", "Building", "General"]
+ALLOWED_CATEGORIES = ["Plumbing", "Electrical", "HVAC", "Cleaning", "Security", "Elevator", "Building", "General", "Carpentry", "Appliance", "Pest Control", "Landscaping"]
 ALLOWED_PRIORITIES = ["Low", "Medium", "High", "Urgent"]
 ALLOWED_SLA_RISKS  = ["Low", "Medium", "High", "Urgent"]
 
@@ -39,14 +39,28 @@ class ComplaintInput(BaseModel):
 class TechnicianInput(BaseModel):
     id: int
     name: str
-    skills: List[str]       # ["Plumbing"] or ["Plumbing, Electrical"] â€” both handled
+    skills: List[str]       # ["Plumbing"] or ["Plumbing, Electrical"] - both handled
     availability: str       # "Available" | "Busy" | "Offline"
     active_jobs: int = 0
+
+    @field_validator("active_jobs")
+    @classmethod
+    def validate_active_jobs(cls, value: int) -> int:
+        if value < 0 or value > 1000:
+            raise ValueError("active_jobs must be between 0 and 1000")
+        return value
 
 
 class SlaInput(BaseModel):
     risk: str               # "Low" | "Medium" | "High"
     reason: str
+
+    @field_validator("risk")
+    @classmethod
+    def validate_sla_risk_input(cls, value: str) -> str:
+        if value not in ALLOWED_SLA_RISKS:
+            raise ValueError("Unsupported SLA risk")
+        return value
 
 
 class TriageRequest(BaseModel):
@@ -72,7 +86,7 @@ class AgentStep(BaseModel):
 
 
 class TriageRecommendation(BaseModel):
-    """Structured AI recommendation â€” validated before returning to ASP.NET."""
+    """Structured AI recommendation - validated before returning to ASP.NET."""
     category: str
     priority: str
     reason: str
@@ -86,7 +100,8 @@ class TriageRecommendation(BaseModel):
     completedSteps: Optional[List[str]] = None
     toolResults: Optional[str] = None
     validationResults: Optional[str] = None
-    agentSteps: List[AgentStep] = []
+    errors: Optional[str] = None
+    agentSteps: List[AgentStep] = Field(default_factory=list)
 
     @field_validator("category")
     @classmethod
@@ -115,4 +130,6 @@ class TriageResponse(BaseModel):
     success: bool
     recommendation: Optional[TriageRecommendation] = None
     error: Optional[str] = None
+
+
 

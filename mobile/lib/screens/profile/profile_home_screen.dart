@@ -183,7 +183,7 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
+                            color: Colors.black.withValues(alpha: 0.08),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -195,7 +195,7 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
+                              color: Colors.white.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
                             child: Center(
@@ -225,7 +225,7 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.12),
+                              color: Colors.white.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -521,9 +521,7 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFFFFD4D4)),
                           backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                          shape: const StadiumBorder(),
                         ),
                       ),
                     ),

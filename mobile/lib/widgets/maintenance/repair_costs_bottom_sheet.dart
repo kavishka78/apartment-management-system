@@ -131,7 +131,7 @@ class _RepairCostsBottomSheetState extends State<RepairCostsBottomSheet> {
                     border: Border.all(color: const Color(0xFFE8ECEF), width: 1.5),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))
                     ],
                   ),
                   child: DropdownButtonHideUnderline(
@@ -257,7 +257,7 @@ class _RepairCostsBottomSheetState extends State<RepairCostsBottomSheet> {
                                             bottomRight: Radius.circular(2),
                                           ),
                                           boxShadow: isSelected && chartCosts[index] > 0 ? [
-                                            BoxShadow(color: const Color(0xFF1E2532).withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))
+                                            BoxShadow(color: const Color(0xFF1E2532).withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))
                                           ] : [],
                                         ),
                                       ),
@@ -307,7 +307,7 @@ class _RepairCostsBottomSheetState extends State<RepairCostsBottomSheet> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF4FC3F7).withOpacity(0.1),
+                            color: const Color(0xFF4FC3F7).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF4FC3F7), size: 20),
@@ -336,7 +336,7 @@ class _RepairCostsBottomSheetState extends State<RepairCostsBottomSheet> {
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))
+                BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))
               ],
             ),
             child: SizedBox(
@@ -353,7 +353,7 @@ class _RepairCostsBottomSheetState extends State<RepairCostsBottomSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1E2532),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: const StadiumBorder(),
                   elevation: 0,
                 ),
                 child: const Text('Pay Pending Costs', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),

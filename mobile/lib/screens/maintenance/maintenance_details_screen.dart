@@ -109,19 +109,33 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
 
   Widget _buildPriorityBadge(String priority) {
     Color color = Colors.green;
-    if (priority == 'High' || priority == 'Urgent') color = Colors.red;
-    if (priority == 'Medium') color = Colors.orange;
+    Color bgColor = Colors.green.shade50;
+    if (priority == 'High' || priority == 'Urgent') {
+      color = Colors.red.shade700;
+      bgColor = Colors.red.shade50;
+    }
+    if (priority == 'Medium') {
+      color = Colors.orange.shade800;
+      bgColor = Colors.orange.shade50;
+    }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.flag, color: color, size: 14),
-        const SizedBox(width: 4),
-        Text(
-          priority,
-          style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.flag, color: color, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            priority,
+            style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+        ],
+      ),
     );
   }
 
@@ -135,7 +149,7 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
           _ticket != null ? 'Ticket #${_ticket!.id}' : '',
           style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w700, fontSize: 18),
         ),
-        backgroundColor: Colors.white.withOpacity(0.9),
+        backgroundColor: Colors.white.withValues(alpha: 0.9),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
         centerTitle: true,
@@ -205,14 +219,26 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 Row(
-                                  children: [
-                                    Icon(Icons.category_outlined, size: 16, color: Colors.grey.shade600),
-                                    const SizedBox(width: 6),
-                                    Text(_ticket!.category?.name ?? 'Maintenance', style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
-                                    const SizedBox(width: 16),
-                                    _buildPriorityBadge(_ticket!.priority),
-                                  ],
-                                ),
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade50,
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.category_outlined, size: 14, color: Colors.blue.shade700),
+                                            const SizedBox(width: 4),
+                                            Text(_ticket!.category?.name ?? 'Maintenance', style: TextStyle(color: Colors.blue.shade700, fontSize: 13, fontWeight: FontWeight.w600)),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      _buildPriorityBadge(_ticket!.priority),
+                                    ],
+                                  ),
                                 
                                 const SizedBox(height: 32),
 
@@ -220,38 +246,52 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
                                 const Text('Description', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1E2532))),
                                 const SizedBox(height: 12),
                                 Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: const Color(0xFFE8ECEF)),
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.only(topRight: Radius.circular(12), bottomRight: Radius.circular(12)),
+                                      border: Border(left: BorderSide(color: Color(0xFF94A3B8), width: 4)),
+                                    ),
+                                    child: Text(
+                                      _ticket!.description,
+                                      style: const TextStyle(color: Color(0xFF334155), fontSize: 15, height: 1.5, fontStyle: FontStyle.italic),
+                                    ),
                                   ),
-                                  child: Text(
-                                    _ticket!.description,
-                                    style: const TextStyle(color: Color(0xFF4A5568), fontSize: 15, height: 1.5),
-                                  ),
-                                ),
 
                                 // Repair Cost
                                 if (_ticket!.repairCost > 0) ...[
                                   const SizedBox(height: 24),
                                   Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(20),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1E2532),
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [BoxShadow(color: const Color(0xFF1E2532).withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 6))],
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text('Repair Cost', style: TextStyle(color: Colors.white70, fontSize: 15)),
-                                        Text('Rs. ${_ticket!.repairCost.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  )
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [Color(0xFF059669), Color(0xFF10B981)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [BoxShadow(color: const Color(0xFF10B981).withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 6))],
+                                      ),
+                                      child: Stack(
+                                        children: [
+                                          Positioned(
+                                            right: -10,
+                                            top: -10,
+                                            child: Icon(Icons.receipt_long, size: 80, color: Colors.white.withValues(alpha: 0.15)),
+                                          ),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              const Text('Repair Cost', style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w500)),
+                                              Text('Rs. ${_ticket!.repairCost.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    )
                                 ],
 
                                 // Verify Action
@@ -290,7 +330,7 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
                                             },
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.orange.shade700,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              shape: const StadiumBorder(),
                                             ),
                                             child: const Text('Verify Resolution', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                           ),
@@ -385,7 +425,7 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
               Container(
                 width: 32,
                 height: 32,
-                decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
                 child: Icon(icon, color: color, size: 16),
               ),
               if (!isLast)
@@ -420,7 +460,30 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
                   ),
                   if (h.note.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    Text(h.note, style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.4)),
+                    Builder(builder: (context) {
+                      final match = RegExp(r'^\[Rating: (\d)/5 Stars\]\s*(.*)$').firstMatch(h.note);
+                      if (match != null) {
+                        final rating = int.parse(match.group(1)!);
+                        final text = match.group(2)!;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: List.generate(5, (index) => Icon(
+                                Icons.star, 
+                                size: 16, 
+                                color: index < rating ? Colors.amber : Colors.grey.shade300
+                              )),
+                            ),
+                            if (text.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(text, style: const TextStyle(color: Color(0xFF1E88E5), fontWeight: FontWeight.bold, fontSize: 13, height: 1.4)),
+                            ],
+                          ],
+                        );
+                      }
+                      return Text(h.note, style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.4));
+                    }),
                   ],
                   if (h.changedBy.isNotEmpty) ...[
                     const SizedBox(height: 6),

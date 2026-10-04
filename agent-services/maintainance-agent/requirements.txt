@@ -1,4 +1,4 @@
-# Maintenance Triage AI Agent — Python dependencies
+# Maintenance Triage AI Agent ??? Python dependencies
 
 # Web framework
 fastapi==0.115.5
@@ -13,5 +13,11 @@ python-dotenv==1.0.1
 # Google Gemini API (official SDK)
 google-genai==1.16.0
 
-# HTTP client (optional utility, used for health checks)
+# HTTP client (For health checks)
 httpx==0.28.1
+langgraph==0.2.61
+pytest==8.3.4
+pytest-asyncio==0.24.0
+
+
+

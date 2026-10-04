@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck, MdVpnKey } from 'react-icons/md';
+import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck, MdVpnKey, MdToggleOn, MdToggleOff } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
 import './Complaints.css';
@@ -581,31 +581,20 @@ function TechniciansList() {
                   </div>
 
                   {/* Access Status */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700', color: '#68727c', marginBottom: '8px' }}>Access Status</label>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button
-                        onClick={() => setFormData({ ...formData, isAccessGranted: true })}
-                        style={{
-                          flex: 1, padding: '10px', borderRadius: '50px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-                          border: formData.isAccessGranted ? '2px solid #38a169' : '1px solid #e0e0e0',
-                          background: formData.isAccessGranted ? '#f0fff4' : '#fff',
-                          color: formData.isAccessGranted ? '#22543d' : '#a0aec0'
-                        }}
-                      >
-                        Granted
-                      </button>
-                      <button
-                        onClick={() => setFormData({ ...formData, isAccessGranted: false })}
-                        style={{
-                          flex: 1, padding: '10px', borderRadius: '50px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-                          border: !formData.isAccessGranted ? '2px solid #e53e3e' : '1px solid #e0e0e0',
-                          background: !formData.isAccessGranted ? '#fff5f5' : '#fff',
-                          color: !formData.isAccessGranted ? '#9b2c2c' : '#a0aec0'
-                        }}
-                      >
-                        Revoked
-                      </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '4px 0' }}>
+                    <label style={{ display: 'block', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700', color: '#68727c', margin: 0 }}>Access Status</label>
+                    <div 
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                      onClick={() => setFormData({ ...formData, isAccessGranted: !formData.isAccessGranted })}
+                    >
+                      {formData.isAccessGranted ? (
+                        <MdToggleOn size={36} color="#38a169" />
+                      ) : (
+                        <MdToggleOff size={36} color="#a0aec0" />
+                      )}
+                      <span style={{ fontSize: '14px', fontWeight: '600', color: formData.isAccessGranted ? '#38a169' : '#a0aec0' }}>
+                        {formData.isAccessGranted ? "Granted" : "Revoked"}
+                      </span>
                     </div>
                   </div>
                 </div>

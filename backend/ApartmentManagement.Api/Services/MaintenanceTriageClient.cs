@@ -14,11 +14,13 @@ namespace ApartmentManagement.Api.Services
     {
         private readonly HttpClient _httpClient;
         private readonly string _pythonAgentUrl;
+        private readonly string? _agentSharedSecret;
 
         public MaintenanceTriageClient(IConfiguration config, HttpClient httpClient)
         {
             _httpClient = httpClient;
             _pythonAgentUrl = config["PythonAgentUrl"] ?? "http://localhost:8000";
+            _agentSharedSecret = config["PythonAgent:SharedSecret"];
         }
 
         public async Task<AiTriageRecommendationDto> TriageComplaintAsync(
@@ -62,7 +64,13 @@ namespace ApartmentManagement.Api.Services
                 manager_feedback = managerFeedback
             };
 
-            var response = await _httpClient.PostAsJsonAsync($"{_pythonAgentUrl}/triage", requestPayload);
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{_pythonAgentUrl}/triage")
+            {
+                Content = JsonContent.Create(requestPayload)
+            };
+            if (!string.IsNullOrWhiteSpace(_agentSharedSecret))
+                request.Headers.Add("X-Agent-Key", _agentSharedSecret);
+            var response = await _httpClient.SendAsync(request);
             
             if (!response.IsSuccessStatusCode)
             {

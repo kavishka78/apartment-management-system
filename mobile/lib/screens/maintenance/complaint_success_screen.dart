@@ -95,7 +95,7 @@ class ComplaintSuccessScreen extends StatelessWidget {
                   border: Border.all(color: const Color(0xFFE8ECEF)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
+                      color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -135,7 +135,7 @@ class ComplaintSuccessScreen extends StatelessWidget {
                     backgroundColor: const Color(0xFF03A9F4), // Blue
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: const StadiumBorder(),
                   ),
                   child: const Text('View My Complaints', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
@@ -152,7 +152,7 @@ class ComplaintSuccessScreen extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF03A9F4),
                     side: const BorderSide(color: Color(0xFF03A9F4), width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: const StadiumBorder(),
                   ),
                   child: const Text('Back to Home', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 ),

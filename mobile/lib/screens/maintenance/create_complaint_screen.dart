@@ -24,7 +24,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
   
   List<MaintenanceCategory> _categories = [];
   MaintenanceCategory? _selectedCategory;
-  String _selectedPriority = 'Pending Assessment';
+  final String _selectedPriority = 'Pending Assessment';
   
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
@@ -234,9 +234,9 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF10B981) : Colors.white,
+            color: isActive ? const Color(0xFF4FC3F7) : Colors.white,
             shape: BoxShape.circle,
-            border: Border.all(color: isActive ? const Color(0xFF10B981) : Colors.grey.shade300, width: 2),
+            border: Border.all(color: isActive ? const Color(0xFF4FC3F7) : Colors.grey.shade300, width: 2),
           ),
           child: Center(
             child: isActive && _currentStep > stepIndex
@@ -256,7 +256,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-            color: isActive ? const Color(0xFF10B981) : Colors.grey.shade500,
+            color: isActive ? const Color(0xFF4FC3F7) : Colors.grey.shade500,
           ),
         )
       ],
@@ -269,7 +269,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
       child: Container(
         height: 2,
         margin: const EdgeInsets.only(bottom: 24, left: 8, right: 8),
-        color: isActive ? const Color(0xFF10B981) : Colors.grey.shade300,
+        color: isActive ? const Color(0xFF4FC3F7) : Colors.grey.shade300,
       ),
     );
   }
@@ -305,7 +305,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                       color: isSelected ? const Color(0xFF1E2532) : const Color(0xFFE8ECEF),
                       width: isSelected ? 2 : 1,
                     ),
-                    boxShadow: isSelected ? [BoxShadow(color: const Color(0xFF1E2532).withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))] : null,
+                    boxShadow: isSelected ? [BoxShadow(color: const Color(0xFF1E2532).withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4))] : null,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -449,7 +449,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF1E2532).withOpacity(0.3), style: BorderStyle.solid),
+                      border: Border.all(color: const Color(0xFF1E2532).withValues(alpha: 0.3), style: BorderStyle.solid),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -497,7 +497,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.image, color: Color(0xFF10B981), size: 24),
+                      const Icon(Icons.image, color: Color(0xFF4FC3F7), size: 24),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
@@ -527,7 +527,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: const Color(0xFF10B981), size: 24),
+        Icon(icon, color: const Color(0xFF4FC3F7), size: 24),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
@@ -561,7 +561,7 @@ Widget _buildBottomActions() {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF1E2532),
                   side: const BorderSide(color: Color(0xFFE8ECEF), width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: const StadiumBorder(),
                 ),
                 child: const Text('Back', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
               ),
@@ -577,7 +577,7 @@ Widget _buildBottomActions() {
                   backgroundColor: const Color(0xFF1E2532),
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: const StadiumBorder(),
                 ),
                 child: _isSubmitting
                     ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))

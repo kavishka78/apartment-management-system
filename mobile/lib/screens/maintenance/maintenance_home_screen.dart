@@ -133,7 +133,7 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                     color: const Color(0xFFF4F9FF),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8)),
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 8)),
                     ],
                   ),
                   child: Stack(
@@ -142,9 +142,9 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                         right: 0,
                         top: 0,
                         bottom: 0,
-                        width: 220,
-                        child: Image.network(
-                          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=500&auto=format&fit=crop',
+                        width: 280,
+                        child: Image.asset(
+                          'assets/images/maintenance_banner.jpg',
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -154,12 +154,26 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                             gradient: LinearGradient(
                               colors: [
                                 const Color(0xFFF4F9FF),
-                                const Color(0xFFF4F9FF),
-                                const Color(0xFFF4F9FF).withOpacity(0.0),
+                                const Color(0xFFF4F9FF).withValues(alpha: 0.0),
                               ],
-                              stops: const [0.55, 0.75, 1.0],
+                              stops: const [0.55, 0.65],
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFFF4F9FF),
+                                const Color(0xFFF4F9FF).withValues(alpha: 0.0),
+                              ],
+                              stops: const [0.0, 0.20],
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
                             ),
                           ),
                         ),
@@ -329,7 +343,7 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 5, offset: const Offset(0, 2)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 5, offset: const Offset(0, 2)),
           ],
         ),
         child: Row(

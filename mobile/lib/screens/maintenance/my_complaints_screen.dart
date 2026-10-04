@@ -44,10 +44,6 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
         setState(() {
           _allTickets = items.map((e) => MaintenanceTicket.fromJson(e)).toList();
           
-          // Exclude Resolved and Closed from "My Complaints" active view if desired, but requirements didn't explicitly ask for it, 
-          // they asked for a separate History screen. So we'll exclude Closed to keep it clean.
-          _allTickets = _allTickets.where((t) => t.status != 'Closed').toList();
-          
           _allTickets.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           
           // Populate categories for filter
@@ -73,7 +69,17 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
       _filteredTickets = _allTickets.where((t) {
         final matchesSearch = t.title.toLowerCase().contains(_searchQuery) ||
                               t.description.toLowerCase().contains(_searchQuery);
-        final matchesStatus = _statusFilter == 'All' || t.status == _statusFilter;
+        
+        bool matchesStatus = false;
+        if (_statusFilter == 'All') {
+          // Keep Closed tickets out of the "All" active view
+          matchesStatus = t.status != 'Closed';
+        } else if (_statusFilter == 'Resolved') {
+          matchesStatus = t.status == 'Resolved' || t.status == 'Closed';
+        } else {
+          matchesStatus = t.status == _statusFilter;
+        }
+
         final tCategory = t.category?.name ?? 'General';
         final matchesCategory = _categoryFilter == 'All Categories' || tCategory == _categoryFilter;
         return matchesSearch && matchesStatus && matchesCategory;
@@ -172,19 +178,22 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               children: ['All', 'Pending', 'Assigned', 'In Progress', 'Resolved'].map((status) {
                 final isSelected = _statusFilter == status;
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
                     label: Text(status),
                     selected: isSelected,
-                    selectedColor: const Color(0xFF1E2532),
+                    selectedColor: const Color(0xFF2C3E50),
+                    checkmarkColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     labelStyle: TextStyle(
                       color: isSelected ? Colors.white : Colors.black87,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                     ),
                     backgroundColor: Colors.white,
                     side: BorderSide(
-                      color: isSelected ? const Color(0xFF1E2532) : const Color(0xFFE8ECEF),
+                      color: isSelected ? const Color(0xFF2C3E50) : const Color(0xFFE8ECEF),
                     ),
                     onSelected: (selected) {
                       if (selected) {
@@ -219,7 +228,7 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
                             child: ListView.separated(
                               padding: const EdgeInsets.all(20),
                               itemCount: _filteredTickets.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              separatorBuilder: (_, _) => const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final t = _filteredTickets[index];
                                 return InkWell(
@@ -240,7 +249,7 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
                                       border: Border.all(color: const Color(0xFFE8ECEF)),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.02),
+                                          color: Colors.black.withValues(alpha: 0.02),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         )
@@ -248,23 +257,26 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
                                     ),
                                     child: Row(
                                       children: [
-                                        Container(
-                                          width: 50,
-                                          height: 50,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFF5F7F8),
-                                            borderRadius: BorderRadius.circular(12),
+                                        if (t.photoPath != null && t.photoPath!.isNotEmpty)
+                                          Container(
+                                            width: 50,
+                                            height: 50,
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            clipBehavior: Clip.antiAlias,
+                                            child: Image.network(
+                                              'http://10.0.2.2:5073${t.photoPath}',
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) => 
+                                                const Icon(Icons.assignment_outlined, color: Color(0xFF1E2532), size: 28),
+                                            ),
+                                          )
+                                        else
+                                          const Padding(
+                                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                            child: Icon(Icons.assignment_outlined, color: Color(0xFF1E2532), size: 28),
                                           ),
-                                          clipBehavior: Clip.antiAlias,
-                                          child: t.photoPath != null && t.photoPath!.isNotEmpty
-                                              ? Image.network(
-                                                  'http://10.0.2.2:5073${t.photoPath}',
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (context, error, stackTrace) => 
-                                                    const Icon(Icons.build_circle, color: Color(0xFF1E2532), size: 24),
-                                                )
-                                              : const Icon(Icons.build_circle, color: Color(0xFF1E2532), size: 24),
-                                        ),
                                         const SizedBox(width: 16),
                                         Expanded(
                                           child: Column(
@@ -298,7 +310,8 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
                                                     decoration: BoxDecoration(
                                                       color: t.status == 'Pending' ? Colors.orange.shade50 : 
                                                              t.status == 'In Progress' ? Colors.blue.shade50 :
-                                                             t.status == 'Resolved' ? Colors.green.shade50 :
+                                                             (t.status == 'Resolved' || t.status == 'Assigned') ? Colors.green.shade50 :
+                                                             t.status == 'Closed' ? Colors.red.shade50 :
                                                              Colors.grey.shade100,
                                                       borderRadius: BorderRadius.circular(6),
                                                     ),
@@ -309,7 +322,8 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
                                                         fontWeight: FontWeight.w600,
                                                         color: t.status == 'Pending' ? Colors.orange.shade700 : 
                                                                t.status == 'In Progress' ? Colors.blue.shade700 :
-                                                               t.status == 'Resolved' ? Colors.green.shade700 :
+                                                               (t.status == 'Resolved' || t.status == 'Assigned') ? Colors.green.shade700 :
+                                                               t.status == 'Closed' ? Colors.red.shade700 :
                                                                Colors.grey.shade700,
                                                       ),
                                                     ),

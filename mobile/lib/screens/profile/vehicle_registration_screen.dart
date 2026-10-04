@@ -224,9 +224,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF17212B),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                      shape: const StadiumBorder(),
                     ),
                     child: const Text(
                       'Register Vehicle',
@@ -332,9 +330,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF17212B),
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            shape: const StadiumBorder(),
                           ),
                         ),
                       ],
@@ -346,7 +342,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(20),
                     itemCount: _vehicles.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
                     itemBuilder: (ctx, idx) {
                       final v = _vehicles[idx];
                       return Container(
@@ -357,7 +353,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                           border: Border.all(color: const Color(0xFFE8ECEF)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.02),
+                              color: Colors.black.withValues(alpha: 0.02),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -374,7 +370,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF17212B).withOpacity(0.08),
+                                        color: const Color(0xFF17212B).withValues(alpha: 0.08),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: const Icon(

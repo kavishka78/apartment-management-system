@@ -316,7 +316,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF0F172A).withOpacity(0.12),
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.12),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -334,7 +334,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -354,8 +354,8 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: hourlyRate > 0
-                                ? const Color(0xFF059669).withOpacity(0.2)
-                                : Colors.blue.withOpacity(0.2),
+                                ? const Color(0xFF059669).withValues(alpha: 0.2)
+                                : Colors.blue.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: hourlyRate > 0
@@ -423,7 +423,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF0F172A).withOpacity(0.02),
+                        color: const Color(0xFF0F172A).withValues(alpha: 0.02),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -482,7 +482,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                               boxShadow: [
                                 BoxShadow(
                                   color: const Color(0xFF0F172A)
-                                      .withOpacity(0.02),
+                                      .withValues(alpha: 0.02),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -539,7 +539,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                               boxShadow: [
                                 BoxShadow(
                                   color: const Color(0xFF0F172A)
-                                      .withOpacity(0.02),
+                                      .withValues(alpha: 0.02),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -593,7 +593,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF0F172A).withOpacity(0.02),
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.02),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -784,9 +784,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                         ? Colors.white
                         : const Color(0xFF94A3B8),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: const StadiumBorder(),
                   ),
                   child: _isSubmitting
                       ? const SizedBox(

@@ -375,9 +375,7 @@ class _InvoiceDetailsScreenState
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF17212B),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                shape: const StadiumBorder(),
               ),
               onPressed: () async {
                 await Navigator.push(
