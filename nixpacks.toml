@@ -1,0 +1,11 @@
+[providers]
+providers = ["dotnet"]
+
+[phases.setup]
+nixPkgs = ["dotnet-sdk_8"]
+
+[phases.build]
+cmds = ["dotnet publish backend/ApartmentManagement.Api/ApartmentManagement.Api.csproj -c Release -o out"]
+
+[start]
+cmd = "dotnet out/ApartmentManagement.Api.dll"
