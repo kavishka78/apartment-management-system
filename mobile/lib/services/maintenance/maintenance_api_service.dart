@@ -3,9 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../auth/auth_service.dart';
 
+import '../api_config.dart';
+
 class MaintenanceApiService {
-  // Using the exact port and base URL found in the backend analysis
-  static const String baseUrl = 'http://10.0.2.2:5073/api';
+  static String get baseUrl => ApiConfig.baseUrl;
 
   // Helper method for error handling consistency
   static Map<String, dynamic> _handleError(http.Response? response, dynamic e, String defaultMessage) {

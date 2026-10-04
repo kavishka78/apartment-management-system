@@ -3,8 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../auth/auth_service.dart';
 
+import '../api_config.dart';
+
 class ParkingApiService {
-  static const String baseUrl = 'http://10.0.2.2:5073/api';
+  static String get baseUrl => ApiConfig.baseUrl;
 
   // GET ACTIVE VISITORS / PASSES (FILTERED BY RESIDENT)
   static Future<Map<String, dynamic>> getActiveVisitors([int? residentId]) async {
