@@ -2,7 +2,7 @@
 
 .admin-sidebar {
   width: 264px;
-  min-height: 100vh;
+  height: 100vh;
   background: linear-gradient(180deg, #111827 0%, #1a2234 100%);
   color: #fff;
   padding: 28px 18px;
