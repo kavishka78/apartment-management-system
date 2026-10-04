@@ -7,8 +7,10 @@ using Microsoft.EntityFrameworkCore;
 using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.Models;
 using ApartmentManagement.Api.DTOs.Maintenance;
+using ApartmentManagement.Api.DTOs.Safety;
 using ApartmentManagement.Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace ApartmentManagement.Api.Controllers.Maintenance
 {
@@ -37,12 +39,62 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         private readonly AppDbContext _context;
         private readonly IMaintenanceTriageService _aiService;
         private readonly INotificationService _notificationService;
+        private readonly SafetyValidationClient _safety;
 
-        public MaintenanceController(AppDbContext context, IMaintenanceTriageService aiService, INotificationService notificationService)
+        public MaintenanceController(AppDbContext context, IMaintenanceTriageService aiService, INotificationService notificationService, SafetyValidationClient safety)
         {
             _context = context;
             _aiService = aiService;
             _notificationService = notificationService;
+            _safety = safety;
+        }
+
+        // Validation & Safety gate for committing a repair. Returns an error result to stop the action,
+        // or null when the action may proceed.
+        private async Task<ActionResult?> SafetyGateAsync(Models.Maintenance maintenance, int tenantId)
+        {
+            var key = $"maintenance:{maintenance.Id}";
+            var latest = await _context.SafetyVerdictLogs
+                .Where(v => v.WorkflowId == key)
+                .OrderByDescending(v => v.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (latest?.Verdict == "needs_human")
+            {
+                if (latest.HumanDecision == "approved") return null;
+                if (latest.HumanDecision == "rejected") return StatusCode(403, "A manager rejected this repair in the safety audit.");
+                return StatusCode(409, $"Awaiting manager approval in the safety audit (verdict {latest.Id}).");
+            }
+
+            int.TryParse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier), out var userId);
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+
+            var verdict = await _safety.ValidateAsync(new ProposedActionDto
+            {
+                WorkflowId = key,
+                TenantId = tenantId,
+                ProposedBy = "maintenance_assign",
+                Requester = new RequesterDto
+                {
+                    UserId = userId,
+                    Role = isSuperAdmin ? "SuperAdmin" : "ApartmentAdmin",
+                    TenantId = tenantId,
+                },
+                Action = new ActionTargetDto
+                {
+                    Type = "approve_repair",
+                    TargetTenantId = tenantId,
+                    TargetResourceId = key,
+                    AmountLkr = maintenance.RepairCost,
+                },
+            });
+
+            return verdict.Verdict switch
+            {
+                "block" => StatusCode(403, verdict.Reason),
+                "needs_human" => StatusCode(409, $"Awaiting manager approval in the safety audit (verdict {verdict.TraceId})."),
+                _ => null,
+            };
         }
 
         private async Task<AgentWorkflow> RecordTriageServiceFailureAsync(int maintenanceId, string objective, Exception exception)
@@ -348,6 +400,13 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
 
             var tech = await _context.Technicians.FindAsync(request.TechnicianId);
             if (tech == null) return BadRequest("Invalid technician.");
+
+            var complexId = maintenance.Resident?.TenantId;
+            if (complexId == null) return BadRequest("This ticket is not linked to a complex.");
+            if (!User.IsInRole("SuperAdmin") && User.FindFirstValue("tenantId") != complexId.ToString()) return Forbid();
+
+            var safetyDenied = await SafetyGateAsync(maintenance, complexId.Value);
+            if (safetyDenied != null) return safetyDenied;
 
             maintenance.TechnicianId = request.TechnicianId;
             maintenance.Status = "Assigned";
