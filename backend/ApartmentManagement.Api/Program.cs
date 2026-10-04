@@ -95,13 +95,10 @@ builder.Services.AddCors(options =>
 
     options.AddPolicy("ReactApp", policy =>
     {
-        policy.SetIsOriginAllowed(origin =>
-            {
-                return Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
-                    (uri.IsLoopback || allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase));
-            })
+        policy.SetIsOriginAllowed(origin => true) // Allow web browser access from Vercel & local
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
