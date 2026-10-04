@@ -104,7 +104,7 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF0F172A).withOpacity(0.12),
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.12),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -122,7 +122,7 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
@@ -158,14 +158,12 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                             ),
                           ),
                           style: TextButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.12),
+                            backgroundColor: Colors.white.withValues(alpha: 0.12),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 6,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                            shape: const StadiumBorder(),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
@@ -219,7 +217,7 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF4F46E5).withOpacity(0.2),
+                        color: const Color(0xFF4F46E5).withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -230,7 +228,7 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -363,7 +361,7 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.04),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -644,9 +642,7 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                             ? Colors.white
                             : const Color(0xFF94A3B8),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                        shape: const StadiumBorder(),
                       ),
                       child: Text(
                         isActive ? 'Book Spot' : 'Currently Unavailable',
@@ -671,28 +667,35 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
 
   IconData _getFacilityIcon(String name) {
     final lower = name.toLowerCase();
-    if (lower.contains('pool') || lower.contains('swim'))
+    if (lower.contains('pool') || lower.contains('swim')) {
       return Icons.pool_rounded;
+    }
     if (lower.contains('gym') ||
         lower.contains('fitness') ||
-        lower.contains('workout'))
+        lower.contains('workout')) {
       return Icons.fitness_center_rounded;
+    }
     if (lower.contains('tennis') ||
         lower.contains('court') ||
         lower.contains('badminton') ||
-        lower.contains('squash'))
+        lower.contains('squash')) {
       return Icons.sports_tennis_rounded;
+    }
     if (lower.contains('hall') ||
         lower.contains('party') ||
         lower.contains('club') ||
-        lower.contains('event'))
+        lower.contains('event')) {
       return Icons.celebration_rounded;
-    if (lower.contains('bbq') || lower.contains('grill'))
+    }
+    if (lower.contains('bbq') || lower.contains('grill')) {
       return Icons.outdoor_grill_rounded;
-    if (lower.contains('park') || lower.contains('garden'))
+    }
+    if (lower.contains('park') || lower.contains('garden')) {
       return Icons.park_rounded;
-    if (lower.contains('sauna') || lower.contains('spa'))
+    }
+    if (lower.contains('sauna') || lower.contains('spa')) {
       return Icons.hot_tub_rounded;
+    }
     return Icons.domain_rounded;
   }
 }

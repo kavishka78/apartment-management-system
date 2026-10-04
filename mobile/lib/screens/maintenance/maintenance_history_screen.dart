@@ -4,7 +4,6 @@ import '../../services/maintenance/maintenance_api_service.dart';
 import '../../widgets/maintenance/maintenance_widgets.dart';
 import 'maintenance_details_screen.dart';
 import '../../widgets/maintenance/maintenance_skeleton.dart';
-import '../../widgets/maintenance/repair_costs_bottom_sheet.dart';
 
 // HARDCODED for now until Phase 1 JWT is complete
 const int CURRENT_RESIDENT_ID = 1;
@@ -45,8 +44,6 @@ class _MaintenanceHistoryScreenState extends State<MaintenanceHistoryScreen> {
       if (mounted) {
         setState(() {
           _allTickets = items.map((e) => MaintenanceTicket.fromJson(e)).toList();
-          // Filter to only history states
-          _allTickets = _allTickets.where((t) => t.status == 'Resolved' || t.status == 'Closed').toList();
           // Sort by newest first
           _allTickets.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           _applyFilters();
@@ -68,7 +65,16 @@ class _MaintenanceHistoryScreenState extends State<MaintenanceHistoryScreen> {
       _filteredTickets = _allTickets.where((t) {
         final matchesSearch = t.title.toLowerCase().contains(_searchQuery) ||
                               t.description.toLowerCase().contains(_searchQuery);
-        final matchesStatus = _statusFilter == 'All History' || t.status == _statusFilter;
+        
+        bool matchesStatus = false;
+        if (_statusFilter == 'All History') {
+          matchesStatus = true;
+        } else if (_statusFilter == 'Resolved') {
+          matchesStatus = t.status == 'Resolved' || t.status == 'Closed';
+        } else {
+          matchesStatus = t.status == _statusFilter;
+        }
+
         return matchesSearch && matchesStatus;
       }).toList();
     });
@@ -124,19 +130,22 @@ appBar: AppBar(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               children: ['All History', 'Resolved', 'Closed'].map((status) {
                 final isSelected = _statusFilter == status;
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
                     label: Text(status),
                     selected: isSelected,
-                    selectedColor: const Color(0xFF1E2532),
+                    selectedColor: const Color(0xFF2C3E50),
+                    checkmarkColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     labelStyle: TextStyle(
                       color: isSelected ? Colors.white : Colors.black87,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                     ),
                     backgroundColor: Colors.white,
                     side: BorderSide(
-                      color: isSelected ? const Color(0xFF1E2532) : const Color(0xFFE8ECEF),
+                      color: isSelected ? const Color(0xFF2C3E50) : const Color(0xFFE8ECEF),
                     ),
                     onSelected: (selected) {
                       if (selected) {
@@ -172,7 +181,7 @@ appBar: AppBar(
                             child: ListView.separated(
                               padding: const EdgeInsets.all(20),
                               itemCount: _filteredTickets.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              separatorBuilder: (_, _) => const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final t = _filteredTickets[index];
                                 return InkWell(
@@ -193,7 +202,7 @@ appBar: AppBar(
                                       border: Border.all(color: const Color(0xFFE8ECEF)),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.02),
+                                          color: Colors.black.withValues(alpha: 0.02),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         )
@@ -203,11 +212,7 @@ appBar: AppBar(
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFF5F7F8),
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: const Icon(Icons.check_circle, color: Color(0xFF1E2532), size: 24),
+                                          child: const Icon(Icons.check_circle, color: Colors.green, size: 24),
                                         ),
                                         const SizedBox(width: 16),
                                         Expanded(
@@ -240,7 +245,11 @@ children: [
                                                   Container(
                                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                     decoration: BoxDecoration(
-                                                      color: t.status == 'Resolved' ? Colors.green.shade50 : (t.status == 'Closed' ? Colors.red.shade50 : Colors.grey.shade100),
+                                                      color: t.status == 'Pending' ? Colors.orange.shade50 : 
+                                                             t.status == 'In Progress' ? Colors.blue.shade50 :
+                                                             (t.status == 'Resolved' || t.status == 'Assigned') ? Colors.green.shade50 :
+                                                             t.status == 'Closed' ? Colors.red.shade50 :
+                                                             Colors.grey.shade100,
                                                       borderRadius: BorderRadius.circular(6),
                                                     ),
                                                     child: Text(
@@ -248,7 +257,11 @@ children: [
                                                       style: TextStyle(
                                                         fontSize: 11,
                                                         fontWeight: FontWeight.w600,
-                                                        color: t.status == 'Resolved' ? Colors.green.shade700 : (t.status == 'Closed' ? Colors.red.shade700 : Colors.grey.shade700),
+                                                        color: t.status == 'Pending' ? Colors.orange.shade700 : 
+                                                               t.status == 'In Progress' ? Colors.blue.shade700 :
+                                                               (t.status == 'Resolved' || t.status == 'Assigned') ? Colors.green.shade700 :
+                                                               t.status == 'Closed' ? Colors.red.shade700 :
+                                                               Colors.grey.shade700,
                                                       ),
                                                     ),
                                                   ),

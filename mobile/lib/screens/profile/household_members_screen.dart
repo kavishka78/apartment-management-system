@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../models/profile/profile_models.dart';
-import '../../services/auth/auth_service.dart';
 import '../../services/profile/profile_api_service.dart';
 
 class HouseholdMembersScreen extends StatefulWidget {
@@ -198,9 +197,7 @@ class _HouseholdMembersScreenState extends State<HouseholdMembersScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF17212B),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                      shape: const StadiumBorder(),
                     ),
                     child: const Text(
                       'Save Member',
@@ -306,9 +303,7 @@ class _HouseholdMembersScreenState extends State<HouseholdMembersScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF17212B),
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            shape: const StadiumBorder(),
                           ),
                         ),
                       ],
@@ -320,7 +315,7 @@ class _HouseholdMembersScreenState extends State<HouseholdMembersScreen> {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(20),
                     itemCount: _members.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (ctx, idx) {
                       final m = _members[idx];
                       return Container(
@@ -336,7 +331,7 @@ class _HouseholdMembersScreenState extends State<HouseholdMembersScreen> {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF17212B).withOpacity(0.08),
+                                color: const Color(0xFF17212B).withValues(alpha: 0.08),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(

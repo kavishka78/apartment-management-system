@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../models/auth/contact_check_result.dart';
 import '../../models/auth/resident_session.dart';

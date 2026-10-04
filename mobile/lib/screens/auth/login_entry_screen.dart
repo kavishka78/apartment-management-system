@@ -256,7 +256,7 @@ class _LoginEntryScreenState extends State<LoginEntryScreen>
                               width: 46,
                               height: 46,
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.1),
+                                color: Colors.white.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: const Icon(
@@ -410,10 +410,8 @@ class _LoginEntryScreenState extends State<LoginEntryScreen>
                                       backgroundColor: const Color(0xFF17212B),
                                       foregroundColor: Colors.white,
                                       disabledBackgroundColor:
-                                          const Color(0xFF17212B).withOpacity(0.6),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
+                                          const Color(0xFF17212B).withValues(alpha: 0.6),
+                                      shape: const StadiumBorder(),
                                       elevation: 0,
                                     ),
                                     child: _isLoading
@@ -482,9 +480,7 @@ class _LoginEntryScreenState extends State<LoginEntryScreen>
                                       style: OutlinedButton.styleFrom(
                                         minimumSize: const Size.fromHeight(46),
                                         side: const BorderSide(color: Color(0xFF10B981), width: 1.2),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
+                                        shape: const StadiumBorder(),
                                         backgroundColor: const Color(0xFFF0FDF4),
                                       ),
                                     ),

@@ -14,7 +14,7 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _vehicleController = TextEditingController();
-  DateTime _expectedArrival = DateTime.now().add(const Duration(hours: 2));
+  final DateTime _expectedArrival = DateTime.now().add(const Duration(hours: 2));
   bool _isSubmitting = false;
 
   List<dynamic> _activeVisitors = [];
@@ -345,9 +345,7 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                           backgroundColor: const Color(0xFF17212B),
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          shape: const StadiumBorder(),
                         ),
                       ),
                     ),
@@ -483,9 +481,7 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                                   horizontal: 14,
                                   vertical: 6,
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                                shape: const StadiumBorder(),
                               ),
                               child: const Text(
                                 'Cancel Pass',

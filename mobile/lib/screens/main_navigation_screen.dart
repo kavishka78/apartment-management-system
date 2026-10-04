@@ -10,24 +10,9 @@ import 'maintenance/maintenance_home_screen.dart';
 import 'auth/login_entry_screen.dart';
 import '../services/auth/auth_service.dart';
 
-import 'payment/payment_home_screen.dart';
-import 'facility/facilities_list_screen.dart';
-import 'facility/my_bookings_screen.dart';
-import 'parking/visitor_parking_screen.dart';
-import 'maintenance/maintenance_home_screen.dart';
 import 'maintenance/notifications_screen.dart';
-import 'auth/login_entry_screen.dart';
 import 'profile/profile_home_screen.dart';
-import 'profile/vehicle_registration_screen.dart';
-import 'profile/domestic_staff_screen.dart';
 
-import '../services/auth/auth_service.dart';
-/// The main bottom navigation shell shown after successful login.
-///
-/// Moved out of main.dart so SplashScreen can route to it independently.
-/// The Profile tab is currently a placeholder — Part 2 will replace it
-/// with the full Resident Profile Hub screen.
-import 'profile/profile_home_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -487,7 +472,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.15),
+                      color: Colors.green.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(

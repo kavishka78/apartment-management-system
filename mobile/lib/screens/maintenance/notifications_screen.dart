@@ -194,7 +194,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                              color: isRead ? Colors.transparent : Colors.blue.withOpacity(0.05),
+                              color: isRead ? Colors.transparent : Colors.blue.withValues(alpha: 0.05),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -227,7 +227,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                         Text(
                                           n['message'],
                                           style: TextStyle(
-                                            color: isRead ? Colors.grey.shade600 : const Color(0xFF1E2532).withOpacity(0.85),
+                                            color: isRead ? Colors.grey.shade600 : const Color(0xFF1E2532).withValues(alpha: 0.85),
                                             fontSize: 14,
                                             height: 1.4,
                                           ),

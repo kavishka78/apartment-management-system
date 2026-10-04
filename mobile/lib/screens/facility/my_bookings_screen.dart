@@ -65,9 +65,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFDC2626),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+              shape: const StadiumBorder(),
               elevation: 0,
             ),
             child: const Text('Cancel Spot'),
@@ -311,9 +309,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                         foregroundColor: const Color(0xFFDC2626),
                         side: const BorderSide(color: Color(0xFFFCA5A5)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: const StadiumBorder(),
                       ),
                       child: const Text(
                         'Cancel Booking',
@@ -330,9 +326,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                       backgroundColor: const Color(0xFF0F172A),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: const StadiumBorder(),
                       elevation: 0,
                     ),
                     child: const Text(
@@ -367,7 +361,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 18, color: iconColor),
@@ -619,7 +613,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0F172A).withOpacity(0.04),
+                color: const Color(0xFF0F172A).withValues(alpha: 0.04),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -846,9 +840,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                           foregroundColor: const Color(0xFFDC2626),
                           side: const BorderSide(color: Color(0xFFFCA5A5)),
                           backgroundColor: const Color(0xFFFEF2F2),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                          shape: const StadiumBorder(),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
                             vertical: 6,
@@ -877,28 +869,35 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
 
   IconData _getFacilityIcon(String name) {
     final lower = name.toLowerCase();
-    if (lower.contains('pool') || lower.contains('swim'))
+    if (lower.contains('pool') || lower.contains('swim')) {
       return Icons.pool_rounded;
+    }
     if (lower.contains('gym') ||
         lower.contains('fitness') ||
-        lower.contains('workout'))
+        lower.contains('workout')) {
       return Icons.fitness_center_rounded;
+    }
     if (lower.contains('tennis') ||
         lower.contains('court') ||
         lower.contains('badminton') ||
-        lower.contains('squash'))
+        lower.contains('squash')) {
       return Icons.sports_tennis_rounded;
+    }
     if (lower.contains('hall') ||
         lower.contains('party') ||
         lower.contains('club') ||
-        lower.contains('event'))
+        lower.contains('event')) {
       return Icons.celebration_rounded;
-    if (lower.contains('bbq') || lower.contains('grill'))
+    }
+    if (lower.contains('bbq') || lower.contains('grill')) {
       return Icons.outdoor_grill_rounded;
-    if (lower.contains('park') || lower.contains('garden'))
+    }
+    if (lower.contains('park') || lower.contains('garden')) {
       return Icons.park_rounded;
-    if (lower.contains('sauna') || lower.contains('spa'))
+    }
+    if (lower.contains('sauna') || lower.contains('spa')) {
       return Icons.hot_tub_rounded;
+    }
     return Icons.domain_rounded;
   }
 }

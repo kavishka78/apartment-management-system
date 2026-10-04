@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -43,6 +43,23 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             _context = context;
             _aiService = aiService;
             _notificationService = notificationService;
+        }
+
+        private async Task<AgentWorkflow> RecordTriageServiceFailureAsync(int maintenanceId, string objective, Exception exception)
+        {
+            var workflow = new AgentWorkflow
+            {
+                MaintenanceId = maintenanceId,
+                Objective = objective,
+                ApprovalStatus = "Failed",
+                Status = "SafeFailure",
+                IsSafeFailure = true,
+                CurrentStep = "Safe Failure: triage service unavailable",
+                Errors = $"Triage service failure: {exception.GetType().Name}"
+            };
+            _context.AgentWorkflows.Add(workflow);
+            await _context.SaveChangesAsync();
+            return workflow;
         }
 
         [HttpGet]
@@ -170,34 +187,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             _context.Maintenances.Add(maintenance);
             await _context.SaveChangesAsync();
 
-            // AI Triage (Advisory only)
-            var availableTechs = await _context.Technicians.Where(t => t.Status == "Available").ToListAsync();
-            var recommendation = await _context.Maintenances
-                .Where(m => m.Id == maintenance.Id)
-                .Select(m => new { m.Title, m.Description })
-                .FirstOrDefaultAsync();
-
-            if (recommendation != null)
-            {
-                var activeWorkloads = await _context.Maintenances
-                    .Where(m => m.Status == "Assigned" || m.Status == "In Progress")
-                    .Where(m => m.TechnicianId != null)
-                    .GroupBy(m => m.TechnicianId.Value)
-                    .Select(g => new { TechId = g.Key, Count = g.Count() })
-                    .ToDictionaryAsync(g => g.TechId, g => g.Count);
-
-                var triageResult = await _aiService.TriageComplaintAsync(
-                    recommendation.Title, 
-                    recommendation.Description, 
-                    availableTechs, 
-                    activeWorkloads
-                );
-
-
-                await _context.SaveChangesAsync();
-            }
-
-            // Fire-and-forget Auto-Triage
+            // Start exactly one advisory triage workflow. Assignment remains blocked for manager approval.
             var scopeFactory = HttpContext.RequestServices.GetRequiredService<IServiceScopeFactory>();
             int newId = maintenance.Id;
             _ = Task.Run(async () =>
@@ -221,7 +211,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
 
                     var result = await ai.TriageComplaintAsync(m.Title, m.Description, availableTechs, activeTickets, "Not yet assigned", "High");
                     
-                    var allowedCats = new[] { "Plumbing", "Electrical", "HVAC", "Cleaning", "Security", "Elevator", "Building", "General" };
+                    var allowedCats = new[] { "Plumbing", "Electrical", "HVAC", "Cleaning", "Security", "Elevator", "Building", "General", "Carpentry", "Appliance", "Pest Control", "Landscaping" };
                     var allowedPris = new[] { "Low", "Medium", "High", "Urgent" };
                     bool isValid = allowedCats.Contains(result.Category) && allowedPris.Contains(result.Priority);
 
@@ -233,9 +223,11 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                         CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
                         ToolResults = result.ToolResults,
                         ValidationResults = result.ValidationResults,
+                        Errors = result.Errors,
                         ApprovalStatus = (result.RecommendedTechnicianId == null || !isValid) ? "Failed" : "Pending",
                         Status = (result.RecommendedTechnicianId == null || !isValid) ? "SafeFailure" : "PendingApproval",
-                        CurrentStep = "Pending Approval",
+                        IsSafeFailure = result.RecommendedTechnicianId == null || !isValid,
+                        CurrentStep = (result.RecommendedTechnicianId == null || !isValid) ? "Safe Failure: recommendation was not actioned" : "Pending Approval",
                         FinalOutcome = System.Text.Json.JsonSerializer.Serialize(new { result.RecommendedTechnicianId, result.Category, result.Priority, result.SlaRisk, Reason = result.TechnicianReason }),
                         Steps = result.AgentSteps.Select(step => new AgentWorkflowStep
                         {
@@ -254,9 +246,26 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                     db.AgentWorkflows.Add(workflow);
                     await db.SaveChangesAsync();
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // Ignore AI background failure; we don't want to crash the request
+                    // A failed background call must still be observable and durable.
+                    try
+                    {
+                        using var failureScope = scopeFactory.CreateScope();
+                        var failureDb = failureScope.ServiceProvider.GetRequiredService<AppDbContext>();
+                        failureDb.AgentWorkflows.Add(new AgentWorkflow
+                        {
+                            MaintenanceId = newId,
+                            Objective = "Auto-Triage Complaint and Assign Technician",
+                            ApprovalStatus = "Failed",
+                            Status = "SafeFailure",
+                            IsSafeFailure = true,
+                            CurrentStep = "Safe Failure: triage service unavailable",
+                            Errors = $"Triage service failure: {ex.GetType().Name}"
+                        });
+                        await failureDb.SaveChangesAsync();
+                    }
+                    catch { /* Preserve the original request even if audit persistence is unavailable. */ }
                 }
             });
 
@@ -351,14 +360,15 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                 ChangedBy = "Manager"
             });
 
-            // Assignment is a high-impact action. A pending AI workflow must be
-            // decided through the explicit approval endpoint before it can proceed.
             var pendingWorkflow = await _context.AgentWorkflows
-                .Where(w => w.MaintenanceId == id && w.ApprovalStatus == "Pending")
+                .Where(w => w.MaintenanceId == id && (w.ApprovalStatus == "Pending" || w.Status == "SafeFailure" || w.ApprovalStatus == "Failed"))
                 .OrderByDescending(w => w.CreatedAt)
                 .FirstOrDefaultAsync();
             if (pendingWorkflow != null)
-                return BadRequest("The AI workflow is awaiting an authorised approval decision.");
+            {
+                pendingWorkflow.ApprovalStatus = "Overridden";
+                pendingWorkflow.Status = "Manually Assigned";
+            }
 
             await _context.SaveChangesAsync();
             return Ok(MapToDto(maintenance));
@@ -583,10 +593,19 @@ maintenance.History.Add(new MaintenanceHistory
             else if (timeDiff.TotalHours < 24) risk = "High";
             else if (timeDiff.TotalHours < 72) risk = "Medium";
 
-            var result = await _aiService.TriageComplaintAsync(maintenance.Title, maintenance.Description, availableTechs, activeTickets, slaContext, risk);
+            AiTriageRecommendationDto result;
+            try
+            {
+                result = await _aiService.TriageComplaintAsync(maintenance.Title, maintenance.Description, availableTechs, activeTickets, slaContext, risk);
+            }
+            catch (Exception ex)
+            {
+                var failed = await RecordTriageServiceFailureAsync(id, "Triage Complaint and Assign Technician", ex);
+                return StatusCode(503, new { workflowId = failed.Id, status = failed.Status, message = "AI triage is unavailable; a safe-failure workflow was recorded." });
+            }
             
             // [Requirement 2 & 4] Deterministic Validation in C#
-            var allowedCats = new[] { "Plumbing", "Electrical", "HVAC", "Cleaning", "Security", "Elevator", "Building", "General" };
+            var allowedCats = new[] { "Plumbing", "Electrical", "HVAC", "Cleaning", "Security", "Elevator", "Building", "General", "Carpentry", "Appliance", "Pest Control", "Landscaping" };
             var allowedPris = new[] { "Low", "Medium", "High", "Urgent" };
             bool isValid = allowedCats.Contains(result.Category) && allowedPris.Contains(result.Priority);
 
@@ -604,8 +623,10 @@ maintenance.History.Add(new MaintenanceHistory
                 CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
                 ToolResults = result.ToolResults,
                 ValidationResults = result.ValidationResults,
+                Errors = result.Errors,
                 ApprovalStatus = approvalStatus,
                 Status = workflowStatus,
+                IsSafeFailure = workflowStatus == "SafeFailure",
                 CurrentStep = currentStep,
                 FinalOutcome = System.Text.Json.JsonSerializer.Serialize(new { result.RecommendedTechnicianId, result.Category, result.Priority, result.SlaRisk, Reason = result.TechnicianReason }),
                 Steps = result.AgentSteps.Select(step => new AgentWorkflowStep
@@ -638,13 +659,21 @@ maintenance.History.Add(new MaintenanceHistory
         {
             var workflow = await _context.AgentWorkflows
                 .Include(w => w.Steps)
+                .Include(w => w.Maintenance)
                 .Where(w => w.MaintenanceId == id)
                 .OrderByDescending(w => w.CreatedAt)
                 .FirstOrDefaultAsync();
+            if (workflow != null && User.IsInRole("Resident"))
+            {
+                var residentId = User.FindFirst("residentId")?.Value;
+                if (!int.TryParse(residentId, out var parsedResidentId) || workflow.Maintenance.ResidentId != parsedResidentId)
+                    return Forbid();
+            }
             return workflow == null ? NotFound() : Ok(ToWorkflowSummary(workflow));
         }
 
         [HttpGet("workflows/{workflowId}")]
+        [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
         public async Task<IActionResult> GetWorkflow(int workflowId)
         {
             var workflow = await _context.AgentWorkflows
@@ -661,7 +690,10 @@ maintenance.History.Add(new MaintenanceHistory
             if (workflow == null) return NotFound();
             if (workflow.ApprovalStatus != "Pending") return BadRequest("This workflow has already been decided.");
 
-            workflow.ApprovalUser = request.ApprovedBy;
+            var approvedBy = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                ?? User.Identity?.Name
+                ?? "AuthorizedAdministrator";
+            workflow.ApprovalUser = approvedBy;
             workflow.ApprovalTime = DateTimeOffset.UtcNow;
             workflow.ApprovalNote = request.Note ?? string.Empty;
             workflow.UpdatedAt = DateTimeOffset.UtcNow;
@@ -678,7 +710,7 @@ maintenance.History.Add(new MaintenanceHistory
                 workflow.Status = "RevisionRequested";
                 workflow.CurrentStep = "Revision requested by manager";
             }
-            else
+            else if (request.Decision == "Approve")
             {
                 var recommendation = System.Text.Json.JsonSerializer.Deserialize<AiTriageRecommendationDto>(workflow.FinalOutcome);
                 if (recommendation?.RecommendedTechnicianId == null)
@@ -709,13 +741,14 @@ maintenance.History.Add(new MaintenanceHistory
                 maintenance.History.Add(new MaintenanceHistory
                 {
                     Status = "AI Recommendation Approved & Technician Assigned",
-                    Note = $"Approved by {request.ApprovedBy}. Priority set to {maintenance.Priority}. {request.Note}".Trim(),
-                    ChangedBy = request.ApprovedBy
+                    Note = $"Approved by {approvedBy}. Priority set to {maintenance.Priority}. {request.Note}".Trim(),
+                    ChangedBy = approvedBy
                 });
                 workflow.ApprovalStatus = "Approved";
                 workflow.Status = "Approved";
                 workflow.CurrentStep = "Assignment approved and executed";
             }
+            else return BadRequest("Unsupported workflow decision.");
 
             await _context.SaveChangesAsync();
             return Ok(ToWorkflowSummary(workflow));
@@ -757,13 +790,22 @@ maintenance.History.Add(new MaintenanceHistory
             else if (timeDiff.TotalHours < 24) risk = "High";
             else if (timeDiff.TotalHours < 72) risk = "Medium";
 
-            var result = await _aiService.TriageComplaintAsync(maintenance.Title, maintenance.Description, availableTechs, activeTickets, slaContext, risk, request.ManagerFeedback);
+            AiTriageRecommendationDto result;
+            try
+            {
+                result = await _aiService.TriageComplaintAsync(maintenance.Title, maintenance.Description, availableTechs, activeTickets, slaContext, risk, request.ManagerFeedback);
+            }
+            catch (Exception ex)
+            {
+                var failed = await RecordTriageServiceFailureAsync(id, "Revise Triage Complaint", ex);
+                return StatusCode(503, new { workflowId = failed.Id, status = failed.Status, message = "AI triage is unavailable; a safe-failure workflow was recorded." });
+            }
             
             // Mark older pending workflows for this ticket as revised
             var oldWorkflows = await _context.AgentWorkflows.Where(w => w.MaintenanceId == id && w.ApprovalStatus == "Pending").ToListAsync();
             foreach(var ow in oldWorkflows) { ow.ApprovalStatus = "Revised"; }
 
-            var allowedCats = new[] { "Plumbing", "Electrical", "HVAC", "Cleaning", "Security", "Elevator", "Building", "General" };
+            var allowedCats = new[] { "Plumbing", "Electrical", "HVAC", "Cleaning", "Security", "Elevator", "Building", "General", "Carpentry", "Appliance", "Pest Control", "Landscaping" };
             var allowedPris = new[] { "Low", "Medium", "High", "Urgent" };
             bool isValid = allowedCats.Contains(result.Category) && allowedPris.Contains(result.Priority);
 
@@ -779,8 +821,10 @@ maintenance.History.Add(new MaintenanceHistory
                 CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
                 ToolResults = result.ToolResults,
                 ValidationResults = result.ValidationResults,
+                Errors = result.Errors,
                 ApprovalStatus = approvalStatus,
                 Status = workflowStatus,
+                IsSafeFailure = workflowStatus == "SafeFailure",
                 CurrentStep = currentStep,
                 FinalOutcome = System.Text.Json.JsonSerializer.Serialize(new { result.RecommendedTechnicianId, result.Category, result.Priority, result.SlaRisk, Reason = result.TechnicianReason }),
                 Steps = result.AgentSteps.Select(step => new AgentWorkflowStep
@@ -935,7 +979,7 @@ maintenance.History.Add(new MaintenanceHistory
                     new MaintenanceCategory { Name = "Plumbing" },
                     new MaintenanceCategory { Name = "Electrical" },
                     new MaintenanceCategory { Name = "HVAC" },
-                    new MaintenanceCategory { Name = "General" }, new MaintenanceCategory { Name = "Cleaning" }, new MaintenanceCategory { Name = "Security" }, new MaintenanceCategory { Name = "Elevator" }, new MaintenanceCategory { Name = "Building" }
+                    new MaintenanceCategory { Name = "General" }, new MaintenanceCategory { Name = "Cleaning" }, new MaintenanceCategory { Name = "Security" }, new MaintenanceCategory { Name = "Elevator" }, new MaintenanceCategory { Name = "Building" }, new MaintenanceCategory { Name = "Carpentry" }, new MaintenanceCategory { Name = "Appliance" }, new MaintenanceCategory { Name = "Pest Control" }, new MaintenanceCategory { Name = "Landscaping" }
                 );
                 await _context.SaveChangesAsync();
             }
@@ -1105,6 +1149,8 @@ return Ok("Database setup successfully");
         }
     }
 }
+
+
 
 
 

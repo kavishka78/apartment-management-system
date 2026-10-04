@@ -35,7 +35,7 @@ class _MaintenanceSkeletonState extends State<MaintenanceSkeleton>
     return ListView.separated(
       padding: const EdgeInsets.all(20),
       itemCount: widget.itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         return FadeTransition(
           opacity: _animation,

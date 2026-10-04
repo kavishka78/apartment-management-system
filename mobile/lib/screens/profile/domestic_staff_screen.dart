@@ -248,9 +248,7 @@ class _DomesticStaffScreenState extends State<DomesticStaffScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF17212B),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
+                        shape: const StadiumBorder(),
                       ),
                       child: const Text(
                         'Generate Access Pass',
@@ -364,9 +362,7 @@ class _DomesticStaffScreenState extends State<DomesticStaffScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF17212B),
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            shape: const StadiumBorder(),
                           ),
                         ),
                       ],
@@ -378,7 +374,7 @@ class _DomesticStaffScreenState extends State<DomesticStaffScreen> {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(20),
                     itemCount: _staffList.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
                     itemBuilder: (ctx, idx) {
                       final s = _staffList[idx];
                       return Container(
@@ -393,7 +389,7 @@ class _DomesticStaffScreenState extends State<DomesticStaffScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.02),
+                              color: Colors.black.withValues(alpha: 0.02),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -459,7 +455,7 @@ class _DomesticStaffScreenState extends State<DomesticStaffScreen> {
                                   horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 color: s.isActive
-                                    ? const Color(0xFF17212B).withOpacity(0.04)
+                                    ? const Color(0xFF17212B).withValues(alpha: 0.04)
                                     : Colors.red.shade50,
                                 borderRadius: BorderRadius.circular(10),
                               ),

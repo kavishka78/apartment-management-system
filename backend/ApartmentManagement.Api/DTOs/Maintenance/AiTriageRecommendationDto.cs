@@ -15,6 +15,7 @@ namespace ApartmentManagement.Api.DTOs.Maintenance
         public List<string> CompletedSteps { get; set; } = new List<string>();
         public string ToolResults { get; set; } = string.Empty;
         public string ValidationResults { get; set; } = string.Empty;
+        public string? Errors { get; set; }
         public List<AgentStepDto> AgentSteps { get; set; } = new List<AgentStepDto>();
         public int? WorkflowId { get; set; }
     }

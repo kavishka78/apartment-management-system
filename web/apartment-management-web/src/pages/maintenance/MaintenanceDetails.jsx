@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { getAuthToken } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MdAutoAwesome, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack, MdChevronRight, MdKeyboardArrowDown, MdBuild, MdFlag, MdPerson, MdAttachMoney, MdPhone, MdHome, MdPriorityHigh, MdDescription, MdAccessTime } from 'react-icons/md';
+import { MdAutoAwesome, MdStar, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack, MdChevronRight, MdKeyboardArrowDown, MdBuild, MdFlag, MdPerson, MdAttachMoney, MdPhone, MdHome, MdPriorityHigh, MdDescription, MdAccessTime } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import { motion } from 'framer-motion';
 import '../payment/PaymentDashboard.css';
@@ -20,6 +20,12 @@ function MaintenanceDetails() {
   const [repairCost, setRepairCost] = useState('');
   const [note, setNote] = useState('');
   const [commentNote, setCommentNote] = useState('');
+
+  // For manual assignment
+  const [showManualAssign, setShowManualAssign] = useState(false);
+  const [availableTechs, setAvailableTechs] = useState([]);
+  const [selectedTechId, setSelectedTechId] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
 const fetchWithAuth = useCallback((url, options = {}) => {
     const token = getAuthToken();
@@ -121,6 +127,31 @@ const fetchWithAuth = useCallback((url, options = {}) => {
     })
     .then(res => {
         if (res.ok) fetchTicket();
+    });
+  };
+
+  const loadAvailableTechs = () => {
+    fetchWithAuth('http://localhost:5073/api/maintenance/technicians')
+      .then(res => res.json())
+      .then(data => {
+        setAvailableTechs(data.filter(t => t.status === 'Available'));
+        setShowManualAssign(true);
+      })
+      .catch(err => console.error("Failed to load techs", err));
+  };
+
+  const handleManualAssign = () => {
+    if (!selectedTechId) return;
+    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/assign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ technicianId: parseInt(selectedTechId) })
+    })
+    .then(res => {
+      if (res.ok) {
+        setShowManualAssign(false);
+        fetchTicket();
+      }
     });
   };
 
@@ -626,7 +657,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                               {aiRecommendation.agentSteps && aiRecommendation.agentSteps.map((step, idx) => (
                                 <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', fontSize: '13px', color: '#334155', background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                   <div style={{ minWidth: '28px', height: '28px', borderRadius: '50%', background: step.status === 'Blocked' ? '#fee2e2' : '#dcfce7', color: step.status === 'Blocked' ? '#991b1b' : '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold' }}>
-                                    {step.status === 'Blocked' ? '✕' : '✓'}
+                                    {step.status === 'Blocked' ? '✖' : '✓'}
                                   </div>
                                   <div style={{ flex: 1 }}>
                                     <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
@@ -657,6 +688,103 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                               )}
                             </div>
                           )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {ticket.status === 'Pending' && (
+                  <div className="action-box" style={{ background: '#fff', border: '1px solid #e3e7e3', padding: '25px', marginTop: '16px' }}>
+                    <h4 style={{ margin: '0 0 10px', fontSize: '15px' }}>Manual Assignment</h4>
+                    {!showManualAssign ? (
+                      <>
+                        <p style={{ color: '#68727c', marginBottom: '15px', fontSize: '13.5px' }}>
+                          Assign this ticket to a specific available technician manually.
+                        </p>
+                        <button className="rect-btn" style={{ background: "#2563eb", color: "white", border: "1px solid #1d4ed8" }} onClick={loadAvailableTechs}>
+                          <MdPerson size={18} style={{ marginRight: '6px' }} /> Assign Manually
+                        </button>
+                      </>
+                    ) : (
+                      <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '8px' }}>Select Technician</label>
+                        <div style={{ position: 'relative', marginBottom: '16px' }}>
+                          <div 
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            style={{ 
+                              padding: '12px 16px', 
+                              border: isDropdownOpen ? '2px solid #2563eb' : '1px solid #cbd5e1', 
+                              borderRadius: '8px', 
+                              cursor: 'pointer',
+                              background: '#fff',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              boxShadow: isDropdownOpen ? '0 0 0 3px rgba(37, 99, 235, 0.1)' : 'none',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <span style={{ fontSize: '14px', color: selectedTechId ? '#0f172a' : '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {selectedTechId ? (
+                                <><strong style={{ fontWeight: 600 }}>{availableTechs.find(t => t.id == selectedTechId)?.name}</strong> <span style={{ color: '#64748b' }}>• {availableTechs.find(t => t.id == selectedTechId)?.skills}</span></>
+                              ) : '-- Choose a Technician --'}
+                            </span>
+                            <MdKeyboardArrowDown size={20} style={{ color: '#94a3b8', transform: isDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0, marginLeft: '8px' }} />
+                          </div>
+                          
+                          {isDropdownOpen && (
+                            <div style={{ 
+                              position: 'absolute', 
+                              top: 'calc(100% + 4px)', 
+                              left: 0, 
+                              right: 0, 
+                              background: '#fff', 
+                              borderRadius: '12px', 
+                              border: '1px solid #e2e8f0', 
+                              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', 
+                              zIndex: 10,
+                              maxHeight: '260px',
+                              overflowY: 'auto',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              padding: '6px'
+                            }} className="custom-scrollbar">
+                              <div 
+                                onClick={() => { setSelectedTechId(''); setIsDropdownOpen(false); }}
+                                onMouseEnter={(e) => { if (selectedTechId) e.currentTarget.style.background = '#f8fafc'; }}
+                                onMouseLeave={(e) => { if (selectedTechId) e.currentTarget.style.background = 'transparent'; }}
+                                style={{ padding: '10px 12px', cursor: 'pointer', fontSize: '14px', borderRadius: '6px', marginBottom: '4px', background: !selectedTechId ? '#eff6ff' : 'transparent', color: !selectedTechId ? '#2563eb' : '#475569', fontWeight: !selectedTechId ? '600' : 'normal', transition: 'background 0.1s' }}
+                              >
+                                -- Choose a Technician --
+                              </div>
+                              {availableTechs.map(t => (
+                                <div 
+                                  key={t.id}
+                                  onClick={() => { setSelectedTechId(t.id); setIsDropdownOpen(false); }}
+                                  onMouseEnter={(e) => { if (selectedTechId != t.id) e.currentTarget.style.background = '#f8fafc'; }}
+                                  onMouseLeave={(e) => { if (selectedTechId != t.id) e.currentTarget.style.background = 'transparent'; }}
+                                  style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '6px', marginBottom: '2px', background: selectedTechId == t.id ? '#eff6ff' : 'transparent', transition: 'background 0.1s' }}
+                                >
+                                  <div style={{ fontSize: '14px', fontWeight: selectedTechId == t.id ? '600' : '500', color: selectedTechId == t.id ? '#2563eb' : '#0f172a' }}>
+                                    {t.name}
+                                  </div>
+                                  <div style={{ fontSize: '12.5px', color: selectedTechId == t.id ? '#3b82f6' : '#64748b', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {t.skills}
+                                  </div>
+                                </div>
+                              ))}
+                              {availableTechs.length === 0 && (
+                                <div style={{ padding: '16px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
+                                  No available technicians found.
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button className="rect-btn rect-btn-dark" onClick={handleManualAssign} disabled={!selectedTechId}>Confirm Assignment</button>
+                          <button className="rect-btn rect-btn-outline" onClick={() => setShowManualAssign(false)}>Cancel</button>
                         </div>
                       </div>
                     )}
@@ -734,7 +862,30 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                           <h4 style={{ margin: 0, fontSize: '14px', color: '#0f172a' }}>{h.status}</h4>
                           <span style={{ fontSize: '12px', color: '#64748b' }}>{new Date(h.createdAt).toLocaleString()}</span>
                         </div>
-                        <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#475569' }}>{h.note}</p>
+                                                {(() => {
+                          const match = h.note ? h.note.match(/^\[Rating: (\d)\/5 Stars\]\s*(.*)$/is) : null;
+                          let rating = null;
+                          let cleanNote = h.note;
+                          if (match) {
+                            rating = parseInt(match[1], 10);
+                            cleanNote = match[2];
+                          }
+                          return (
+                            <>
+                              {rating !== null && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                  <div style={{ display: 'flex', gap: '2px' }}>
+                                    {[...Array(5)].map((_, i) => (
+                                      <MdStar key={i} size={18} color={i < rating ? '#f5c518' : '#e2e8f0'} />
+                                    ))}
+                                  </div>
+                                  <span style={{ fontWeight: 'bold', color: '#f5c518', fontSize: '13px' }}>{rating}/5 Stars</span>
+                                </div>
+                              )}
+                              {cleanNote && <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#0033a0', fontWeight: 'bold' }}>{cleanNote}</p>}
+                            </>
+                          );
+                        })()}
                         <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>By: {h.changedBy}</span>
                       </div>
                     </div>
@@ -766,6 +917,11 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 }
 
 export default MaintenanceDetails;
+
+
+
+
+
 
 
 

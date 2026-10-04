@@ -17,6 +17,40 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
   String _error = '';
   int _rating = 5; // Default 5 stars
 
+  IconData _getCategoryIcon(String? categoryName) {
+    switch (categoryName?.toLowerCase()) {
+      case 'plumbing': return Icons.water_drop;
+      case 'electrical': return Icons.electrical_services;
+      case 'hvac': return Icons.ac_unit;
+      case 'security': return Icons.security;
+      case 'cleaning': return Icons.cleaning_services;
+      case 'carpentry': return Icons.handyman;
+      case 'appliance': return Icons.kitchen;
+      case 'pest control': return Icons.pest_control;
+      case 'landscaping': return Icons.park;
+      case 'elevator': return Icons.elevator;
+      case 'building': return Icons.apartment;
+      default: return Icons.build;
+    }
+  }
+
+  Color _getCategoryColor(String? categoryName) {
+    switch (categoryName?.toLowerCase()) {
+      case 'plumbing': return const Color(0xFF4FC3F7);
+      case 'electrical': return const Color(0xFFFFB74D);
+      case 'hvac': return const Color(0xFF81C784);
+      case 'security': return const Color(0xFFE57373);
+      case 'cleaning': return const Color(0xFF64B5F6);
+      case 'carpentry': return const Color(0xFFA1887F);
+      case 'appliance': return const Color(0xFF90A4AE);
+      case 'pest control': return const Color(0xFFFF8A65);
+      case 'landscaping': return const Color(0xFF81C784);
+      case 'elevator': return const Color(0xFF9575CD);
+      case 'building': return const Color(0xFF7986CB);
+      default: return const Color(0xFF90A4AE);
+    }
+  }
+
   @override
   void dispose() {
     _noteController.dispose();
@@ -33,7 +67,7 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
     String userNote = _noteController.text.trim();
     String finalNote = '[Rating: $_rating/5 Stars]';
     if (userNote.isNotEmpty) {
-      finalNote += ' ' + userNote;
+      finalNote += ' $userNote';
     }
 
     final result = await MaintenanceApiService.verifyResolution(
@@ -136,13 +170,9 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5F7F8),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.water_drop, color: Color(0xFF4FC3F7), size: 24),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+                      child: Icon(_getCategoryIcon(widget.ticket.category?.name), color: _getCategoryColor(widget.ticket.category?.name), size: 32),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -246,7 +276,7 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
                       backgroundColor: const Color(0xFF1E2532), // Theme navy instead of bright green
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: const StadiumBorder(),
                     ),
                     child: const Text('Submit Feedback', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                   ),

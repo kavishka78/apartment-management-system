@@ -252,9 +252,7 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4F46E5),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                        shape: const StadiumBorder(),
                         elevation: 0,
                       ),
                     ),
@@ -581,9 +579,7 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF10B981),
                                       foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
+                                      shape: const StadiumBorder(),
                                       elevation: 0,
                                     ),
                                     child: _isApproving

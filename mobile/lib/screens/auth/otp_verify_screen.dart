@@ -254,7 +254,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -317,7 +317,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF17212B).withOpacity(0.06),
+                          color: const Color(0xFF17212B).withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Row(
@@ -428,8 +428,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                           backgroundColor: const Color(0xFFF0FDF4),
                           side: const BorderSide(
                               color: Color(0xFF10B981), width: 1.2),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
+                          shape: const StadiumBorder(),
                         ),
                       ),
 
@@ -446,9 +445,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF17212B),
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
+                              shape: const StadiumBorder(),
                               elevation: 0,
                             ),
                             child: _isVerifying

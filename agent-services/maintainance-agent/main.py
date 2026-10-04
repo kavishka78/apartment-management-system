@@ -10,10 +10,11 @@ Architecture:
 """
 
 import os
+import secrets
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import TriageRequest, TriageResponse
@@ -21,6 +22,7 @@ from agent import triage_complaint
 
 load_dotenv()
 AI_PORT = int(os.getenv("AI_PORT", "8000"))
+AGENT_SHARED_SECRET = os.getenv("AGENT_SHARED_SECRET", "")
 
 
 # ─── Startup / shutdown ──────────────────────────────────────────────────────
@@ -79,13 +81,16 @@ async def health():
         "Does NOT assign a technician or modify any database."
     ),
 )
-async def triage(request: TriageRequest) -> TriageResponse:
+async def triage(request: TriageRequest, x_agent_key: str | None = Header(default=None)) -> TriageResponse:
     """
     Analyze a maintenance complaint and recommend a technician.
 
     The recommendation must be reviewed and approved by a Manager
     before the assignment is made in ASP.NET Core.
     """
+    if AGENT_SHARED_SECRET and not (x_agent_key and secrets.compare_digest(x_agent_key, AGENT_SHARED_SECRET)):
+        raise HTTPException(status_code=401, detail="Internal agent authentication failed.")
+
     try:
         recommendation = await triage_complaint(request)
         return TriageResponse(success=True, recommendation=recommendation)
@@ -97,3 +102,14 @@ async def triage(request: TriageRequest) -> TriageResponse:
     except Exception as e:
         # All other failures — return a structured error, don't crash
         return TriageResponse(success=False, error=str(e))
+
+@app.get("/workflow/graph", summary="Get LangGraph Mermaid graph")
+async def get_workflow_graph():
+    """Returns the Mermaid representation of the orchestration graph."""
+    from graph import build_graph
+    try:
+        app_graph = build_graph()
+        mermaid = app_graph.get_graph().draw_mermaid()
+        return {"mermaid": mermaid}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

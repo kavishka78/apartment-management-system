@@ -32,7 +32,7 @@ class EmailAuthOptionsScreen extends StatefulWidget {
 
 class _EmailAuthOptionsScreenState extends State<EmailAuthOptionsScreen> {
   bool _isGoogleLoading = false;
-  bool _isOtpLoading = false;
+  final bool _isOtpLoading = false;
   String? _errorMessage;
 
   // ── Google Sign-In ─────────────────────────────────────────────────────────
@@ -211,7 +211,7 @@ class _EmailAuthOptionsScreenState extends State<EmailAuthOptionsScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF17212B).withOpacity(0.06),
+                          color: const Color(0xFF17212B).withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Row(
@@ -426,7 +426,7 @@ class _AuthOptionCard extends StatelessWidget {
                       subtitle,
                       style: TextStyle(
                         color: subtitleColor ??
-                            textColor.withOpacity(0.6),
+                            textColor.withValues(alpha: 0.6),
                         fontSize: 12,
                         height: 1.4,
                       ),
@@ -447,7 +447,7 @@ class _AuthOptionCard extends StatelessWidget {
                 )
               else
                 Icon(Icons.arrow_forward_ios_rounded,
-                    size: 14, color: textColor.withOpacity(0.5)),
+                    size: 14, color: textColor.withValues(alpha: 0.5)),
             ],
           ),
         ),

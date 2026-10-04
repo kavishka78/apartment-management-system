@@ -211,9 +211,7 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF17212B),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                  shape: const StadiumBorder(),
                 ),
                 child: Text(
                   'Pay Securely ${widget.amount}',
