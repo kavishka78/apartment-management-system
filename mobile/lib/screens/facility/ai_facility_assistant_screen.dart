@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../services/facility/facility_api_service.dart';
+import '../../services/auth/auth_service.dart';
 
 class AiFacilityAssistantScreen extends StatefulWidget {
   const AiFacilityAssistantScreen({super.key});
@@ -34,10 +35,14 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
       _workflowData = null;
     });
 
+    final session = await AuthService.getSession();
+    final residentId = (session != null && session.residentId > 0) ? session.residentId : 1;
+    final residentName = session?.name.isNotEmpty == true ? session!.name : 'Kamal Perera (A-101)';
+
     final res = await FacilityApiService.planAgenticWorkflow(
       objective: text,
-      residentId: 1,
-      residentName: 'Kamal Perera (A-101)',
+      residentId: residentId,
+      residentName: residentName,
     );
 
     if (mounted) {

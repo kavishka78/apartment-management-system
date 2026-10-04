@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/parking/parking_api_service.dart';
+import '../../services/auth/auth_service.dart';
 
 class VisitorParkingScreen extends StatefulWidget {
   const VisitorParkingScreen({super.key});
@@ -52,8 +53,11 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
 
     setState(() => _isSubmitting = true);
 
+    final session = await AuthService.getSession();
+    final currentResidentId = (session != null && session.residentId > 0) ? session.residentId : 1;
+
     final res = await ParkingApiService.preRegisterVisitor(
-      residentId: 101, // Mock resident ID
+      residentId: currentResidentId,
       visitorName: _nameController.text,
       phoneNumber: _phoneController.text,
       vehicleNumber: _vehicleController.text,

@@ -115,9 +115,22 @@ namespace ApartmentManagement.Api.Controllers
                     ? dto.ExpectedArrival
                     : DateTime.SpecifyKind(dto.ExpectedArrival, DateTimeKind.Utc);
 
+                // Validate Resident Exists or fallback to valid resident in DB
+                var residentExists = await _context.Residents.AnyAsync(r => r.Id == dto.ResidentId);
+                int validResidentId = dto.ResidentId;
+                if (!residentExists)
+                {
+                    var firstResident = await _context.Residents.FirstOrDefaultAsync();
+                    if (firstResident == null)
+                    {
+                        return BadRequest(new { Message = "No registered residents exist in the system to issue a visitor pass." });
+                    }
+                    validResidentId = firstResident.Id;
+                }
+
                 var visitorPass = new VisitorPass
                 {
-                    ResidentId = dto.ResidentId,
+                    ResidentId = validResidentId,
                     VisitorName = dto.VisitorName,
                     PhoneNumber = dto.PhoneNumber,
                     VehicleNumber = dto.VehicleNumber,

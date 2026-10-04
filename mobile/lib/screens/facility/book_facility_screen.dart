@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/facility/facility_api_service.dart';
+import '../../services/auth/auth_service.dart';
 
 class BookFacilityScreen extends StatefulWidget {
   final dynamic facility;
@@ -194,9 +195,12 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
     if (durationHours < 0) durationHours = 0;
     final totalBookingCost = durationHours * hourlyRate * _bookedCapacity;
 
+    final session = await AuthService.getSession();
+    final currentResidentId = (session != null && session.residentId > 0) ? session.residentId : 1;
+
     final result = await FacilityApiService.createBooking(
       facilityId: facilityId,
-      residentId: 1, // Valid resident ID (Kamal Perera)
+      residentId: currentResidentId,
       bookingDate: _selectedDate,
       startTime: _formatTimeOfDay(_startTime),
       endTime: _formatTimeOfDay(_endTime),
