@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {MdApartment, MdArrowForward, MdBuild, MdCheckCircle, MdMeetingRoom, MdNotificationsActive, MdPayment,} from "react-icons/md";
 import "./Landing.css";
@@ -67,7 +67,7 @@ export default function Landing() {
             </p>
 
             <div className="hero-buttons">
-              <Link className="primary-btn" to="/maintenance">Open Dashboard <MdArrowForward /></Link>
+              <Link className="primary-btn" to="/admin">Open Dashboard <MdArrowForward /></Link>
               
             </div>
 
