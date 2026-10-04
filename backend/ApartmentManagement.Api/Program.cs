@@ -50,6 +50,13 @@ builder.Services.AddHttpClient<IMaintenanceTriageService, MaintenanceTriageClien
     client.BaseAddress = new Uri(agentUrl);
     client.Timeout = TimeSpan.FromSeconds(60); // Gemini can be slow; allow up to 60 s
 });
+// ── Validation & Safety Agent (Python, separate port from the triage agent) ──
+builder.Services.AddHttpClient<SafetyValidationClient>(client =>
+{
+    var safetyUrl = builder.Configuration["SafetyAgentUrl"] ?? "http://localhost:8001";
+    client.BaseAddress = new Uri(safetyUrl);
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 builder.Services.AddHttpClient<FacilityAgentClient>(client =>
 {
     var agentUrl = builder.Configuration["PythonAgentUrl"] ?? "http://localhost:8000";

@@ -243,54 +243,6 @@ let mockTenants = [
   }
 ];
 
-let mockSafetyLogs = [
-  {
-    id: "LOG-9921",
-    workflowId: "WF-2026-9041",
-    tenantId: 1,
-    agentRole: "ValidationAndSafetyAgent",
-    actionRequested: "Resident Onboarding & Unit Allocation",
-    targetEntity: "Unit A-101 / Resident Kamal Perera",
-    isolationCheck: "PASS (Verified TenantId=1 matches session)",
-    rbacCheck: "PASS (Role 'ApartmentManager' authorized)",
-    schemaValidation: "VALID (All mandatory fields & NIC format verified)",
-    spendingCheck: "N/A",
-    requiresApproval: false,
-    status: "Allowed",
-    timestamp: "2026-03-24T14:32:10Z"
-  },
-  {
-    id: "LOG-9922",
-    workflowId: "WF-2026-9042",
-    tenantId: 1,
-    agentRole: "ValidationAndSafetyAgent",
-    actionRequested: "High-Cost Emergency Elevator Motor Replacement",
-    targetEntity: "Maintenance Ticket #502",
-    isolationCheck: "PASS (TenantId=1)",
-    rbacCheck: "PASS (Facility Manager)",
-    schemaValidation: "VALID (Vendor quote schema verified)",
-    spendingCheck: "TRIGGERED (Estimated cost LKR 85,000 > LKR 25,000 threshold)",
-    requiresApproval: true,
-    approvalDecision: "Pending Admin Approval",
-    status: "PausedForHumanApproval",
-    timestamp: "2026-03-25T09:15:00Z"
-  },
-  {
-    id: "LOG-9923",
-    workflowId: "WF-2026-9043",
-    tenantId: 2,
-    agentRole: "ValidationAndSafetyAgent",
-    actionRequested: "Cross-Tenant Unit Data Query",
-    targetEntity: "Tenant 1 Unit Records",
-    isolationCheck: "BLOCKED (Cross-tenant boundary violation detected)",
-    rbacCheck: "REJECTED",
-    schemaValidation: "REJECTED",
-    spendingCheck: "N/A",
-    requiresApproval: false,
-    status: "BlockedSecurityViolation",
-    timestamp: "2026-03-25T11:45:22Z"
-  }
-];
 
 // ─── API Functions for Tenants ────────────────────────────────
 export async function getTenants() {
@@ -386,12 +338,25 @@ export async function toggleStaffAccess(id) {
 }
 
 // ─── API Functions for AI Safety Logs ─────────────────────────
-export async function getAiSafetyLogs(tenantId = 1) {
-  try {
-    return await request(`/v1/ai/safety-logs?tenantId=${tenantId}`);
-  } catch {
-    return [...mockSafetyLogs];
-  }
+// Validation & Safety Agent verdicts. No mock fallback: a failed call must show as an error.
+export async function getAiSafetyLogs(tenantId, verdict = "") {
+  const q = new URLSearchParams({ tenantId: String(tenantId) });
+  if (verdict) q.set("verdict", verdict);
+  return request(`/v1/safety/verdicts?${q.toString()}`);
+}
+
+export async function decideSafetyVerdict(id, decision) {
+  return request(`/v1/safety/verdicts/${id}/decision`, {
+    method: "POST",
+    body: JSON.stringify({ decision }),
+  });
+}
+
+export async function validateProposedAction(proposal) {
+  return request(`/v1/safety/validate`, {
+    method: "POST",
+    body: JSON.stringify(proposal),
+  });
 }
 
 // ─── Dashboard Aggregates ────────────────────────────────────
