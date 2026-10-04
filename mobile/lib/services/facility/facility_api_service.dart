@@ -4,9 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../auth/auth_service.dart';
 
+import '../api_config.dart';
+
 class FacilityApiService {
-  // Use 10.0.2.2 for Android Emulator, localhost for iOS/Web/Desktop
-  static const String baseUrl = 'http://10.0.2.2:5073/api';
+  static String get baseUrl => ApiConfig.baseUrl;
   static const Duration timeoutDuration = Duration(seconds: 10);
 
   // GET ALL FACILITIES

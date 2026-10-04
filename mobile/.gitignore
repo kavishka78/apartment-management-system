@@ -69,3 +69,4 @@ mobile/.flutter-plugins-dependencies
 mobile/ios/Flutter/ephemeral/
 mobile/macos/Flutter/ephemeral/
 
+.env
