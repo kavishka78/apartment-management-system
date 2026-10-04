@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Apartment - Resident Mobile App (Localhost Preview)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .otp-input {
+      width: 42px;
+      height: 48px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      border: 1.5px solid #DDE2E7;
+      border-radius: 12px;
+      background: white;
+      color: #17212B;
+    }
+    .otp-input:focus {
+      outline: none;
+      border-color: #17212B;
+      box-shadow: 0 0 0 2px rgba(23, 33, 43, 0.15);
+    }
+  </style>
+</head>
+<body class="bg-[#0b1329] text-slate-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+  <!-- Header Info -->
+  <div class="mb-4 text-center max-w-lg">
+    <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-semibold mb-2">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+      Running on Localhost :8080 · Member 1 Full App
+    </div>
+    <h1 class="text-xl font-bold text-white tracking-wide">Smart Apartment Resident Mobile App</h1>
+    <p class="text-xs text-slate-400 mt-1">
+      Interactive preview of Auth, Profile Hub, Household Members, Vehicles, and Staff Gate Passes.
+    </p>
+  </div>
+
+  <!-- Mobile Device Shell -->
+  <div class="relative w-[385px] h-[790px] bg-[#F5F7F8] text-[#17212B] rounded-[48px] shadow-2xl border-[10px] border-[#1e293b] overflow-hidden flex flex-col">
+    
+    <!-- Top Status Bar -->
+    <div id="status-bar" class="w-full bg-[#17212B] text-white pt-3 pb-1 px-7 flex justify-between items-center text-xs font-semibold z-30 transition-colors">
+      <span id="clock">09:41</span>
+      <div class="w-24 h-4 bg-[#0f172a] rounded-full"></div>
+      <div class="flex items-center space-x-1.5 text-[10px]">
+        <i class="fa-solid fa-signal"></i>
+        <i class="fa-solid fa-wifi"></i>
+        <i class="fa-solid fa-battery-full"></i>
+      </div>
+    </div>
+
+    <!-- Screen Viewport -->
+    <div id="screen-container" class="flex-1 overflow-y-auto hide-scrollbar relative flex flex-col">
+
+      <!-- ==========================================
+           SCREEN 1: SPLASH SCREEN (splash_screen.dart)
+      =========================================== -->
+      <div id="screen-splash" class="flex-1 flex flex-col items-center justify-center bg-[#17212B] text-white p-6 relative">
+        <div class="w-20 h-20 rounded-2xl bg-white/10 flex items-center justify-center text-white text-3xl mb-6 shadow-inner animate-pulse">
+          <i class="fa-solid fa-building"></i>
+        </div>
+        <h2 class="text-2xl font-bold tracking-tight">Smart Apartment</h2>
+        <p class="text-xs text-[#B8C2CC] mt-1">Your home, simplified.</p>
+
+        <div class="mt-16 flex flex-col items-center gap-3">
+          <div class="w-6 h-6 border-2 border-[#B8C2CC] border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-[11px] text-[#8A9BAB]">Checking resident session...</span>
+        </div>
+
+        <button onclick="navTo('login')" class="absolute bottom-6 text-xs text-[#8A9BAB] underline hover:text-white transition">
+          Continue to Login &rarr;
+        </button>
+      </div>
+
+      <!-- ==========================================
+           SCREEN 2: LOGIN ENTRY (login_entry_screen.dart)
+      =========================================== -->
+      <div id="screen-login" class="flex-1 flex flex-col bg-[#17212B] hidden">
+        <div class="px-6 pt-6 pb-4 text-white">
+          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg mb-3">
+            <i class="fa-solid fa-building"></i>
+          </div>
+          <p class="text-xs text-[#B8C2CC]">Resident Portal</p>
+          <h2 class="text-2xl font-bold leading-tight mt-1">Sign in to your<br>apartment</h2>
+          <p class="text-[11px] text-[#8A9BAB] mt-1.5 leading-relaxed">
+            Only pre-registered residents onboarded by building administration can access.
+          </p>
+        </div>
+
+        <div class="flex-1 bg-[#F5F7F8] rounded-t-[32px] p-6 flex flex-col shadow-lg">
+          <!-- Auth Mode Tabs -->
+          <div class="flex bg-[#E8ECEF] p-1 rounded-xl mb-4">
+            <button id="tab-phone" onclick="switchAuthTab('phone')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-white text-[#17212B] shadow-sm transition">
+              <i class="fa-solid fa-phone mr-1"></i> Phone
+            </button>
+            <button id="tab-email" onclick="switchAuthTab('email')" class="flex-1 py-2 text-xs font-semibold rounded-lg text-gray-500 hover:text-gray-900 transition">
+              <i class="fa-solid fa-envelope mr-1"></i> Email
+            </button>
+          </div>
+
+          <!-- Phone Form -->
+          <div id="form-phone" class="space-y-4">
+            <div>
+              <label class="text-[11px] font-bold text-gray-700 uppercase tracking-wider block mb-1.5">Registered Mobile Number</label>
+              <div class="flex rounded-xl border border-gray-200 bg-white overflow-hidden focus-within:border-[#17212B]">
+                <span class="px-3 py-3 bg-gray-50 text-xs font-bold text-gray-600 border-r border-gray-200 flex items-center">+94</span>
+                <input id="input-phone" type="tel" value="771234567" placeholder="7XXXXXXXX" class="w-full px-3 py-3 text-sm font-semibold text-gray-900 focus:outline-none">
+              </div>
+            </div>
+
+            <!-- Quick demo accounts -->
+            <div class="p-3 bg-white rounded-xl border border-gray-100">
+              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Pre-registered Supabase Account</span>
+              <div class="flex flex-wrap gap-1.5">
+                <button onclick="setPhone('771234567', 'Kamal Perera (Unit A-101)')" class="text-[11px] px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-emerald-800 font-semibold">
+                  Kamal Perera · Unit A-101 (Live Supabase)
+                </button>
+              </div>
+            </div>
+
+            <button onclick="submitPhoneAuth()" class="w-full py-3.5 bg-[#17212B] hover:bg-black text-white text-xs font-bold rounded-xl transition shadow-md flex items-center justify-center gap-2">
+              <span>Send OTP Verification Code</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </button>
+          </div>
+
+          <!-- Email Form -->
+          <div id="form-email" class="space-y-4 hidden">
+            <div>
+              <label class="text-[11px] font-bold text-gray-700 uppercase tracking-wider block mb-1.5">Registered Resident Email</label>
+              <input id="input-email" type="email" value="kamal.perera@gmail.com" placeholder="resident@example.com" class="w-full px-3.5 py-3 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-900 focus:outline-none focus:border-[#17212B]">
+            </div>
+
+            <button onclick="submitEmailAuth()" class="w-full py-3.5 bg-[#17212B] hover:bg-black text-white text-xs font-bold rounded-xl transition shadow-md flex items-center justify-center gap-2">
+              <span>Continue with Email OTP</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </button>
+
+            <div class="relative flex py-1 items-center">
+              <div class="flex-grow border-t border-gray-200"></div>
+              <span class="flex-shrink mx-3 text-[10px] text-gray-400 font-bold uppercase">or</span>
+              <div class="flex-grow border-t border-gray-200"></div>
+            </div>
+
+            <button onclick="submitGoogleAuth()" class="w-full py-3 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-2">
+              <i class="fa-brands fa-google text-red-500"></i>
+              <span>Sign in with Google</span>
+            </button>
+          </div>
+
+          <div class="mt-auto pt-4 text-center">
+            <p class="text-[10px] text-gray-400">
+              Need assistance? Contact <a href="#" class="text-[#17212B] font-semibold underline">Building Management</a>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SCREEN 3: OTP VERIFICATION (otp_verify_screen.dart)
+      =========================================== -->
+      <div id="screen-otp" class="flex-1 flex flex-col bg-[#F5F7F8] hidden p-6">
+        <div class="flex items-center justify-between mb-4">
+          <button onclick="navTo('login')" class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-700 shadow-sm hover:bg-gray-100">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+          </button>
+          <span class="text-xs font-bold text-gray-400">Step 2 of 2</span>
+          <div class="w-8"></div>
+        </div>
+
+        <div class="text-center mt-2 mb-6">
+          <div class="w-14 h-14 rounded-2xl bg-[#17212B] text-white flex items-center justify-center text-xl mx-auto mb-3 shadow-md">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <h2 class="text-xl font-bold text-[#17212B]">Enter Verification Code</h2>
+          <p class="text-xs text-gray-500 mt-1">
+            Sent to <span id="otp-target-label" class="font-bold text-[#17212B]">+94 77 123 4567</span>
+          </p>
+          <span class="inline-block mt-2 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
+            Resident Verified: Kamal Perera · Unit A-101 (Lotus Grand Residencies)
+          </span>
+        </div>
+
+        <!-- 6 OTP Boxes -->
+        <div class="flex justify-center gap-2 mb-6">
+          <input type="text" maxlength="1" value="4" class="otp-input">
+          <input type="text" maxlength="1" value="8" class="otp-input">
+          <input type="text" maxlength="1" value="2" class="otp-input">
+          <input type="text" maxlength="1" value="9" class="otp-input">
+          <input type="text" maxlength="1" value="1" class="otp-input">
+          <input type="text" maxlength="1" value="0" class="otp-input">
+        </div>
+
+        <div class="text-center mb-6">
+          <span class="text-xs text-gray-400">Resend code in </span>
+          <span class="text-xs font-bold text-[#17212B]">00:48</span>
+        </div>
+
+        <button onclick="verifyOtpAndEnter()" class="w-full py-3.5 bg-[#17212B] hover:bg-black text-white text-xs font-bold rounded-xl transition shadow-md flex items-center justify-center gap-2">
+          <i class="fa-solid fa-lock-open text-[11px]"></i>
+          <span>Verify & Enter Resident Hub</span>
+        </button>
+
+        <p class="text-center text-[10px] text-gray-400 mt-4">
+          Code is auto-filled for quick demonstration
+        </p>
+      </div>
+
+      <!-- ==========================================
+           SCREEN 4: HOME SCREEN (main_navigation_screen.dart)
+      =========================================== -->
+      <div id="screen-home" class="p-5 flex flex-col gap-4 hidden">
+        <!-- User Welcome Banner -->
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[11px] font-semibold text-gray-400">Good Day</span>
+            <h2 id="home-user-name" class="text-lg font-bold text-[#17212B]">Kamal Perera</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 bg-[#17212B] text-white rounded-full text-[10px] font-bold">Unit A-101</span>
+            <button onclick="navTo('profile-hub')" class="w-9 h-9 rounded-full bg-gray-200 text-[#17212B] flex items-center justify-center font-bold text-xs shadow-inner">
+              KP
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Notice Card -->
+        <div class="bg-gradient-to-r from-[#17212B] to-[#2c3e50] text-white p-4 rounded-2xl shadow-sm">
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Notice</span>
+              <h3 class="text-xs font-bold mt-0.5">Water Maintenance Schedule</h3>
+              <p class="text-[10px] text-gray-300 mt-1">Water supply tank cleaning this Thursday from 10:00 AM to 02:00 PM.</p>
+            </div>
+            <i class="fa-solid fa-bullhorn text-sm text-gray-400"></i>
+          </div>
+        </div>
+
+        <!-- Quick Services Grid -->
+        <div>
+          <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Resident Services</h3>
+          <div class="grid grid-cols-2 gap-2.5">
+            <!-- Member 1: Vehicles -->
+            <button onclick="navTo('vehicles')" class="bg-white p-3.5 rounded-2xl border border-gray-100 flex items-center gap-3 text-left hover:border-gray-300 transition shadow-sm">
+              <div class="w-9 h-9 rounded-xl bg-gray-100 text-[#17212B] flex items-center justify-center text-sm">
+                <i class="fa-solid fa-car"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">My Vehicles</p>
+                <p id="home-veh-sub" class="text-[10px] text-gray-500">1 registered</p>
+              </div>
+            </button>
+
+            <!-- Member 1: Domestic Staff -->
+            <button onclick="navTo('staff')" class="bg-white p-3.5 rounded-2xl border border-gray-100 flex items-center gap-3 text-left hover:border-gray-300 transition shadow-sm">
+              <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-id-card-clip"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">Staff Passes</p>
+                <p id="home-staff-sub" class="text-[10px] text-gray-500">2 passes active</p>
+              </div>
+            </button>
+
+            <!-- Member 1: Household -->
+            <button onclick="navTo('household')" class="bg-white p-3.5 rounded-2xl border border-gray-100 flex items-center gap-3 text-left hover:border-gray-300 transition shadow-sm">
+              <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-people-roof"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">Household</p>
+                <p class="text-[10px] text-gray-500">Family members</p>
+              </div>
+            </button>
+
+            <!-- Member 2: Visitor Parking -->
+            <button onclick="alert('Member 2 Scope: Visitor & Gate Automation QR Pass')" class="bg-white p-3.5 rounded-2xl border border-gray-100 flex items-center gap-3 text-left hover:border-gray-300 transition shadow-sm">
+              <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-qrcode"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">Gate Pass</p>
+                <p class="text-[10px] text-gray-500">Member 2</p>
+              </div>
+            </button>
+
+            <!-- Member 3: Maintenance -->
+            <button onclick="alert('Member 3 Scope: Maintenance Requests & Work Orders')" class="bg-white p-3.5 rounded-2xl border border-gray-100 flex items-center gap-3 text-left hover:border-gray-300 transition shadow-sm">
+              <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-wrench"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">Maintenance</p>
+                <p class="text-[10px] text-gray-500">Member 3</p>
+              </div>
+            </button>
+
+            <!-- Member 4: Facilities -->
+            <button onclick="alert('Member 4 Scope: Facility & Amenity Bookings')" class="bg-white p-3.5 rounded-2xl border border-gray-100 flex items-center gap-3 text-left hover:border-gray-300 transition shadow-sm">
+              <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-calendar-check"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">Facilities</p>
+                <p class="text-[10px] text-gray-500">Member 4</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SCREEN 5: PROFILE HUB (profile_home_screen.dart)
+      =========================================== -->
+      <div id="screen-profile-hub" class="p-5 flex flex-col gap-4 hidden">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold text-[#17212B]">Resident Profile</h2>
+          <span class="text-[11px] px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold">Active Resident</span>
+        </div>
+
+        <!-- Identity Card -->
+        <div class="w-full p-5 bg-[#17212B] text-white rounded-2xl shadow-sm flex flex-col items-center text-center">
+          <div class="w-16 h-16 rounded-full bg-white/15 flex items-center justify-center text-2xl font-bold mb-3 shadow-inner">
+            <span id="profile-avatar-letter">KP</span>
+          </div>
+          <h3 id="profile-display-name" class="text-lg font-bold">Kamal Perera</h3>
+          <span class="inline-block mt-1 px-3 py-1 bg-white/10 rounded-full text-xs text-[#B8C2CC] font-medium">
+            Unit A-101 · Lotus Grand Residencies
+          </span>
+          <p class="text-[11px] text-gray-400 mt-2">
+            Phone: <span class="text-white font-medium">+94 77 123 4567</span>
+          </p>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="navTo('vehicles')" class="bg-white p-4 rounded-2xl border border-[#E8ECEF] flex flex-col justify-between h-24 text-left hover:border-gray-400 transition shadow-sm">
+            <i class="fa-solid fa-car text-[#17212B] text-base"></i>
+            <div>
+              <p id="veh-count-badge" class="text-xl font-bold text-[#17212B]">1</p>
+              <p class="text-[10px] text-gray-500 flex items-center justify-between">
+                <span>Registered Cars</span>
+                <i class="fa-solid fa-arrow-right text-[9px] text-gray-400"></i>
+              </p>
+            </div>
+          </button>
+
+          <button onclick="navTo('staff')" class="bg-white p-4 rounded-2xl border border-[#E8ECEF] flex flex-col justify-between h-24 text-left hover:border-gray-400 transition shadow-sm">
+            <i class="fa-solid fa-id-badge text-[#17212B] text-base"></i>
+            <div>
+              <p id="staff-count-badge" class="text-xl font-bold text-[#17212B]">1</p>
+              <p class="text-[10px] text-gray-500 flex items-center justify-between">
+                <span>Staff Gate Passes</span>
+                <i class="fa-solid fa-arrow-right text-[9px] text-gray-400"></i>
+              </p>
+            </div>
+          </button>
+        </div>
+
+        <!-- Registry Navigation List -->
+        <div class="bg-white rounded-2xl border border-[#E8ECEF] overflow-hidden shadow-sm divide-y divide-gray-100">
+          <button onclick="navTo('household')" class="w-full p-3.5 flex items-center justify-between hover:bg-gray-50 transition text-left">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-people-roof"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">Household Members</p>
+                <p class="text-[10px] text-gray-500">2 occupants registered</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+          </button>
+
+          <button onclick="navTo('vehicles')" class="w-full p-3.5 flex items-center justify-between hover:bg-gray-50 transition text-left">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-gray-100 text-[#17212B] flex items-center justify-center text-sm">
+                <i class="fa-solid fa-car-side"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">My Registered Vehicles</p>
+                <p id="veh-subtext" class="text-[10px] text-gray-500">1 vehicle linked to Unit A-101</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+          </button>
+
+          <button onclick="navTo('staff')" class="w-full p-3.5 flex items-center justify-between hover:bg-gray-50 transition text-left">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-id-card-clip"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">Domestic Staff & Gate Passes</p>
+                <p id="staff-subtext" class="text-[10px] text-gray-500">1 helper authorized</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+          </button>
+
+          <button onclick="signOut()" class="w-full p-3.5 flex items-center justify-between hover:bg-red-50 transition text-left text-red-600">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center text-sm">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold">Sign Out</p>
+                <p class="text-[10px] text-red-400">Exit resident session</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-red-300 text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SCREEN 6: VEHICLES (vehicle_registration_screen.dart)
+      =========================================== -->
+      <div id="screen-vehicles" class="p-5 flex flex-col gap-4 hidden">
+        <div class="flex items-center justify-between">
+          <button onclick="navTo('profile-hub')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+          </button>
+          <h2 class="text-base font-bold text-[#17212B]">Registered Vehicles</h2>
+          <button onclick="openAddVehicleModal()" class="w-8 h-8 rounded-full bg-[#17212B] text-white flex items-center justify-center text-xs shadow-sm">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+
+        <p class="text-[11px] text-gray-500">Vehicles authorized with RFID parking tags for Unit 4B:</p>
+
+        <div id="vehicles-list" class="space-y-3">
+          <div id="veh-row-1" class="bg-white p-4 rounded-2xl border border-[#E8ECEF] shadow-sm">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-[#17212B]">
+                  <i class="fa-solid fa-car text-sm"></i>
+                </div>
+                <div>
+                  <h4 class="text-sm font-bold text-[#17212B] tracking-wide">WP CAB-4521</h4>
+                  <p class="text-[11px] text-gray-500">Car • Toyota Prius 2018 (Silver)</p>
+                </div>
+              </div>
+              <button onclick="deleteVehicle(1)" class="text-red-400 hover:text-red-600 p-1">
+                <i class="fa-regular fa-trash-can text-xs"></i>
+              </button>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-1.5 text-gray-600">
+                <i class="fa-solid fa-square-parking text-gray-400"></i>
+                <span class="font-medium text-[11px]">Slot P-A101</span>
+              </div>
+              <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">Approved</span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="openAddVehicleModal()" class="w-full py-3 bg-white border border-dashed border-gray-300 rounded-xl text-xs font-semibold text-gray-600 flex items-center justify-center gap-1.5 hover:border-gray-500 mt-2">
+          <i class="fa-solid fa-car-tunnel text-[11px]"></i> Register Another Vehicle
+        </button>
+      </div>
+
+      <!-- ==========================================
+           SCREEN 7: DOMESTIC STAFF & PASSES (domestic_staff_screen.dart)
+      =========================================== -->
+      <div id="screen-staff" class="p-5 flex flex-col gap-4 hidden">
+        <div class="flex items-center justify-between">
+          <button onclick="navTo('profile-hub')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+          </button>
+          <h2 class="text-base font-bold text-[#17212B]">Staff Access Passes</h2>
+          <button onclick="openAddStaffModal()" class="w-8 h-8 rounded-full bg-[#17212B] text-white flex items-center justify-center text-xs shadow-sm">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+
+        <p class="text-[11px] text-gray-500">Active gate access passes issued for household helpers:</p>
+
+        <div id="staff-list" class="space-y-3">
+          <!-- Staff 1 -->
+          <div id="staff-card-1" class="bg-white p-4 rounded-2xl border border-[#E8ECEF] shadow-sm">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-sm font-bold">NK</div>
+                <div>
+                  <h4 class="text-sm font-bold text-[#17212B]">Nalani Kumari</h4>
+                  <p class="text-[11px] text-gray-500">Housekeeper / Maid • +94 77 908 1122</p>
+                </div>
+              </div>
+              <button onclick="deleteStaff(1)" class="text-red-400 hover:text-red-600 p-1">
+                <i class="fa-regular fa-trash-can text-xs"></i>
+              </button>
+            </div>
+            <div class="mt-3 p-2.5 bg-gray-50 rounded-xl flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-qrcode text-sm text-[#17212B]"></i>
+                <code class="font-mono text-xs font-bold text-[#17212B]">PASS-N78-101</code>
+              </div>
+              <span class="text-[10px] text-gray-400">08:00 AM - 05:00 PM (Mon-Fri)</span>
+            </div>
+            <div class="mt-2.5 flex items-center justify-between">
+              <span id="pass-status-1" class="text-xs font-semibold text-emerald-600">Gate Access: Enabled</span>
+              <button onclick="togglePassStatus(1)" id="pass-toggle-1" class="w-10 h-6 bg-[#17212B] rounded-full p-0.5 flex items-center justify-end transition">
+                <div class="w-5 h-5 bg-white rounded-full shadow-sm"></div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="openAddStaffModal()" class="w-full py-3 bg-white border border-dashed border-gray-300 rounded-xl text-xs font-semibold text-gray-600 flex items-center justify-center gap-1.5 hover:border-gray-500 mt-2">
+          <i class="fa-solid fa-user-plus text-[11px]"></i> Add Another Helper / Driver
+        </button>
+      </div>
+
+      <!-- ==========================================
+           SCREEN 8: HOUSEHOLD (household_members_screen.dart)
+      =========================================== -->
+      <div id="screen-household" class="p-5 flex flex-col gap-4 hidden">
+        <div class="flex items-center justify-between">
+          <button onclick="navTo('profile-hub')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+          </button>
+          <h2 class="text-base font-bold text-[#17212B]">Household Members</h2>
+          <button onclick="openAddMemberModal()" class="w-8 h-8 rounded-full bg-[#17212B] text-white flex items-center justify-center text-xs shadow-sm">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+        <p class="text-[11px] text-gray-500">Registered occupants living in Unit A-101:</p>
+        
+        <div id="household-list" class="space-y-2.5">
+          <!-- Member 1 -->
+          <div id="member-row-1" class="bg-white p-3.5 rounded-2xl border border-[#E8ECEF] flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center text-sm font-bold">SP</div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">Sunethra Perera</p>
+                <span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-semibold rounded-md">Spouse · 34 yrs</span>
+              </div>
+            </div>
+            <button onclick="deleteMember(1)" class="text-red-400 hover:text-red-600 p-1">
+              <i class="fa-regular fa-trash-can text-xs"></i>
+            </button>
+          </div>
+
+          <!-- Member 2 -->
+          <div id="member-row-2" class="bg-white p-3.5 rounded-2xl border border-[#E8ECEF] flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center text-sm font-bold">DP</div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">Dineth Perera</p>
+                <span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-semibold rounded-md">Son · 7 yrs</span>
+              </div>
+            </div>
+            <button onclick="deleteMember(2)" class="text-red-400 hover:text-red-600 p-1">
+              <i class="fa-regular fa-trash-can text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <button onclick="openAddMemberModal()" class="w-full py-3 bg-white border border-dashed border-gray-300 rounded-xl text-xs font-semibold text-gray-600 flex items-center justify-center gap-1.5 hover:border-gray-500 mt-2">
+          <i class="fa-solid fa-user-plus text-[11px]"></i> Add Family Member
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation Bar (Visible only when logged in) -->
+    <div id="bottom-nav" class="w-full bg-white border-t border-gray-200 py-2 px-3 flex justify-around items-center z-20 hidden">
+      <button onclick="navTo('home')" id="nav-btn-home" class="flex flex-col items-center gap-1 text-[#17212B]">
+        <i class="fa-solid fa-house text-sm"></i>
+        <span class="text-[10px] font-bold">Home</span>
+      </button>
+      <button onclick="alert('Member 4 Scope: Amenities & Bookings')" class="flex flex-col items-center gap-1 text-gray-400">
+        <i class="fa-regular fa-building text-sm"></i>
+        <span class="text-[10px] font-medium">Facilities</span>
+      </button>
+      <button onclick="alert('Member 2 Scope: Visitor Parking Passes')" class="flex flex-col items-center gap-1 text-gray-400">
+        <i class="fa-regular fa-square-parking text-sm"></i>
+        <span class="text-[10px] font-medium">Parking</span>
+      </button>
+      <button onclick="alert('Payments & Billing')" class="flex flex-col items-center gap-1 text-gray-400">
+        <i class="fa-regular fa-credit-card text-sm"></i>
+        <span class="text-[10px] font-medium">Payments</span>
+      </button>
+      <button onclick="navTo('profile-hub')" id="nav-btn-profile" class="flex flex-col items-center gap-1 text-gray-400">
+        <i class="fa-regular fa-user text-sm"></i>
+        <span class="text-[10px] font-medium">Profile</span>
+      </button>
+    </div>
+
+    <!-- Bottom Home Bar Indicator -->
+    <div class="w-full bg-white pb-2 flex justify-center">
+      <div class="w-32 h-1 bg-gray-300 rounded-full"></div>
+    </div>
+  </div>
+
+  <script>
+    let vehiclesCount = 1;
+    let staffCount = 1;
+    let memberCount = 2;
+    const passStates = { 1: true };
+
+    function navTo(screen) {
+      const allScreens = ['splash', 'login', 'otp', 'home', 'profile-hub', 'vehicles', 'staff', 'household'];
+      allScreens.forEach(s => {
+        const el = document.getElementById('screen-' + s);
+        if (el) el.classList.add('hidden');
+      });
+      const target = document.getElementById('screen-' + screen);
+      if (target) target.classList.remove('hidden');
+
+      // Status bar style
+      const statusBar = document.getElementById('status-bar');
+      if (screen === 'splash' || screen === 'login') {
+        statusBar.className = "w-full bg-[#17212B] text-white pt-3 pb-1 px-7 flex justify-between items-center text-xs font-semibold z-30 transition-colors";
+        document.getElementById('bottom-nav').classList.add('hidden');
+      } else {
+        statusBar.className = "w-full bg-white text-[#17212B] pt-3 pb-1 px-7 flex justify-between items-center text-xs font-semibold z-30 transition-colors border-b border-gray-100";
+        document.getElementById('bottom-nav').classList.remove('hidden');
+      }
+
+      // Update bottom nav active indicator
+      const homeBtn = document.getElementById('nav-btn-home');
+      const profBtn = document.getElementById('nav-btn-profile');
+      if (screen === 'home') {
+        homeBtn.className = "flex flex-col items-center gap-1 text-[#17212B]";
+        homeBtn.querySelector('i').className = "fa-solid fa-house text-sm";
+        profBtn.className = "flex flex-col items-center gap-1 text-gray-400";
+        profBtn.querySelector('i').className = "fa-regular fa-user text-sm";
+      } else if (['profile-hub', 'vehicles', 'staff', 'household'].includes(screen)) {
+        profBtn.className = "flex flex-col items-center gap-1 text-[#17212B]";
+        profBtn.querySelector('i').className = "fa-solid fa-user text-sm";
+        homeBtn.className = "flex flex-col items-center gap-1 text-gray-400";
+        homeBtn.querySelector('i').className = "fa-regular fa-house text-sm";
+      }
+    }
+
+    function switchAuthTab(type) {
+      if (type === 'phone') {
+        document.getElementById('form-phone').classList.remove('hidden');
+        document.getElementById('form-email').classList.add('hidden');
+        document.getElementById('tab-phone').className = "flex-1 py-2 text-xs font-bold rounded-lg bg-white text-[#17212B] shadow-sm transition";
+        document.getElementById('tab-email').className = "flex-1 py-2 text-xs font-semibold rounded-lg text-gray-500 hover:text-gray-900 transition";
+      } else {
+        document.getElementById('form-phone').classList.add('hidden');
+        document.getElementById('form-email').classList.remove('hidden');
+        document.getElementById('tab-email').className = "flex-1 py-2 text-xs font-bold rounded-lg bg-white text-[#17212B] shadow-sm transition";
+        document.getElementById('tab-phone').className = "flex-1 py-2 text-xs font-semibold rounded-lg text-gray-500 hover:text-gray-900 transition";
+      }
+    }
+
+    function setPhone(num, label) {
+      document.getElementById('input-phone').value = num;
+    }
+
+    function submitPhoneAuth() {
+      const val = document.getElementById('input-phone').value;
+      document.getElementById('otp-target-label').innerText = "+94 " + val;
+      navTo('otp');
+    }
+
+    function submitEmailAuth() {
+      const val = document.getElementById('input-email').value;
+      document.getElementById('otp-target-label').innerText = val;
+      navTo('otp');
+    }
+
+    function submitGoogleAuth() {
+      alert("Simulating Google OAuth popup -> Token exchange -> Signed in as Kamal Silva");
+      verifyOtpAndEnter();
+    }
+
+    function verifyOtpAndEnter() {
+      navTo('home');
+    }
+
+    function signOut() {
+      if (confirm("Are you sure you want to sign out?")) {
+        navTo('login');
+      }
+    }
+
+    // ── Live Supabase Backend Integration ────────────────────────────────
+    const API_BASE = 'http://localhost:5073/api/v1';
+    const RESIDENT_ID = 1;
+
+    async function loadSupabaseData() {
+      try {
+        const profRes = await fetch(`${API_BASE}/resident/profile/${RESIDENT_ID}`);
+        if (profRes.ok) {
+          const profile = await profRes.json();
+          document.getElementById('home-user-name').innerText = profile.fullName;
+          document.getElementById('profile-display-name').innerText = profile.fullName;
+          document.getElementById('veh-count-badge').innerText = profile.vehiclesCount;
+          document.getElementById('staff-count-badge').innerText = profile.staffCount;
+          document.getElementById('veh-subtext').innerText = `${profile.vehiclesCount} vehicle(s) linked to Unit ${profile.unitNumber}`;
+          document.getElementById('staff-subtext').innerText = `${profile.staffCount} helper(s) authorized`;
+          document.getElementById('home-veh-sub').innerText = `${profile.vehiclesCount} registered`;
+          document.getElementById('home-staff-sub').innerText = `${profile.staffCount} passes active`;
+        }
+        await refreshVehicles();
+        await refreshStaff();
+        await refreshHousehold();
+      } catch (err) {
+        console.warn("Could not connect to API, using local view:", err);
+      }
+    }
+
+    // Vehicle CRUD (Live Supabase)
+    async function refreshVehicles() {
+      try {
+        const res = await fetch(`${API_BASE}/resident/${RESIDENT_ID}/vehicles`);
+        if (!res.ok) return;
+        const list = await res.json();
+        const container = document.getElementById('vehicles-list');
+        container.innerHTML = '';
+        document.getElementById('veh-count-badge').innerText = list.length;
+        document.getElementById('veh-subtext').innerText = `${list.length} vehicle(s) linked to Unit A-101`;
+        document.getElementById('home-veh-sub').innerText = `${list.length} registered`;
+
+        if (list.length === 0) {
+          container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">No vehicles registered yet</p>';
+          return;
+        }
+
+        list.forEach(v => {
+          const card = document.createElement('div');
+          card.className = "bg-white p-4 rounded-2xl border border-[#E8ECEF] shadow-sm";
+          card.innerHTML = `
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-[#17212B]">
+                  <i class="fa-solid fa-car text-sm"></i>
+                </div>
+                <div>
+                  <h4 class="text-sm font-bold text-[#17212B] tracking-wide">${v.plateNumber}</h4>
+                  <p class="text-[11px] text-gray-500">${v.vehicleType} • ${v.makeModel || 'Vehicle'}</p>
+                </div>
+              </div>
+              <button onclick="deleteVehicle(${v.id})" class="text-red-400 hover:text-red-600 p-1">
+                <i class="fa-regular fa-trash-can text-xs"></i>
+              </button>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-1.5 text-gray-600">
+                <i class="fa-solid fa-square-parking text-gray-400"></i>
+                <span class="font-medium text-[11px]">${v.parkingSlot || 'Unassigned'}</span>
+              </div>
+              <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">${v.status || 'Approved'}</span>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (e) {
+        console.error("Vehicles fetch error:", e);
+      }
+    }
+
+    async function openAddVehicleModal() {
+      const plate = prompt("Enter Vehicle License Plate (e.g. WP CAA-9988):");
+      if (!plate) return;
+      const model = prompt("Enter Make & Model (e.g. Honda Vezel):", "Honda Vezel") || "Vehicle";
+      const slot = prompt("Enter Parking Slot:", "Slot P-A101") || "Unassigned";
+
+      try {
+        const res = await fetch(`${API_BASE}/resident/${RESIDENT_ID}/vehicles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plateNumber: plate,
+            vehicleType: 'Car',
+            makeModel: model,
+            parkingSlot: slot
+          })
+        });
+
+        if (res.ok) {
+          alert("✅ Vehicle successfully saved to Supabase database!");
+          await refreshVehicles();
+        } else {
+          const err = await res.text();
+          alert("Error saving vehicle: " + err);
+        }
+      } catch (e) {
+        alert("Failed to reach server: " + e.message);
+      }
+    }
+
+    async function deleteVehicle(id) {
+      if (!confirm("De-register this vehicle from Supabase?")) return;
+      try {
+        const res = await fetch(`${API_BASE}/resident/${RESIDENT_ID}/vehicles/${id}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          alert("Vehicle removed from Supabase.");
+          await refreshVehicles();
+        } else {
+          alert("Error deleting vehicle");
+        }
+      } catch (e) {
+        alert("Server error: " + e.message);
+      }
+    }
+
+    // Staff Pass CRUD (Live Supabase)
+    async function refreshStaff() {
+      try {
+        const res = await fetch(`${API_BASE}/resident/${RESIDENT_ID}/staff`);
+        if (!res.ok) return;
+        const list = await res.json();
+        const container = document.getElementById('staff-list');
+        container.innerHTML = '';
+        document.getElementById('staff-count-badge').innerText = list.length;
+        document.getElementById('staff-subtext').innerText = `${list.length} helper(s) authorized`;
+        document.getElementById('home-staff-sub').innerText = `${list.length} passes active`;
+
+        if (list.length === 0) {
+          container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">No domestic staff passes issued</p>';
+          return;
+        }
+
+        list.forEach(s => {
+          const card = document.createElement('div');
+          card.className = "bg-white p-4 rounded-2xl border border-[#E8ECEF] shadow-sm";
+          card.innerHTML = `
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-sm font-bold">
+                  ${s.fullName ? s.fullName[0].toUpperCase() : 'S'}
+                </div>
+                <div>
+                  <h4 class="text-sm font-bold text-[#17212B]">${s.fullName}</h4>
+                  <p class="text-[11px] text-gray-500">${s.staffType || 'Helper'} • ${s.contactPhone || 'No phone'}</p>
+                </div>
+              </div>
+              <button onclick="deleteStaff(${s.id})" class="text-red-400 hover:text-red-600 p-1">
+                <i class="fa-regular fa-trash-can text-xs"></i>
+              </button>
+            </div>
+            <div class="mt-3 p-2.5 bg-gray-50 rounded-xl flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-qrcode text-sm text-[#17212B]"></i>
+                <code class="font-mono text-xs font-bold text-[#17212B]">${s.accessPassCode}</code>
+              </div>
+              <span class="text-[10px] text-gray-400">${s.workingHours || 'Active'}</span>
+            </div>
+            <div class="mt-2.5 flex items-center justify-between">
+              <span class="text-xs font-semibold ${s.isActive ? 'text-emerald-600' : 'text-red-500'}">
+                ${s.isActive ? 'Gate Access: Enabled' : 'Gate Access: Revoked'}
+              </span>
+              <button onclick="togglePassStatus(${s.id})" class="w-10 h-6 ${s.isActive ? 'bg-[#17212B] justify-end' : 'bg-gray-300 justify-start'} rounded-full p-0.5 flex items-center transition">
+                <div class="w-5 h-5 bg-white rounded-full shadow-sm"></div>
+              </button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (e) {
+        console.error("Staff fetch error:", e);
+      }
+    }
+
+    async function openAddStaffModal() {
+      const name = prompt("Enter Helper Full Name (e.g. Ranjani Jayawardena):");
+      if (!name) return;
+      const role = prompt("Enter Role (Maid, Driver, Cook, Gardener):", "Cook") || "Helper";
+      const phone = prompt("Enter Phone Number:", "+94 77 123 9900") || "";
+
+      try {
+        const res = await fetch(`${API_BASE}/resident/${RESIDENT_ID}/staff`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: name,
+            staffType: role,
+            contactPhone: phone,
+            nicNumber: '199012345678',
+            workingHours: '08:00 AM - 05:00 PM (Mon-Fri)'
+          })
+        });
+
+        if (res.ok) {
+          alert("✅ Staff pass created and saved to Supabase!");
+          await refreshStaff();
+        } else {
+          const err = await res.text();
+          alert("Error creating staff pass: " + err);
+        }
+      } catch (e) {
+        alert("Server error: " + e.message);
+      }
+    }
+
+    async function togglePassStatus(id) {
+      try {
+        const res = await fetch(`${API_BASE}/resident/staff/${id}/toggle`, {
+          method: 'PATCH'
+        });
+        if (res.ok) {
+          await refreshStaff();
+        }
+      } catch (e) {
+        console.error("Toggle error:", e);
+      }
+    }
+
+    async function deleteStaff(id) {
+      if (!confirm("Revoke gate access pass and remove helper from Supabase?")) return;
+      try {
+        const res = await fetch(`${API_BASE}/resident/${RESIDENT_ID}/staff/${id}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          alert("Helper removed from Supabase.");
+          await refreshStaff();
+        } else {
+          alert("Error deleting helper");
+        }
+      } catch (e) {
+        alert("Server error: " + e.message);
+      }
+    }
+
+    // Household CRUD (Live Supabase)
+    async function refreshHousehold() {
+      try {
+        const res = await fetch(`${API_BASE}/resident/${RESIDENT_ID}/household`);
+        if (!res.ok) return;
+        const list = await res.json();
+        const container = document.getElementById('household-list');
+        container.innerHTML = '';
+
+        if (list.length === 0) {
+          container.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">No occupants registered</p>';
+          return;
+        }
+
+        list.forEach(m => {
+          const card = document.createElement('div');
+          card.className = "bg-white p-3.5 rounded-2xl border border-[#E8ECEF] flex items-center justify-between";
+          card.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center text-sm font-bold">
+                ${m.name ? m.name[0].toUpperCase() : 'M'}
+              </div>
+              <div>
+                <p class="text-xs font-bold text-[#17212B]">${m.name}</p>
+                <span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-semibold rounded-md">
+                  ${m.relation || 'Occupant'} ${m.age ? '· ' + m.age + ' yrs' : ''}
+                </span>
+              </div>
+            </div>
+            <button onclick="deleteMember(${m.id})" class="text-red-400 hover:text-red-600 p-1">
+              <i class="fa-regular fa-trash-can text-xs"></i>
+            </button>
+          `;
+          container.appendChild(card);
+        });
+      } catch (e) {
+        console.error("Household fetch error:", e);
+      }
+    }
+
+    async function openAddMemberModal() {
+      const name = prompt("Enter Family Member Name:");
+      if (!name) return;
+      const relation = prompt("Relation (Spouse, Child, Parent, Other):", "Child") || "Occupant";
+      const age = prompt("Age:", "12") || "0";
+
+      try {
+        const res = await fetch(`${API_BASE}/resident/${RESIDENT_ID}/household`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name,
+            relation: relation,
+            age: parseInt(age) || 0
+          })
+        });
+
+        if (res.ok) {
+          alert("✅ Household occupant saved to Supabase!");
+          await refreshHousehold();
+        } else {
+          const err = await res.text();
+          alert("Error saving member: " + err);
+        }
+      } catch (e) {
+        alert("Server error: " + e.message);
+      }
+    }
+
+    async function deleteMember(id) {
+      if (!confirm("Remove household member from Supabase?")) return;
+      try {
+        const res = await fetch(`${API_BASE}/resident/${RESIDENT_ID}/household/${id}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          alert("Occupant removed from Supabase.");
+          await refreshHousehold();
+        } else {
+          alert("Error deleting member");
+        }
+      } catch (e) {
+        alert("Server error: " + e.message);
+      }
+    }
+
+    // Auto-load live Supabase data on start
+    window.addEventListener('DOMContentLoaded', loadSupabaseData);
+  </script>
+</body>
+</html>

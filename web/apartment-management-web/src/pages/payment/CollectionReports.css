@@ -268,3 +268,47 @@
     gap: 7px;
   }
 }
+
+
+/* =========================
+   Print Styles
+========================= */
+
+@media print {
+  body, html {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .payment-page {
+    display: block !important;
+    height: auto !important;
+    min-height: auto !important;
+    background: white !important;
+  }
+  .payment-sidebar {
+    display: none !important;
+  }
+  .payment-content {
+    padding: 20px !important;
+    width: 100% !important;
+    display: block !important;
+  }
+  .payment-header button {
+    display: none !important;
+  }
+  .charts-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .dashboard-panel {
+    page-break-inside: avoid;
+  }
+  .recharts-responsive-container {
+    page-break-inside: avoid;
+  }
+  .collection-overview-panel {
+    page-break-inside: avoid;
+  }
+  .invoice-report-grid {
+    page-break-inside: avoid;
+  }
+}
