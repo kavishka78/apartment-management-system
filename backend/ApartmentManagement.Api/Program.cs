@@ -32,14 +32,12 @@ if (File.Exists(envPath))
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 var port = Environment.GetEnvironmentVariable("PORT");
-if (!string.IsNullOrEmpty(port))
+var urls = new List<string> { "http://+:8080", "http://+:5073" };
+if (!string.IsNullOrWhiteSpace(port) && port != "8080" && port != "5073")
 {
-    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+    urls.Insert(0, $"http://+:{port}");
 }
-else
-{
-    builder.WebHost.UseUrls("http://0.0.0.0:8080", "http://0.0.0.0:5073");
-}
+builder.WebHost.UseUrls(urls.ToArray());
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
@@ -138,6 +136,23 @@ _ = Task.Run(() =>
             RegistrySeeder.SeedPlatform(dbContext);
             RegistrySeeder.Seed(dbContext);
             FacilitySeeder.Seed(dbContext);
+
+            if (!dbContext.UserAccounts.Any(u => u.Email == "technician@apartment.lk"))
+            {
+                var tech = new ApartmentManagement.Api.Models.UserAccount
+                {
+                    Name = "Test Technician",
+                    Email = "technician@apartment.lk",
+                    Phone = "0771234567",
+                    Role = "Technician",
+                    Status = "Active",
+                    AssignedAt = DateTime.UtcNow.ToString("O")
+                };
+                var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<ApartmentManagement.Api.Models.UserAccount>();
+                tech.PasswordHash = hasher.HashPassword(tech, "tech12345");
+                dbContext.UserAccounts.Add(tech);
+                dbContext.SaveChanges();
+            }
         }
         catch (Exception ex)
         {
@@ -222,27 +237,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Seed Technician User
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    if (!db.UserAccounts.Any(u => u.Email == "technician@apartment.lk"))
-    {
-        var tech = new ApartmentManagement.Api.Models.UserAccount
-        {
-            Name = "Test Technician",
-            Email = "technician@apartment.lk",
-            Phone = "0771234567",
-            Role = "Technician",
-            Status = "Active",
-            AssignedAt = DateTime.UtcNow.ToString("O")
-        };
-        var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<ApartmentManagement.Api.Models.UserAccount>();
-        tech.PasswordHash = hasher.HashPassword(tech, "tech12345");
-        db.UserAccounts.Add(tech);
-        db.SaveChanges();
-    }
-}
+app.MapControllers();
 
 app.Run();
 
