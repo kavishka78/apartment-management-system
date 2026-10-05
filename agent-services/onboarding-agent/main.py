@@ -14,6 +14,7 @@ import os
 import secrets
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
@@ -22,7 +23,8 @@ import extraction
 import validation
 from models import OnboardingDraftResponse, OnboardingRequest
 
-load_dotenv()
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path)
 AGENT_SHARED_SECRET = os.getenv("AGENT_SHARED_SECRET", "")
 APP_ENV = os.getenv("APP_ENV", "development").lower()
 
