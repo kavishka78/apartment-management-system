@@ -1,3 +1,4 @@
+import '../../services/api_config.dart';
 import 'package:flutter/material.dart';
 
 import 'dart:convert';
@@ -44,7 +45,7 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
     try {
       final notifRes = await http.get(
         Uri.parse(
-          'http://10.0.2.2:5073/api/Notifications/resident/$CURRENT_RESIDENT_ID',
+          '${ApiConfig.baseUrl}/Notifications/resident/$CURRENT_RESIDENT_ID',
         ),
       );
       if (notifRes.statusCode == 200) {

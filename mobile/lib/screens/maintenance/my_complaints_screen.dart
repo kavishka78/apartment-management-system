@@ -1,3 +1,4 @@
+import '../../services/api_config.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/maintenance/maintenance_model.dart';
@@ -321,7 +322,7 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
                                     ),
                                     clipBehavior: Clip.antiAlias,
                                     child: Image.network(
-                                      'http://10.0.2.2:5073${t.photoPath}',
+                                      '${ApiConfig.serverUrl}${t.photoPath}',
                                       fit: BoxFit.cover,
                                       errorBuilder:
                                           (context, error, stackTrace) =>

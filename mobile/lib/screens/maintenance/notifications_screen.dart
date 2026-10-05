@@ -1,3 +1,4 @@
+import '../../services/api_config.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -40,7 +41,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       final resId = AuthService.currentSession?.residentId ?? 0;
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5073/api/Notifications/resident/$resId'),
+        Uri.parse('${ApiConfig.baseUrl}/Notifications/resident/$resId'),
         headers: await AuthService.authHeaders(),
       );
       if (response.statusCode == 200) {
@@ -65,7 +66,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _markAsRead(int id) async {
     try {
       await http.post(
-        Uri.parse('http://10.0.2.2:5073/api/Notifications/$id/read'),
+        Uri.parse('${ApiConfig.baseUrl}/Notifications/$id/read'),
         headers: await AuthService.authHeaders(),
       );
       _loadNotifications(); // Reload to update UI
@@ -79,7 +80,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final resId = AuthService.currentSession?.residentId ?? 0;
       await http.post(
         Uri.parse(
-          'http://10.0.2.2:5073/api/Notifications/resident/$resId/read-all',
+          '${ApiConfig.baseUrl}/Notifications/resident/$resId/read-all',
         ),
         headers: await AuthService.authHeaders(),
       );

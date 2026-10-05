@@ -1,3 +1,4 @@
+import '../services/api_config.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -56,7 +57,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         // Using hardcoded 1 as per current setup, or session.residentId if available
         final resId = session?.residentId ?? 1; 
         
-        final response = await http.get(Uri.parse('http://10.0.2.2:5073/api/Notifications/resident/$resId'));
+        final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/Notifications/resident/$resId'));
         if (response.statusCode == 200) {
           final List<dynamic> notifs = json.decode(response.body);
           
@@ -234,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Fetch maintenance
       try {
-        final mRes = await http.get(Uri.parse('http://10.0.2.2:5073/api/maintenance'), headers: headers);
+        final mRes = await http.get(Uri.parse('${ApiConfig.baseUrl}/maintenance'), headers: headers);
         if (mRes.statusCode == 200) {
           final List<dynamic> mList = json.decode(mRes.body);
           for (var m in mList) {
@@ -256,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Fetch visitors
       try {
-        final vRes = await http.get(Uri.parse('http://10.0.2.2:5073/api/visitors/active'), headers: headers);
+        final vRes = await http.get(Uri.parse('${ApiConfig.baseUrl}/visitors/active'), headers: headers);
         if (vRes.statusCode == 200) {
           final List<dynamic> vList = json.decode(vRes.body);
           for (var v in vList) {
@@ -278,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Fetch bookings
       try {
-        final bRes = await http.get(Uri.parse('http://10.0.2.2:5073/api/bookings'), headers: headers);
+        final bRes = await http.get(Uri.parse('${ApiConfig.baseUrl}/bookings'), headers: headers);
         if (bRes.statusCode == 200) {
           final List<dynamic> bList = json.decode(bRes.body);
           for (var b in bList) {
@@ -300,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Fetch invoices
       try {
-        final pRes = await http.get(Uri.parse('http://10.0.2.2:5073/api/invoices?page=1&pageSize=20'), headers: headers);
+        final pRes = await http.get(Uri.parse('${ApiConfig.baseUrl}/invoices?page=1&pageSize=20'), headers: headers);
         if (pRes.statusCode == 200) {
           final Map<String, dynamic> pData = json.decode(pRes.body);
           if (pData['items'] != null) {

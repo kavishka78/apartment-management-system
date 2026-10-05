@@ -662,6 +662,7 @@ class _LoginEntryScreenState extends State<LoginEntryScreen>
                                         ),
                                         label: const Text(
                                           'Instant Login as Kamal Perera (A-101)',
+                                          textAlign: TextAlign.center,
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w600,
@@ -700,12 +701,16 @@ class _LoginEntryScreenState extends State<LoginEntryScreen>
                                                 color: Colors.blueGrey.shade400,
                                               ),
                                               const SizedBox(width: 4),
-                                              Text(
-                                                'Host: ${ApiConfig.baseUrl}',
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  color:
-                                                      Colors.blueGrey.shade600,
+                                              Flexible(
+                                                child: Text(
+                                                  'Host: ${ApiConfig.baseUrl}',
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color:
+                                                        Colors.blueGrey.shade600,
+                                                  ),
                                                 ),
                                               ),
                                               const SizedBox(width: 4),
