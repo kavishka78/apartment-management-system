@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import Overview from '../pages/admin/Overview.jsx';
 import * as api from '../services/api.js';
+import { AuthProvider } from '../context/AuthContext.jsx';
+
+const renderWithAuth = (ui) => render(<AuthProvider>{ui}</AuthProvider>);
 
 // Mock Recharts ResponsiveContainer to avoid SVG width/height measurement issues in JSDOM
 vi.mock('recharts', async () => {
@@ -21,7 +24,7 @@ describe('Overview Component API Integration & Error State Tests', () => {
     vi.spyOn(api, 'getDashboardStats').mockImplementation(() => new Promise(() => {}));
     vi.spyOn(api, 'getPendingWorkflows').mockImplementation(() => new Promise(() => {}));
 
-    const { container } = render(<Overview />);
+    const { container } = renderWithAuth(<Overview />);
     expect(container.querySelector('.spinner')).toBeInTheDocument();
   });
 
@@ -42,7 +45,7 @@ describe('Overview Component API Integration & Error State Tests', () => {
     vi.spyOn(api, 'getDashboardStats').mockResolvedValue(mockStats);
     vi.spyOn(api, 'getPendingWorkflows').mockResolvedValue([{ id: 1, title: 'Approve Maintenance' }]);
 
-    render(<Overview />);
+    renderWithAuth(<Overview />);
 
     // Wait for loading to finish and KPI values to display
     await waitFor(() => {
@@ -61,7 +64,7 @@ describe('Overview Component API Integration & Error State Tests', () => {
     vi.spyOn(api, 'getDashboardStats').mockRejectedValue(new Error('Failed to connect to API server'));
     vi.spyOn(api, 'getPendingWorkflows').mockResolvedValue([]);
 
-    render(<Overview />);
+    renderWithAuth(<Overview />);
 
     await waitFor(() => {
       expect(screen.getByText(/Some data failed to load: Failed to connect to API server/i)).toBeInTheDocument();

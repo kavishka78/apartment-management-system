@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import Facilities from '../pages/admin/Facilities.jsx';
 import * as api from '../services/api.js';
+import { AuthProvider } from '../context/AuthContext.jsx';
+
+const renderWithAuth = (ui) => render(<AuthProvider>{ui}</AuthProvider>);
 
 describe('Facilities Component API Integration & Error State Tests', () => {
   beforeEach(() => {
@@ -17,7 +20,7 @@ describe('Facilities Component API Integration & Error State Tests', () => {
     vi.spyOn(api, 'getFacilities').mockResolvedValue(mockFacilities);
     vi.spyOn(api, 'getBookings').mockResolvedValue([]);
 
-    render(<Facilities />);
+    renderWithAuth(<Facilities />);
 
     await waitFor(() => {
       expect(screen.getByText('Swimming Pool')).toBeInTheDocument();
@@ -32,7 +35,7 @@ describe('Facilities Component API Integration & Error State Tests', () => {
     vi.spyOn(api, 'getBookings').mockResolvedValue([]);
     const createSpy = vi.spyOn(api, 'createFacility').mockResolvedValue({ id: 10, name: 'Tennis Court' });
 
-    render(<Facilities />);
+    renderWithAuth(<Facilities />);
 
     await waitFor(() => {
       expect(screen.getByText(/No facilities found/i)).toBeInTheDocument();
@@ -62,7 +65,7 @@ describe('Facilities Component API Integration & Error State Tests', () => {
     vi.spyOn(api, 'getBookings').mockResolvedValue([]);
     vi.spyOn(api, 'createFacility').mockRejectedValue(new Error('Server error: Duplicate facility name'));
 
-    render(<Facilities />);
+    renderWithAuth(<Facilities />);
 
     await waitFor(() => {
       expect(screen.getByText(/No facilities found/i)).toBeInTheDocument();
