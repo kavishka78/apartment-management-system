@@ -91,3 +91,28 @@ jobs:
 
       - name: Run tests
         run: pytest -q
+
+  onboarding-agent-ci:
+    name: Test Resident Onboarding Agent (Python)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./agent-services/onboarding-agent
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: './agent-services/onboarding-agent/requirements.txt'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -q
