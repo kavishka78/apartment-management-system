@@ -34,11 +34,18 @@ builder.Configuration.AddEnvironmentVariables();
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5073";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? string.Empty;
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    )
-);
+{
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        options.UseNpgsql(connectionString);
+    }
+});
 
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddScoped<INotificationService, EmailNotificationService>();
