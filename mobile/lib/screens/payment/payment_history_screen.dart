@@ -342,16 +342,6 @@ class _PaymentHistoryScreenState
                   ),
                 ),
 
-                if (payment['cardLastFourDigits'] !=
-                    null) ...[
-                  const SizedBox(height: 10),
-                  _PaymentInfoRow(
-                    icon: Icons.lock_outline,
-                    title: 'Card',
-                    value:
-                        '•••• ${payment['cardLastFourDigits']}',
-                  ),
-                ],
               ],
             ),
           );

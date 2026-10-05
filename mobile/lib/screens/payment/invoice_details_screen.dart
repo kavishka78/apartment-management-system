@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../../services/payment/payment_api_service.dart';
 import 'card_payment_screen.dart';
@@ -10,6 +13,7 @@ class InvoiceDetailsScreen extends StatefulWidget {
   final String dueDate;
   final String amount;
   final String status;
+  final bool autoDownload;
 
   const InvoiceDetailsScreen({
     super.key,
@@ -19,6 +23,7 @@ class InvoiceDetailsScreen extends StatefulWidget {
     required this.dueDate,
     required this.amount,
     required this.status,
+    this.autoDownload = false,
   });
 
   @override
@@ -32,6 +37,7 @@ class _InvoiceDetailsScreenState
   String? _errorMessage;
   Map<String, dynamic>? _invoice;
   bool _hasPendingVerification = false;
+  bool _autoDownloadStarted = false;
 
   @override
   void initState() {
@@ -69,6 +75,12 @@ class _InvoiceDetailsScreenState
         _hasPendingVerification = hasPendingVerification;
         _isLoading = false;
       });
+      if (widget.autoDownload && !_autoDownloadStarted) {
+        _autoDownloadStarted = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _downloadInvoice();
+        });
+      }
     } else {
       setState(() {
         _errorMessage =
@@ -78,6 +90,86 @@ class _InvoiceDetailsScreenState
       });
     }
   }
+
+  Future<void> _downloadInvoice() async {
+    final invoice = _invoice;
+    if (invoice == null) return;
+
+    final items = (invoice['invoiceItems'] as List? ?? [])
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+    final pdf = pw.Document();
+    final rows = <pw.TableRow>[
+      pw.TableRow(
+        decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+        children: [
+          _pdfCell('Description', bold: true),
+          _pdfCell('Amount', bold: true, alignRight: true),
+        ],
+      ),
+      ...items.map((item) => pw.TableRow(children: [
+            _pdfCell((item['description'] ?? item['chargeType'] ?? 'Charge').toString()),
+            _pdfCell(_formatAmount(item['amount']), alignRight: true),
+          ])),
+      pw.TableRow(
+        decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+        children: [
+          _pdfCell('Total', bold: true),
+          _pdfCell(_formatAmount(invoice['totalAmount']), bold: true, alignRight: true),
+        ],
+      ),
+    ];
+
+    final billingMonth = invoice['billingMonth']?.toString() ?? '';
+    final dueDate = invoice['dueDate']?.toString() ?? '';
+    pdf.addPage(pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(40),
+      build: (_) => [
+        pw.Text('APARTMENT MANAGEMENT',
+            style: pw.TextStyle(fontSize: 11, color: PdfColors.blueGrey700, letterSpacing: 1.2)),
+        pw.SizedBox(height: 18),
+        pw.Text('INVOICE', style: pw.TextStyle(fontSize: 26, fontWeight: pw.FontWeight.bold)),
+        pw.SizedBox(height: 8),
+        pw.Text('Invoice number: ${invoice['invoiceNumber'] ?? widget.invoiceNumber}'),
+        pw.SizedBox(height: 5),
+        pw.Text('Billing month: ${billingMonth.length >= 7 ? billingMonth.substring(0, 7) : '-'}'),
+        pw.SizedBox(height: 5),
+        pw.Text('Due date: ${dueDate.length >= 10 ? dueDate.substring(0, 10) : '-'}'),
+        pw.SizedBox(height: 24),
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.grey400, width: .5),
+          columnWidths: {0: const pw.FlexColumnWidth(3), 1: const pw.FlexColumnWidth(1.2)},
+          children: rows,
+        ),
+      ],
+    ));
+
+    try {
+      final filename = 'Invoice-${widget.invoiceNumber}'.replaceAll(
+        RegExp(r'[^A-Za-z0-9_-]'),
+        '_',
+      );
+      await Printing.layoutPdf(
+        name: '$filename.pdf',
+        onLayout: (_) async => pdf.save(),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to create the invoice PDF. Please try again.')),
+      );
+    }
+  }
+
+  pw.Widget _pdfCell(String text, {bool bold = false, bool alignRight = false}) =>
+      pw.Padding(
+        padding: const pw.EdgeInsets.all(9),
+        child: pw.Align(
+          alignment: alignRight ? pw.Alignment.centerRight : pw.Alignment.centerLeft,
+          child: pw.Text(text, style: pw.TextStyle(fontSize: 10, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal)),
+        ),
+      );
 
   String _formatAmount(dynamic value) {
     final amount =
@@ -108,6 +200,11 @@ class _InvoiceDetailsScreenState
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Download invoice PDF',
+            onPressed: _isLoading || _invoice == null ? null : _downloadInvoice,
+            icon: const Icon(Icons.download_outlined),
+          ),
           IconButton(
             onPressed: _loadInvoiceDetails,
             icon: const Icon(Icons.refresh),

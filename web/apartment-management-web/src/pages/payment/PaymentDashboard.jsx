@@ -1,6 +1,7 @@
 import { paymentFetch } from "../../services/api";
 import { useEffect, useState } from "react";
 import "./PaymentDashboard.css";
+import "./PaymentAdminTheme.css";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 
 function PaymentDashboard() {

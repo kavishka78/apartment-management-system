@@ -1,0 +1,188 @@
+/* Align payment pages with the Admin portal's slate and indigo theme. */
+.payment-page {
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+.payment-page .payment-sidebar {
+  width: 264px;
+  background: #0f172a;
+  padding: 30px 22px;
+}
+
+.payment-page .payment-logo {
+  margin-bottom: 40px;
+}
+
+.payment-page .payment-logo-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+}
+
+.payment-page .menu-label {
+  color: #94a3b8;
+}
+
+.payment-page .menu-item {
+  border-radius: 9px;
+  color: #cbd5e1;
+}
+
+.payment-page .menu-item.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, .22), rgba(139, 92, 246, .16));
+  color: #fff;
+}
+
+.payment-page .sidebar-bottom a {
+  color: #94a3b8;
+}
+
+.payment-page .payment-content {
+  padding: 40px 48px;
+}
+
+.payment-page .payment-header {
+  align-items: center;
+  margin-bottom: 28px;
+  padding: 16px 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+}
+
+.payment-page .page-label {
+  color: #6366f1;
+}
+
+.payment-page .payment-header h1 {
+  color: #0f172a;
+  font-size: 20px;
+}
+
+.payment-page .page-description {
+  color: #64748b;
+}
+
+.payment-page :is(
+  .summary-card,
+  .dashboard-panel,
+  .payments-panel,
+  .invoice-panel,
+  .overdue-panel,
+  .report-summary-card,
+  .collection-overview-panel,
+  .collection-rate-card,
+  .generate-invoice-panel
+) {
+  border-color: #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.payment-page :is(
+  .summary-card h2,
+  .panel-heading h2,
+  .payments-panel-header h2,
+  .invoice-panel-heading h2,
+  .overdue-panel-header h2,
+  .collection-overview-header h2,
+  .generate-form-header h2
+) {
+  color: #0f172a;
+}
+
+.payment-page :is(
+  .summary-card p,
+  .summary-card span,
+  .panel-heading p,
+  .payments-panel-header p,
+  .invoice-panel-heading p,
+  .overdue-panel-header p,
+  .collection-overview-header p,
+  .page-description
+) {
+  color: #64748b;
+}
+
+.payment-page :is(.payment-filters, .invoice-filters, .overdue-filters) {
+  border-color: #e5e7eb;
+  background: #fff;
+}
+
+.payment-page :is(input, select, textarea) {
+  border-color: #d1d5db;
+  color: #111827;
+  background-color: #fff;
+}
+
+.payment-page :is(input, select, textarea):focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .1);
+  outline: none;
+}
+
+.payment-page :is(.payments-table th, .invoice-table th, .overdue-table th, .payment-table th, .resident-reference th) {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.payment-page :is(.payments-table td, .invoice-table td, .overdue-table td, .payment-table td, .resident-reference td) {
+  border-color: #f3f4f6;
+  color: #374151;
+}
+
+.payment-page :is(
+  .payments-table tbody tr:hover,
+  .invoice-table tbody tr:hover,
+  .overdue-table tbody tr:hover,
+  .payment-table tbody tr:hover
+) {
+  background: #fafbff;
+}
+
+.payment-page :is(.generate-btn, .verify-payment-btn, .generate-invoice-btn) {
+  border-color: transparent;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+}
+
+.payment-page :is(.generate-btn, .verify-payment-btn, .generate-invoice-btn):hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(99, 102, 241, .22);
+}
+
+.payment-page .cancel-btn {
+  border-color: #d1d5db;
+  background: #fff;
+  color: #374151;
+}
+
+.payment-page .cancel-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.payment-page .view-btn {
+  border-color: #d1d5db;
+  background: #fff;
+  color: #374151;
+}
+
+.payment-page .view-btn:hover {
+  background: #f9fafb;
+}
+
+@media (max-width: 750px) {
+  .payment-page .payment-content {
+    padding: 24px 20px;
+  }
+
+  .payment-page .payment-header {
+    padding: 16px 18px;
+  }
+}

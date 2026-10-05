@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
 import "./OverdueAccounts.css";
+import "./PaymentAdminTheme.css";
 
 function OverdueAccounts() {
   const [overdueInvoices, setOverdueInvoices] = useState([]);

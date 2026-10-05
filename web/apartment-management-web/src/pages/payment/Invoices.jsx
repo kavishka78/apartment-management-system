@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./PaymentDashboard.css";
 import "./Invoices.css";
+import "./PaymentAdminTheme.css";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 
 const emptyEditForm = {

@@ -1,3 +1,85 @@
+.payment-content:has(.resident-reference) {
+  min-width: 0;
+}
+
+.resident-reference {
+  margin-bottom: 24px;
+}
+
+.resident-reference-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 28px;
+}
+
+.resident-reference-controls .form-group {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.resident-reference-controls select {
+  padding: 12px 14px;
+  border: 1px solid #dfe2dd;
+  border-radius: 8px;
+  background: white;
+  color: #17212b;
+  font: inherit;
+}
+
+.resident-reference-controls input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #dfe2dd;
+  border-radius: 8px;
+  background: white;
+  color: #17212b;
+  font: inherit;
+}
+
+.resident-reference-scroll {
+  overflow-x: auto;
+}
+
+.resident-reference table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.resident-reference th,
+.resident-reference td {
+  padding: 14px 20px;
+  border-bottom: 1px solid #e8e9e6;
+}
+
+.resident-reference th {
+  background: #f7f8f6;
+  white-space: nowrap;
+}
+
+.resident-reference td {
+  overflow-wrap: anywhere;
+  min-width: 90px;
+}
+
+.resident-reference small {
+  display: block;
+  margin-top: 4px;
+  color: #626b64;
+}
+
+.resident-reference-status {
+  margin: 16px 28px;
+  font-size: 14px;
+}
+
+.resident-reference-status:empty {
+  display: none;
+}
+
 .generate-invoice-panel {
   background: white;
   border: 1px solid #e5e7e3;
@@ -88,6 +170,17 @@
 
 .cancel-btn:hover {
   background: #f5f6f4;
+}
+
+.booking-invoice-btn { white-space: nowrap; }
+.booking-invoice-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.booking-selection-summary {
+  margin: 18px 28px 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f5f7f3;
+  color: #39443c;
+  font-size: 14px;
 }
 
 @media (max-width: 750px) {

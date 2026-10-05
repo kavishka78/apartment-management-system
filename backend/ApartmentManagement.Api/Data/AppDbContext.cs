@@ -75,6 +75,16 @@ namespace ApartmentManagement.Api.Data
                 .HasForeignKey(ii => ii.InvoiceId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Invoice>()
+                .HasIndex(i => i.FacilityBookingId)
+                .IsUnique();
+
+            modelBuilder.Entity<Invoice>()
+                .HasOne<FacilityBooking>()
+                .WithMany()
+                .HasForeignKey(i => i.FacilityBookingId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Invoice -> Payments
             // One invoice can have payment transactions.
             modelBuilder.Entity<Invoice>()
