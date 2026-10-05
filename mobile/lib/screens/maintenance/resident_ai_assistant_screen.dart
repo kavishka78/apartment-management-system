@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/resident_maintenance_ai_service.dart';
 import '../../models/maintenance/resident_ai_response.dart';
 import '../../services/maintenance/maintenance_api_service.dart';
@@ -30,14 +32,47 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
   DraftComplaint? _finalDraft;
   bool _isSubmitting = false;
 
+
+
+  // --- Local Chat History Logic ---
+  Future<void> _saveChatHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String encodedData = json.encode(_messages);
+    await prefs.setString('resident_ai_chat_history', encodedData);
+  }
+
+  Future<void> _loadChatHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? encodedData = prefs.getString('resident_ai_chat_history');
+    if (encodedData != null) {
+      final List<dynamic> decodedList = json.decode(encodedData);
+      setState(() {
+        _messages = decodedList.map((e) => Map<String, String>.from(e)).toList();
+      });
+      // Scroll to bottom
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No chat history found."), duration: Duration(seconds: 2)),
+      );
+    }
+  }
+  // --------------------------------
+
   void _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    setState(() {
-      _messages.add({"role": "user", "content": text});
-      _isLoading = true;
-    });
+    setState(() { _messages.add({"role": "user", "content": text}); _isLoading = true; });
+    _saveChatHistory();
     _messageController.clear();
     _scrollToBottom();
 
@@ -61,6 +96,7 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
       setState(() {
         _isLoading = false;
       });
+      _saveChatHistory();
       _scrollToBottom();
     }
   }
@@ -115,6 +151,13 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history, color: Colors.black54),
+            tooltip: 'Load Chat History',
+            onPressed: _loadChatHistory,
+          ),
+        ],
         title: const Row(
           children: [
             Icon(Icons.auto_awesome, color: Colors.blueAccent, size: 20),

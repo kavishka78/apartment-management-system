@@ -164,26 +164,23 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
 
   IconData _getCategoryIcon(String name) {
     final lower = name.toLowerCase();
-    if (lower.contains('plumb') || lower.contains('water'))
-      return Icons.water_drop;
-    if (lower.contains('elect') || lower.contains('light'))
-      return Icons.lightbulb_outline;
-    if (lower.contains('cool') ||
-        lower.contains('ac') ||
-        lower.contains('air') ||
-        lower.contains('hvac'))
-      return Icons.ac_unit;
+    if (lower.contains('plumb') || lower.contains('water')) return Icons.water_drop;
+    if (lower.contains('elect') || lower.contains('light')) return Icons.lightbulb_outline;
+    if (lower.contains('cool') || lower.contains('ac') || lower.contains('air') || lower.contains('hvac')) return Icons.ac_unit;
     if (lower.contains('appli')) return Icons.kitchen;
-    if (lower.contains('door') ||
-        lower.contains('lock') ||
-        lower.contains('key'))
-      return Icons.door_front_door_outlined;
+    if (lower.contains('door') || lower.contains('lock') || lower.contains('key')) return Icons.door_front_door_outlined;
     if (lower.contains('paint')) return Icons.format_paint;
     if (lower.contains('clean')) return Icons.cleaning_services;
     if (lower.contains('secur')) return Icons.security;
     if (lower.contains('elevat')) return Icons.elevator;
-    if (lower.contains('build') || lower.contains('struct'))
-      return Icons.apartment;
+    if (lower.contains('build') || lower.contains('struct')) return Icons.domain;
+    
+    // New specific icons
+    if (lower.contains('carpent') || lower.contains('wood')) return Icons.handyman;
+    if (lower.contains('pest') || lower.contains('bug')) return Icons.pest_control;
+    if (lower.contains('landscap') || lower.contains('garden')) return Icons.park;
+    
+    // Default fallback
     return Icons.build;
   }
 
