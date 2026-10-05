@@ -287,6 +287,16 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen> {
             final dueDate =
                 _formatDate(invoice['dueDate']?.toString());
 
+            final dueDateRaw = invoice['dueDate']?.toString() ?? '';
+            final dueDateDay = dueDateRaw.length >= 10
+                ? DateTime.tryParse(dueDateRaw.substring(0, 10))
+                : null;
+            final today = DateTime.now();
+            final todayDay = DateTime(today.year, today.month, today.day);
+            final showPaymentReminder = invoice['canPay'] == true &&
+                dueDateDay != null &&
+                !dueDateDay.isBefore(todayDay);
+
             final amount =
                 _formatAmount(invoice['totalAmount']);
 
@@ -300,6 +310,7 @@ class _MyInvoicesScreenState extends State<MyInvoicesScreen> {
                 dueDate: dueDate,
                 amount: amount,
                 status: status,
+                showPaymentReminder: showPaymentReminder,
                 onTap: () async {
                   await Navigator.push(
                     context,
@@ -370,6 +381,7 @@ class InvoiceCard extends StatelessWidget {
   final String dueDate;
   final String amount;
   final String status;
+  final bool showPaymentReminder;
   final VoidCallback onTap;
 
   const InvoiceCard({
@@ -379,6 +391,7 @@ class InvoiceCard extends StatelessWidget {
     required this.dueDate,
     required this.amount,
     required this.status,
+    required this.showPaymentReminder,
     required this.onTap,
   });
 
@@ -511,6 +524,18 @@ class InvoiceCard extends StatelessWidget {
                   ),
                 ],
               ),
+
+              if (showPaymentReminder) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Pay by the due date to avoid a 5% overdue penalty.',
+                  style: TextStyle(
+                    color: Color(0xFF8A5B12),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

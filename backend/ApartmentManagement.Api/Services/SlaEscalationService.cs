@@ -21,6 +21,9 @@ namespace ApartmentManagement.Api.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // Delay 15 seconds after startup before running first SLA check to ensure DB and server are ready
+            try { await Task.Delay(15000, stoppingToken); } catch { }
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
