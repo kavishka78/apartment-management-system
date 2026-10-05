@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
 import { MdAssignment, MdPlayArrow, MdCheckCircle } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
+import Pagination from '../../components/Pagination';
+import useIsMobile from '../../hooks/useIsMobile';
 import '../payment/PaymentDashboard.css';
 
 function WorkOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const isMobile = useIsMobile();
+  const [desktopPageSize, setDesktopPageSize] = useState(15);
+  const pageSize = isMobile ? 10 : desktopPageSize;
 
   useEffect(() => {
     const token = localStorage.getItem('ah_token');
@@ -18,6 +24,10 @@ function WorkOrders() {
         setLoading(false);
       });
   }, []);
+
+  const pageCount = Math.ceil(orders.length / pageSize);
+  const visiblePage = Math.min(currentPage, Math.max(1, pageCount));
+  const visibleOrders = orders.slice((visiblePage - 1) * pageSize, visiblePage * pageSize);
 
   return (
     <div className="payment-page">
@@ -46,6 +56,7 @@ function WorkOrders() {
               <p style={{ margin: 0, color: '#8a949e', fontSize: '13.5px' }}>Assigned jobs will appear here.</p>
             </div>
           ) : (
+            <>
             <div className="table-wrapper"><table className="payment-table">
               <thead>
                 <tr>
@@ -58,7 +69,7 @@ function WorkOrders() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map(o => (
+                {visibleOrders.map(o => (
                   <tr key={o.id}>
                     <td><strong style={{color: '#2d3748'}}>{o.title}</strong></td>
                     <td>
@@ -88,6 +99,16 @@ function WorkOrders() {
                 ))}
               </tbody>
             </table></div>
+            <Pagination
+              currentPage={visiblePage}
+              totalItems={orders.length}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 15, 25]}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => { setDesktopPageSize(size); setCurrentPage(1); }}
+              label="work orders"
+            />
+            </>
           )}
         </section>
       </main>
