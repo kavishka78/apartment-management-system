@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {MdApartment, MdArrowForward, MdBuild, MdCheckCircle, MdMeetingRoom, MdNotificationsActive, MdPayment,} from "react-icons/md";
+import { MdApartment, MdArrowForward, MdBuild, MdCheckCircle, MdClose, MdMeetingRoom, MdMenu, MdNotificationsActive, MdPayment } from "react-icons/md";
 import "./Landing.css";
 import Footer from "../components/Footer";
 
 export default function Landing() {
   const [isOverHero, setIsOverHero] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,14 +33,24 @@ export default function Landing() {
           <span>ApartmentHub</span>
         </div>
 
-        <div className="nav-links">
-          <a href="#home">Home</a>
-          <a href="#apartments">Architecture</a>
-          <a href="#services">Modules</a>
-          <a href="#facilities">Workflows</a>
+        <div className={`nav-links ${isMenuOpen ? "nav-links--open" : ""}`}>
+          <a href="#home" onClick={() => setIsMenuOpen(false)}>Home</a>
+          <a href="#apartments" onClick={() => setIsMenuOpen(false)}>Architecture</a>
+          <a href="#services" onClick={() => setIsMenuOpen(false)}>Modules</a>
+          <a href="#facilities" onClick={() => setIsMenuOpen(false)}>Workflows</a>
+          <button className="nav-dashboard-link" onClick={() => navigate('/login')}>Open Dashboard</button>
         </div>
 
         <button className="login-btn" onClick={() => navigate('/login')}>Open Dashboard</button>
+        <button
+          type="button"
+          className="menu-toggle"
+          aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={isMenuOpen}
+          onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+        >
+          {isMenuOpen ? <MdClose /> : <MdMenu />}
+        </button>
       </nav>
 
       <main>

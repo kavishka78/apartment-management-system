@@ -251,3 +251,72 @@
     padding: 30px;
   }
 }
+
+@media (max-width: 600px) {
+  .login-container {
+    width: 100%;
+    min-height: 100dvh;
+    height: auto;
+    overflow: auto;
+  }
+
+  .login-hero {
+    flex: none;
+    min-height: 245px;
+    padding: 32px 20px;
+    align-items: flex-end;
+  }
+
+  .login-hero .hero-content {
+    max-width: none;
+    text-align: center;
+  }
+
+  .hero-kicker {
+    margin-bottom: 12px;
+    font-size: 11px;
+  }
+
+  .hero-title {
+    margin-bottom: 20px;
+    font-size: clamp(28px, 9vw, 36px);
+  }
+
+  .hero-badges {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  .login-form-side {
+    flex: none;
+    min-height: auto;
+    padding: 30px 20px 36px;
+  }
+
+  .form-icon-header {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 20px;
+  }
+
+  .form-wrapper h2 {
+    font-size: 28px;
+  }
+
+  .form-subtitle {
+    margin-bottom: 28px;
+  }
+
+  .login-form {
+    gap: 20px;
+  }
+
+  .demo-info {
+    margin-top: 32px;
+  }
+}

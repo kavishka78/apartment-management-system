@@ -48,7 +48,7 @@ function CustomDropdown({ value, options, onChange, label }) {
     return (
         <div className="custom-dropdown">
             <div className="dropdown-trigger" onClick={() => setIsOpen(!isOpen)}>
-                {value === 'All' ? label : value} <MdKeyboardArrowDown size={16} color="#64748b" />
+                {value === 'All' ? label : value} <MdKeyboardArrowDown size={16} color="#0033a0" />
             </div>
             {isOpen && (
                 <>
@@ -84,6 +84,7 @@ export default function TechnicianDashboard() {
     const [statusFilter, setStatusFilter] = useState('All');
     const [priorityFilter, setPriorityFilter] = useState('All');
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [technicianPhoto, setTechnicianPhoto] = useState(null);
 
     useEffect(() => {
         if (currentUser?.requiresPasswordReset) {
@@ -91,6 +92,30 @@ export default function TechnicianDashboard() {
             setIsProfileOpen(true);
         }
     }, [currentUser]);
+
+    useEffect(() => {
+        if (!currentUser?.email) return undefined;
+
+        let isCurrent = true;
+
+        const fetchTechnicianPhoto = async () => {
+            try {
+                const response = await fetch('http://localhost:5073/api/technicians');
+                if (!response.ok) return;
+
+                const technicians = await response.json();
+                const technician = technicians.find((item) => item.email?.toLowerCase() === currentUser.email.toLowerCase());
+                if (isCurrent) setTechnicianPhoto(technician?.photoBase64 || null);
+            } catch (error) {
+                console.error('Failed to load technician profile photo', error);
+            }
+        };
+
+        fetchTechnicianPhoto();
+        return () => {
+            isCurrent = false;
+        };
+    }, [currentUser?.email]);
 
     const fetchJobs = useCallback(async () => {
         if (!currentUser) return;
@@ -190,7 +215,11 @@ export default function TechnicianDashboard() {
             <header className="tech-topbar">
                 <div className="topbar-left">
                     <div className="topbar-avatar">
-                        <MdPerson size={24} />
+                        {technicianPhoto ? (
+                            <img src={technicianPhoto} alt="Technician profile" />
+                        ) : (
+                            <span aria-label="Technician profile">{(currentUser?.name || currentUser?.email || 'T').charAt(0).toUpperCase()}</span>
+                        )}
                     </div>
                     <div className="topbar-info">
                         <h2>Welcome, {currentUser?.name || currentUser?.email}</h2>
@@ -340,7 +369,7 @@ export default function TechnicianDashboard() {
                                     <h4><MdPerson size={18} /> Resident Information</h4>
                                     <div className="rp-info-block" style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', gap: '12px' }}>
                                         <p style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0f172a', fontWeight: '600' }}>
-                                            <MdPerson size={16} color="#64748b" /> {selectedJob.residentName || `Dr. Anoma Jayasinghe`}
+                                            <MdPerson size={16} color="#0033a0" /> {selectedJob.residentName || `Dr. Anoma Jayasinghe`}
                                         </p>
                                         <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <MdPhone size={16} color="#3b82f6" /> {selectedJob.residentPhone || '+94 71 889 2341'}
