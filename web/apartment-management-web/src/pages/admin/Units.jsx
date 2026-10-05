@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getUnits, createUnit, updateUnit } from "../../services/api";
+import { getUnits, createUnit, updateUnit, getComplexes } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import "./Units.css";
 
@@ -14,6 +14,7 @@ export default function Units() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUnit, setEditingUnit] = useState(null);
   const [toast, setToast] = useState(null);
+  const [complex, setComplex] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -33,6 +34,11 @@ export default function Units() {
     setLoading(true);
     const data = await getUnits(activeTenantId);
     setUnits(data || []);
+
+    // Load complex info to show unit limit
+    const complexes = await getComplexes();
+    const curr = complexes?.find(c => c.id === activeTenantId);
+    setComplex(curr);
   } catch (err) {
     console.error(err);
   } finally {
@@ -170,6 +176,11 @@ export default function Units() {
             <span style={{ fontSize: "11px", background: "#f1f5f9", color: "#334155", fontWeight: 700, padding: "2px 8px", borderRadius: "4px", textTransform: "uppercase" }}>
               {activeComplexName}
             </span>
+            {complex && (
+              <span style={{ fontSize: "11px", background: "#dbeafe", color: "#1e40af", fontWeight: 700, padding: "2px 8px", borderRadius: "4px" }}>
+                {units.length}/{complex.totalUnits} units
+              </span>
+            )}
           </div>
           <h1>Unit Directory & Floor Allocations</h1>
           <p>Configure apartment units, floor allocations, occupancy status, and monthly rent structures.</p>
@@ -180,12 +191,14 @@ export default function Units() {
             setEditingUnit(null);
             setShowAddModal(true);
           }}
+          disabled={complex && units.length >= complex.totalUnits}
+          title={complex && units.length >= complex.totalUnits ? `All ${complex.totalUnits} units created` : "Add a new unit"}
           id="btn-add-unit"
         >
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
-          Add Unit
+          Add Unit {complex ? `(${complex.totalUnits - units.length} left)` : ""}
         </button>
       </div>
 

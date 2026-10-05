@@ -67,10 +67,22 @@ namespace ApartmentManagement.Api.Controllers
             var denied = await Guard(unit.TenantId, "units");
             if (denied != null) return denied;
             if (string.IsNullOrWhiteSpace(unit.UnitNumber)) return BadRequest("Unit number is required.");
+            if (unit.NumberOfBedrooms <= 0) return BadRequest("Number of bedrooms must be at least 1.");
+            if (unit.NumberOfBathrooms <= 0) return BadRequest("Number of bathrooms must be at least 1.");
+            if (unit.SquareFeet <= 0) return BadRequest("Square feet must be greater than 0.");
 
             var number = unit.UnitNumber.Trim();
             if (await _db.Units.AnyAsync(u => u.TenantId == unit.TenantId && u.UnitNumber.ToLower() == number.ToLower()))
                 return Conflict($"Unit '{number}' already exists in this complex.");
+
+            // Check if admin has exceeded the unit limit set by SuperAdmin
+            var complex = await _db.Complexes.FindAsync(unit.TenantId);
+            if (complex != null)
+            {
+                var existingCount = await _db.Units.CountAsync(u => u.TenantId == unit.TenantId);
+                if (existingCount >= complex.TotalUnits)
+                    return Conflict($"Cannot create more than {complex.TotalUnits} units. Already created {existingCount}/{complex.TotalUnits}.");
+            }
 
             unit.Id = 0;
             unit.UnitNumber = number;

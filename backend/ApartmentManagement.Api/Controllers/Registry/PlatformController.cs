@@ -559,36 +559,7 @@ namespace ApartmentManagement.Api.Controllers
             _db.Complexes.Add(complex);
             await _db.SaveChangesAsync();
 
-            // Auto-generate vacant units for this new complex based on TotalUnits
-            int total = complex.TotalUnits > 0 ? complex.TotalUnits : 12;
-            var newUnits = new List<Unit>();
-            int unitsPerFloor = 4;
-            for (int i = 1; i <= total; i++)
-            {
-                int floor = ((i - 1) / unitsPerFloor) + 1;
-                int unitOnFloor = ((i - 1) % unitsPerFloor) + 1;
-                char block = (char)('A' + ((floor - 1) / 4));
-                string unitNum = $"{block}-{floor}{unitOnFloor:D2}";
-                string parking = $"P-{block}{floor}{unitOnFloor:D2}";
-
-                newUnits.Add(new Unit
-                {
-                    TenantId = complex.Id,
-                    UnitNumber = unitNum,
-                    FloorNumber = floor,
-                    BlockName = $"Block {block}",
-                    NumberOfBedrooms = (unitOnFloor % 3) + 1,
-                    NumberOfBathrooms = (unitOnFloor % 2) + 1,
-                    SquareFeet = 900 + ((unitOnFloor % 3) * 250),
-                    MonthlyRent = 85000 + ((unitOnFloor % 3) * 35000),
-                    Status = "Available",
-                    ParkingSlot = parking,
-                });
-            }
-            _db.Units.AddRange(newUnits);
-
-            Log(complex, "Onboarded", $"{complex.SubscriptionPlan}, {req.TermMonths} month term, {newUnits.Count} units generated");
-            await _db.SaveChangesAsync();
+            Log(complex, "Onboarded", $"{complex.SubscriptionPlan}, {req.TermMonths} month term. Admin to create {complex.TotalUnits} units manually.");
             return Ok(complex);
         }
 
