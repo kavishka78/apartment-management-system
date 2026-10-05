@@ -1,40 +1,42 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Centralized API configuration for the entire mobile app.
 ///
-/// Supports:
-/// 1. Cloud deployment via `--dart-define=API_URL=https://my-domain.com/api`
-/// 2. In-app developer URL switching (persisted across restarts)
-/// 3. Automatic platform defaults (Web, Android Emulator, LAN IP)
+/// Priority resolution order for baseUrl:
+/// 1. In-app runtime override (persisted in SharedPreferences)
+/// 2. Command-line flag (--dart-define=API_URL=...)
+/// 3. Value from mobile/.env (API_URL=...)
+/// 4. Platform default (http://10.0.2.2:5073/api)
 class ApiConfig {
   static const String _keyCustomUrl = 'ah_custom_api_base_url';
-
-  // Environment variable override (e.g. for production builds or CI/CD)
-  // Run with: flutter run --dart-define=API_URL=https://my-backend.com/api
   static const String _envUrl = String.fromEnvironment('API_URL');
-
   static String? _inMemoryCustomUrl;
 
-  /// Call once in main() before runApp() to load persisted custom URL if any.
+  /// Call once in main() before runApp() to load .env and persisted settings.
   static Future<void> init() async {
+    try {
+      await dotenv.load(fileName: ".env");
+    } catch (e) {
+      debugPrint('Notice: .env file not loaded: $e');
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       _inMemoryCustomUrl = prefs.getString(_keyCustomUrl);
     } catch (_) {}
   }
 
-  /// Override the API URL at runtime (e.g. from developer settings dialog)
+  /// Override the API URL at runtime
   static Future<void> setCustomUrl(String url) async {
     String cleaned = url.trim();
     if (cleaned.endsWith('/')) {
       cleaned = cleaned.substring(0, cleaned.length - 1);
     }
-    // Ensure it ends with /api if user only typed the domain
     if (!cleaned.endsWith('/api') && !cleaned.endsWith('/api/v1')) {
       cleaned = '$cleaned/api';
     } else if (cleaned.endsWith('/api/v1')) {
-      cleaned = cleaned.substring(0, cleaned.length - 3); // strip /v1 so baseUrl is /api
+      cleaned = cleaned.substring(0, cleaned.length - 3);
     }
 
     _inMemoryCustomUrl = cleaned;
@@ -44,7 +46,7 @@ class ApiConfig {
     } catch (_) {}
   }
 
-  /// Reset to platform defaults
+  /// Reset to .env / platform default
   static Future<void> resetToDefault() async {
     _inMemoryCustomUrl = null;
     try {
@@ -53,24 +55,29 @@ class ApiConfig {
     } catch (_) {}
   }
 
-  /// Base API URL ending in `/api` (e.g. `http://10.0.2.2:5073/api`)
+  /// Base API URL ending in `/api` (reads from mobile/.env if set)
   static String get baseUrl {
     if (_inMemoryCustomUrl != null && _inMemoryCustomUrl!.isNotEmpty) {
       return _inMemoryCustomUrl!;
     }
     if (_envUrl.isNotEmpty) {
-      return _envUrl.endsWith('/') ? _envUrl.substring(0, _envUrl.length - 1) : _envUrl;
+      return _envUrl.endsWith('/')
+          ? _envUrl.substring(0, _envUrl.length - 1)
+          : _envUrl;
     }
-    if (kIsWeb) {
-      return 'http://localhost:5073/api';
+    final dotenvUrl = dotenv.env['API_URL']?.trim();
+    if (dotenvUrl != null && dotenvUrl.isNotEmpty) {
+      return dotenvUrl.endsWith('/')
+          ? dotenvUrl.substring(0, dotenvUrl.length - 1)
+          : dotenvUrl;
     }
-    // Android emulator host loopback address (10.0.2.2)
-    return 'http://10.0.2.2:5073/api';
+    return kIsWeb ? 'http://localhost:5073/api' : 'http://10.0.2.2:5073/api';
   }
 
-  /// V1 API URL ending in `/api/v1` (e.g. `http://10.0.2.2:5073/api/v1`)
+  /// V1 API URL ending in `/api/v1`
   static String get v1Url => '$baseUrl/v1';
 
-  /// Whether a custom URL is currently active
-  static bool get hasCustomUrl => _inMemoryCustomUrl != null && _inMemoryCustomUrl!.isNotEmpty;
+  /// Whether a custom runtime override is active
+  static bool get hasCustomUrl =>
+      _inMemoryCustomUrl != null && _inMemoryCustomUrl!.isNotEmpty;
 }
