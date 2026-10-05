@@ -210,9 +210,20 @@ namespace ApartmentManagement.Api.Controllers
 
             if (unit != null)
             {
+                var wasAvailable = unit.Status == "Available";
                 unit.Status = "Occupied";
                 unit.CurrentResidentName = resident.FullName;
                 unit.CurrentResidentPhone = resident.PhoneNumber;
+
+                // Update complex occupancy count
+                if (wasAvailable)
+                {
+                    var complex = await _db.Complexes.FindAsync(req.TenantId);
+                    if (complex != null)
+                    {
+                        complex.OccupiedUnits++;
+                    }
+                }
             }
 
             await _db.SaveChangesAsync();
