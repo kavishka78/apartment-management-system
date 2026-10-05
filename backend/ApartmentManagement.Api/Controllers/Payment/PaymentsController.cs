@@ -26,7 +26,9 @@ namespace ApartmentManagement.Api.Controllers
             _configuration = configuration;
 
             StripeConfiguration.ApiKey =
-                _configuration["Stripe:SecretKey"];
+                _configuration["Stripe:SecretKey"] ??
+                Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY") ??
+                Environment.GetEnvironmentVariable("Stripe__SecretKey");
         }
 
 
@@ -73,6 +75,14 @@ namespace ApartmentManagement.Api.Controllers
                 });
             }
 
+            if (string.IsNullOrWhiteSpace(StripeConfiguration.ApiKey) || StripeConfiguration.ApiKey.Contains("YOUR_STRIPE") || StripeConfiguration.ApiKey.Contains("Set your Stripe"))
+            {
+                return BadRequest(new
+                {
+                    message = "Stripe Secret Key is not configured on backend server. Please configure Stripe:SecretKey in appsettings.json or environment variables."
+                });
+            }
+
             try
             {
                 var options = new PaymentIntentCreateOptions
@@ -110,11 +120,11 @@ namespace ApartmentManagement.Api.Controllers
                     currency = "lkr"
                 });
             }
-            catch (StripeException)
+            catch (StripeException ex)
             {
                 return BadRequest(new
                 {
-                    message = "Unable to create Stripe PaymentIntent."
+                    message = $"Unable to create Stripe PaymentIntent: {ex.Message}"
                 });
             }
         }
