@@ -15,12 +15,19 @@ export default function FacilityBookingInvoiceTable({ onSelect, refreshKey = 0 }
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError("");
     getInvoiceFacilityBookings()
-      .then((data) => { if (!cancelled) setBookings(Array.isArray(data) ? data : []); })
-      .catch(() => { if (!cancelled) setError("Unable to load facility bookings. Check your connection and try again."); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .then((data) => { 
+        if (!cancelled) {
+          setBookings(Array.isArray(data) ? data : []);
+          setLoading(false);
+        }
+      })
+      .catch(() => { 
+        if (!cancelled) {
+          setError("Unable to load facility bookings. Check your connection and try again.");
+          setLoading(false);
+        }
+      });
     return () => { cancelled = true; };
   }, [attempt, refreshKey]);
 
