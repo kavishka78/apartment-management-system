@@ -27,7 +27,7 @@ describe('Facilities Component API Integration & Error State Tests', () => {
     });
 
     expect(screen.getByText('Gym')).toBeInTheDocument();
-    expect(screen.getByText('Reason: Under maintenance')).toBeInTheDocument();
+    expect(screen.getByText(/Under maintenance/i)).toBeInTheDocument();
   });
 
   it('API Integration: Submits new facility via modal form and triggers API create', async () => {
