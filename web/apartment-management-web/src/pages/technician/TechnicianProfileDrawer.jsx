@@ -144,7 +144,7 @@ export default function TechnicianProfileDrawer({ isOpen, onClose }) {
     const isForcedReset = currentUser?.requiresPasswordReset;
 
     return (
-        <div style={{
+        <div className="technician-profile-overlay" style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(15, 23, 42, 0.6)',
             zIndex: 9999,
@@ -153,7 +153,7 @@ export default function TechnicianProfileDrawer({ isOpen, onClose }) {
             backdropFilter: 'blur(2px)'
         }}>
             {/* Drawer */}
-            <div style={{
+            <div className="technician-profile-drawer" style={{
                 width: '100%', maxWidth: '450px',
                 background: '#f8fafc',
                 height: '100%',
@@ -178,7 +178,7 @@ export default function TechnicianProfileDrawer({ isOpen, onClose }) {
                 `}</style>
 
                 {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
+                <div className="technician-profile-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
                     <h2 style={{ margin: 0, fontSize: '18px', color: '#0f172a', fontWeight: '700' }}>Technician Profile</h2>
                     {!isForcedReset && (
                         <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#475569' }}>
@@ -273,8 +273,8 @@ export default function TechnicianProfileDrawer({ isOpen, onClose }) {
 
             {/* Change Password Modal (Overlay inside Drawer) */}
             {showPasswordModal && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
-                    <div style={{ background: '#fff', padding: '30px', borderRadius: '16px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                <div className="technician-password-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+                    <div className="technician-password-modal" style={{ background: '#fff', padding: '30px', borderRadius: '16px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
                             <div style={{ background: '#dbeafe', padding: '8px', borderRadius: '50%', color: '#1e3a8a' }}><MdVpnKey size={20} /></div>
                             <h2 style={{ margin: 0, fontSize: '18px', color: '#0f172a', fontWeight: '700' }}>
