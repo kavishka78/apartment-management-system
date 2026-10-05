@@ -1,3 +1,4 @@
+import '../api_config.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -36,7 +37,7 @@ class PushNotificationService {
     try {
       final headers = await AuthService.authHeaders();
       await http.post(
-        Uri.parse('http://10.0.2.2:5073/api/auth/resident/fcm-token'),
+        Uri.parse('${ApiConfig.v1Url}/auth/resident/fcm-token'),
         headers: headers,
         body: jsonEncode({'token': token}),
       );

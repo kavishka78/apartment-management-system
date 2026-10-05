@@ -1,3 +1,4 @@
+import '../../services/api_config.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -195,7 +196,7 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
                         color: Colors.grey.shade200,
                         image: DecorationImage(
                           image: NetworkImage(
-                            'http://10.0.2.2:5073${_ticket!.photoPath}',
+                            '${ApiConfig.serverUrl}${_ticket!.photoPath}',
                           ),
                           fit: BoxFit.cover,
                           onError: (e, s) => const AssetImage(''), // Fallback handled by errorBuilder below implicitly if it was an Image widget, but since it's BoxDecoration we just let it fail silently or use a placeholder
@@ -203,7 +204,7 @@ class _MaintenanceDetailsScreenState extends State<MaintenanceDetailsScreen> {
                       ),
                       // A fallback if the network image completely fails
                       child: Image.network(
-                        'http://10.0.2.2:5073${_ticket!.photoPath}',
+                        '${ApiConfig.serverUrl}${_ticket!.photoPath}',
                         fit: BoxFit.cover,
                         errorBuilder: (ctx, err, stack) => const Center(
                           child: Column(

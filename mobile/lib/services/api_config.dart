@@ -8,9 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 1. In-app runtime override (persisted in SharedPreferences)
 /// 2. Command-line flag (--dart-define=API_URL=...)
 /// 3. Value from mobile/.env (API_URL=...)
-/// 4. Platform default (http://10.0.2.2:5073/api)
+/// 4. Deployed backend default
 class ApiConfig {
-  static const String _keyCustomUrl = 'ah_custom_api_base_url';
+  static const String _keyCustomUrl = 'ah_custom_api_base_url_cloud_v1';
   static const String _envUrl = String.fromEnvironment('API_URL');
   static String? _inMemoryCustomUrl;
 
@@ -71,8 +71,11 @@ class ApiConfig {
           ? dotenvUrl.substring(0, dotenvUrl.length - 1)
           : dotenvUrl;
     }
-    return kIsWeb ? 'http://localhost:5073/api' : 'http://10.0.2.2:5073/api';
+    return 'https://apartment-management-system-production.up.railway.app/api';
   }
+
+  /// Origin used for uploaded images.
+  static String get serverUrl => Uri.parse(baseUrl).origin;
 
   /// V1 API URL ending in `/api/v1`
   static String get v1Url => '$baseUrl/v1';
