@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import React from 'react';
 import Facilities from '../pages/admin/Facilities.jsx';
 import * as api from '../services/api.js';
 
