@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
 import "./CollectionReports.css";
+import "./PaymentAdminTheme.css";
 
 function CollectionReports() {
   const [report, setReport] = useState(null);

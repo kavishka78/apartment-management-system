@@ -8,6 +8,10 @@ namespace ApartmentManagement.Api.Models
 
         public int ApartmentId { get; set; }
 
+        // Set for invoices created from a facility booking. The unique index
+        // prevents the same booking from being invoiced more than once.
+        public int? FacilityBookingId { get; set; }
+
         public string InvoiceNumber { get; set; } = string.Empty;
 
         public DateTime BillingMonth { get; set; }

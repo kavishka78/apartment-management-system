@@ -132,6 +132,10 @@ export async function getBookings() {
   return request("/bookings");
 }
 
+export async function getInvoiceFacilityBookings() {
+  return request("/invoices/facility-bookings");
+}
+
 export async function getBookingsForFacility(facilityId) {
   return request(`/bookings/facility/${facilityId}`);
 }

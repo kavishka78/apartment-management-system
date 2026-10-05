@@ -217,6 +217,36 @@ public async Task<IActionResult> ConfirmStripePayment(
             });
         }
 
+        string? cardLastFourDigits = null;
+        if (!string.IsNullOrWhiteSpace(paymentIntent.PaymentMethodId))
+        {
+            try
+            {
+                var paymentMethod = await new PaymentMethodService()
+                    .GetAsync(paymentIntent.PaymentMethodId);
+                cardLastFourDigits = paymentMethod.Card?.Last4;
+            }
+            catch (StripeException)
+            {
+                // Keep recording a verified payment if Stripe cannot return
+                // optional card display details.
+            }
+        }
+        if (string.IsNullOrWhiteSpace(cardLastFourDigits) &&
+            !string.IsNullOrWhiteSpace(paymentIntent.LatestChargeId))
+        {
+            try
+            {
+                var charge = await new ChargeService()
+                    .GetAsync(paymentIntent.LatestChargeId);
+                cardLastFourDigits = charge.PaymentMethodDetails?.Card?.Last4;
+            }
+            catch (StripeException)
+            {
+                // Card digits are optional display information.
+            }
+        }
+
         var payment = new Payment
         {
             InvoiceId = invoice.Id,
@@ -226,6 +256,7 @@ public async Task<IActionResult> ConfirmStripePayment(
 
             Amount = invoice.TotalAmount,
             PaymentMethod = "Stripe Card",
+            CardLastFourDigits = cardLastFourDigits,
             Status = "Successful",
             PaidAt = DateTime.UtcNow
         };
