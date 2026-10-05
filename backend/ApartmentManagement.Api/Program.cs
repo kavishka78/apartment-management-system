@@ -108,6 +108,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Enable CORS immediately as the first middleware in the pipeline
+app.UseCors("ReactApp");
+
 // Ensure DB columns exist for new properties
 using (var scope = app.Services.CreateScope())
 {
@@ -178,9 +181,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-// CORS MUST be placed before any redirection, static files, or authentication/authorization
-app.UseCors("ReactApp");
 
 app.UseStaticFiles(); // For wwwroot if any
 var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
