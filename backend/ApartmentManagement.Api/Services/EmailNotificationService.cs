@@ -36,7 +36,8 @@ public class EmailNotificationService : INotificationService
                     _logger.LogInformation($"[SENDGRID EMAIL SENT] To: {toEmail} | Subject: {subject}");
                     return;
                 }
-                _logger.LogWarning($"[SENDGRID FAIL] Status: {response.StatusCode}. Falling back to SMTP/log.");
+                var errorResponseBody = await response.Body.ReadAsStringAsync();
+                _logger.LogWarning($"[SENDGRID FAIL] Status: {response.StatusCode} | Error: {errorResponseBody}. Falling back to log.");
             }
             catch (Exception ex)
             {
