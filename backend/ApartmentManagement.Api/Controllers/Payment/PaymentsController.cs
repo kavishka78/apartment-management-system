@@ -25,10 +25,33 @@ namespace ApartmentManagement.Api.Controllers
             _context = context;
             _configuration = configuration;
 
-            StripeConfiguration.ApiKey =
-                _configuration["Stripe:SecretKey"] ??
-                Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY") ??
-                Environment.GetEnvironmentVariable("Stripe__SecretKey");
+            var key = GetStripeSecretKey();
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                StripeConfiguration.ApiKey = key;
+            }
+        }
+
+        private string? GetStripeSecretKey()
+        {
+            var candidates = new[]
+            {
+                Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY"),
+                Environment.GetEnvironmentVariable("Stripe__SecretKey"),
+                _configuration["Stripe:SecretKey"],
+                _configuration["STRIPE_SECRET_KEY"]
+            };
+
+            foreach (var candidate in candidates)
+            {
+                if (!string.IsNullOrWhiteSpace(candidate) &&
+                    !candidate.Contains("YOUR_STRIPE") &&
+                    !candidate.Contains("Set your Stripe"))
+                {
+                    return candidate;
+                }
+            }
+            return null;
         }
 
 
@@ -75,13 +98,16 @@ namespace ApartmentManagement.Api.Controllers
                 });
             }
 
-            if (string.IsNullOrWhiteSpace(StripeConfiguration.ApiKey) || StripeConfiguration.ApiKey.Contains("YOUR_STRIPE") || StripeConfiguration.ApiKey.Contains("Set your Stripe"))
+            var stripeKey = GetStripeSecretKey();
+            if (string.IsNullOrWhiteSpace(stripeKey))
             {
                 return BadRequest(new
                 {
-                    message = "Stripe Secret Key is not configured on backend server. Please configure Stripe:SecretKey in appsettings.json or environment variables."
+                    message = "Stripe Secret Key is not configured on backend server. Please configure Stripe:SecretKey in appsettings.json or environment variable STRIPE_SECRET_KEY."
                 });
             }
+
+            StripeConfiguration.ApiKey = stripeKey;
 
             try
             {
