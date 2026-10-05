@@ -30,6 +30,29 @@ namespace ApartmentManagement.Api.Models
         public bool CanPay => Status == "Pending" &&
             !Payments.Any(p => p.Status == "Successful" || p.Status == "Verified");
 
+        public bool AddOverduePenalty(DateTime utcNow)
+        {
+            if (Status != "Pending" || DueDate.Date >= utcNow.Date ||
+                Payments.Any(p => p.Status == "Successful" || p.Status == "Verified") ||
+                InvoiceItems.Any(item => item.ChargeType == "OverduePenalty"))
+            {
+                return false;
+            }
+
+            var penalty = decimal.Round(TotalAmount * 0.05m, 2, MidpointRounding.AwayFromZero);
+            if (penalty <= 0)
+                return false;
+
+            InvoiceItems.Add(new InvoiceItem
+            {
+                Description = "Overdue Penalty (5%)",
+                ChargeType = "OverduePenalty",
+                Amount = penalty
+            });
+            TotalAmount += penalty;
+            return true;
+        }
+
         public List<Payment> Payments { get; set; } = new();
     }
 }

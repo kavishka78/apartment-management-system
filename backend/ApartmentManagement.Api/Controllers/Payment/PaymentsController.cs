@@ -66,6 +66,7 @@ namespace ApartmentManagement.Api.Controllers
         public async Task<IActionResult> CreatePaymentIntent([FromBody] CreatePaymentIntentRequest request)
         {
             var invoice = await _context.VisibleInvoices(User)
+                .Include(i => i.InvoiceItems)
                 .Include(i => i.Payments)
                 .FirstOrDefaultAsync(i => i.Id == request.InvoiceId);
 
@@ -76,6 +77,9 @@ namespace ApartmentManagement.Api.Controllers
                     message = "Invoice not found."
                 });
             }
+
+            if (invoice.AddOverduePenalty(DateTime.UtcNow))
+                await _context.SaveChangesAsync();
 
             if (invoice.Status != "Pending" || invoice.TotalAmount <= 0)
             {

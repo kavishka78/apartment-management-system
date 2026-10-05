@@ -95,6 +95,14 @@ public async Task<IActionResult> GetInvoices(
         .Take(pageSize)
         .ToListAsync();
 
+    var penaltiesApplied = false;
+    var now = DateTime.UtcNow;
+    foreach (var invoice in invoices)
+        penaltiesApplied |= invoice.AddOverduePenalty(now);
+
+    if (penaltiesApplied)
+        await _context.SaveChangesAsync();
+
     return Ok(new
     {
         items = invoices,
@@ -179,6 +187,9 @@ private async Task EnsureCurrentResidentRentInvoice()
             {
                 return NotFound();
             }
+
+            if (invoice.AddOverduePenalty(DateTime.UtcNow))
+                await _context.SaveChangesAsync();
 
             return invoice;
         }
