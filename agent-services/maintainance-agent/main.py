@@ -17,8 +17,9 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from models import TriageRequest, TriageResponse
+from models import TriageRequest, TriageResponse, ResidentChatRequest, ResidentChatResponse
 from agent import triage_complaint
+from resident_agent import handle_resident_chat
 
 load_dotenv()
 AI_PORT = int(os.getenv("AI_PORT", "8000"))
@@ -113,3 +114,16 @@ async def get_workflow_graph():
         return {"mermaid": mermaid}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post(
+    "/resident-intake",
+    response_model=ResidentChatResponse,
+    summary="Handle resident AI chat intake",
+    description="Conversational endpoint for residents to draft a maintenance complaint."
+)
+async def resident_intake(request: ResidentChatRequest) -> ResidentChatResponse:
+    try:
+        return await handle_resident_chat(request)
+    except Exception as e:
+        return ResidentChatResponse(success=False, status="error", reply="I'm having trouble connecting.", error=str(e))

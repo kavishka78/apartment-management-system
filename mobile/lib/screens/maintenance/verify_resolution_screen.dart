@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../models/maintenance/maintenance_model.dart';
 import '../../services/maintenance/maintenance_api_service.dart';
 
@@ -19,35 +20,59 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
 
   IconData _getCategoryIcon(String? categoryName) {
     switch (categoryName?.toLowerCase()) {
-      case 'plumbing': return Icons.water_drop;
-      case 'electrical': return Icons.electrical_services;
-      case 'hvac': return Icons.ac_unit;
-      case 'security': return Icons.security;
-      case 'cleaning': return Icons.cleaning_services;
-      case 'carpentry': return Icons.handyman;
-      case 'appliance': return Icons.kitchen;
-      case 'pest control': return Icons.pest_control;
-      case 'landscaping': return Icons.park;
-      case 'elevator': return Icons.elevator;
-      case 'building': return Icons.apartment;
-      default: return Icons.build;
+      case 'plumbing':
+        return Icons.water_drop;
+      case 'electrical':
+        return Icons.electrical_services;
+      case 'hvac':
+        return Icons.ac_unit;
+      case 'security':
+        return Icons.security;
+      case 'cleaning':
+        return Icons.cleaning_services;
+      case 'carpentry':
+        return Icons.handyman;
+      case 'appliance':
+        return Icons.kitchen;
+      case 'pest control':
+        return Icons.pest_control;
+      case 'landscaping':
+        return Icons.park;
+      case 'elevator':
+        return Icons.elevator;
+      case 'building':
+        return Icons.apartment;
+      default:
+        return Icons.build;
     }
   }
 
   Color _getCategoryColor(String? categoryName) {
     switch (categoryName?.toLowerCase()) {
-      case 'plumbing': return const Color(0xFF4FC3F7);
-      case 'electrical': return const Color(0xFFFFB74D);
-      case 'hvac': return const Color(0xFF81C784);
-      case 'security': return const Color(0xFFE57373);
-      case 'cleaning': return const Color(0xFF64B5F6);
-      case 'carpentry': return const Color(0xFFA1887F);
-      case 'appliance': return const Color(0xFF90A4AE);
-      case 'pest control': return const Color(0xFFFF8A65);
-      case 'landscaping': return const Color(0xFF81C784);
-      case 'elevator': return const Color(0xFF9575CD);
-      case 'building': return const Color(0xFF7986CB);
-      default: return const Color(0xFF90A4AE);
+      case 'plumbing':
+        return const Color(0xFF4FC3F7);
+      case 'electrical':
+        return const Color(0xFFFFB74D);
+      case 'hvac':
+        return const Color(0xFF81C784);
+      case 'security':
+        return const Color(0xFFE57373);
+      case 'cleaning':
+        return const Color(0xFF64B5F6);
+      case 'carpentry':
+        return const Color(0xFFA1887F);
+      case 'appliance':
+        return const Color(0xFF90A4AE);
+      case 'pest control':
+        return const Color(0xFFFF8A65);
+      case 'landscaping':
+        return const Color(0xFF81C784);
+      case 'elevator':
+        return const Color(0xFF9575CD);
+      case 'building':
+        return const Color(0xFF7986CB);
+      default:
+        return const Color(0xFF90A4AE);
     }
   }
 
@@ -103,7 +128,11 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
       appBar: AppBar(
         title: const Text(
           'Request Feedback',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w700, fontSize: 18),
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
         ),
         backgroundColor: const Color(0xFFF8F9FA),
         elevation: 0,
@@ -129,13 +158,18 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
                     children: [
                       Icon(Icons.error_outline, color: Colors.red.shade700),
                       const SizedBox(width: 12),
-                      Expanded(child: Text(_error, style: TextStyle(color: Colors.red.shade800))),
+                      Expanded(
+                        child: Text(
+                          _error,
+                          style: TextStyle(color: Colors.red.shade800),
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
               ],
-              
+
               // Success Icon
               Container(
                 width: 72,
@@ -147,19 +181,27 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
                 child: const Icon(Icons.check, color: Colors.white, size: 40),
               ),
               const SizedBox(height: 20),
-              
+
               const Text(
                 'Maintenance Completed',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF1E2532)),
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1E2532),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Your request has been resolved.\nPlease share your feedback.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600, height: 1.5, fontSize: 15),
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  height: 1.5,
+                  fontSize: 15,
+                ),
               ),
               const SizedBox(height: 32),
-              
+
               // Ticket Card
               Container(
                 padding: const EdgeInsets.all(16),
@@ -172,7 +214,11 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(left: 8.0, right: 8.0),
-                      child: Icon(_getCategoryIcon(widget.ticket.category?.name), color: _getCategoryColor(widget.ticket.category?.name), size: 32),
+                      child: Icon(
+                        _getCategoryIcon(widget.ticket.category?.name),
+                        color: _getCategoryColor(widget.ticket.category?.name),
+                        size: 32,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -181,34 +227,49 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
                         children: [
                           Text(
                             widget.ticket.title,
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF1E2532)),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: Color(0xFF1E2532),
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Text(
                             widget.ticket.category?.name ?? 'Maintenance',
-                            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     Text(
                       '#TKT-${widget.ticket.id}',
-                      style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.w600, fontSize: 13),
+                      style: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Star Rating
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'How would you rate the service?',
-                  style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF1E2532), fontSize: 15),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E2532),
+                    fontSize: 15,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -232,15 +293,19 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
                   );
                 }),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Comments Field
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Additional Comments (Optional)',
-                  style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF1E2532), fontSize: 15),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E2532),
+                    fontSize: 15,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -261,11 +326,13 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               if (_isSubmitting)
-                const Center(child: CircularProgressIndicator(color: Color(0xFF1E2532)))
+                const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF1E2532)),
+                )
               else
                 SizedBox(
                   width: double.infinity,
@@ -273,15 +340,23 @@ class _VerifyResolutionScreenState extends State<VerifyResolutionScreen> {
                   child: ElevatedButton(
                     onPressed: _submitFeedback,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E2532), // Theme navy instead of bright green
+                      backgroundColor: const Color(
+                        0xFF1E2532,
+                      ), // Theme navy instead of bright green
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: const StadiumBorder(),
                     ),
-                    child: const Text('Submit Feedback', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    child: const Text(
+                      'Submit Feedback',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
-                
+
               const SizedBox(height: 20),
             ],
           ),

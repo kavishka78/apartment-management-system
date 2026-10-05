@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../../services/maintenance/maintenance_api_service.dart';
 import 'create_complaint_screen.dart';
 import 'my_complaints_screen.dart';
+import 'resident_ai_assistant_screen.dart';
 import 'maintenance_history_screen.dart';
 import 'notifications_screen.dart';
 import '../../models/maintenance/maintenance_model.dart';
@@ -144,6 +145,30 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
           const SizedBox(width: 8),
         ],
       ),
+
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ResidentAiAssistantScreen(),
+            ),
+          ).then((needsRefresh) {
+            if (needsRefresh == true) _loadStats();
+          });
+        },
+        backgroundColor: Colors.white,
+        icon: const Icon(Icons.auto_awesome, color: Colors.blueAccent),
+        label: const Text(
+          'Ask Assistant',
+          style: TextStyle(
+            color: const Color(0xFF1E2532),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevation: 4,
+      ),
+
       body: RefreshIndicator(
         onRefresh: _loadStats,
         color: const Color(0xFF1E2532),

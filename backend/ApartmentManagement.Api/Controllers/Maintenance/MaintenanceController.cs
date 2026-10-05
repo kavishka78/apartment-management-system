@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -1147,6 +1147,23 @@ return Ok("Database setup successfully");
                 }).OrderByDescending(h => h.CreatedAt).ToList()
             };
         }
+
+        [HttpPost("chat")]
+        [Authorize(Roles = "Resident")]
+        public async Task<IActionResult> ChatWithAssistant([FromBody] ResidentChatRequestDto request)
+        {
+            try
+            {
+                var response = await _aiService.ChatWithResidentAgentAsync(request);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error communicating with Resident AI: {ex}");
+                return StatusCode(500, new { success = false, error = "Failed to communicate with AI Assistant." });
+            }
+        }
+
     }
 }
 
