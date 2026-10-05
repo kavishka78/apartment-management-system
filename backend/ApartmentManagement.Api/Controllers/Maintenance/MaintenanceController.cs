@@ -49,6 +49,8 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         {
             var workflow = new AgentWorkflow
             {
+                ApprovalUser = "",
+                ApprovalNote = "",
                 MaintenanceId = maintenanceId,
                 Objective = objective,
                 ApprovalStatus = "Failed",
@@ -216,14 +218,16 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                     bool isValid = allowedCats.Contains(result.Category) && allowedPris.Contains(result.Priority);
 
                     var workflow = new AgentWorkflow
-                    {
+            {
+                ApprovalUser = "",
+                ApprovalNote = "",
                         MaintenanceId = newId,
                         Objective = "Auto-Triage Complaint and Assign Technician",
                         Plan = System.Text.Json.JsonSerializer.Serialize(result.Plan),
                         CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
-                        ToolResults = result.ToolResults,
-                        ValidationResults = result.ValidationResults,
-                        Errors = result.Errors,
+                        ToolResults = result.ToolResults ?? "",
+                        ValidationResults = result.ValidationResults ?? "",
+                        Errors = result.Errors ?? "" ?? "",
                         ApprovalStatus = (result.RecommendedTechnicianId == null || !isValid) ? "Failed" : "Pending",
                         Status = (result.RecommendedTechnicianId == null || !isValid) ? "SafeFailure" : "PendingApproval",
                         IsSafeFailure = result.RecommendedTechnicianId == null || !isValid,
@@ -617,13 +621,15 @@ maintenance.History.Add(new MaintenanceHistory
             // Persist Agent Workflow State
             var workflow = new AgentWorkflow
             {
+                ApprovalUser = "",
+                ApprovalNote = "",
                 MaintenanceId = id,
                 Objective = "Triage Complaint and Assign Technician",
                 Plan = System.Text.Json.JsonSerializer.Serialize(result.Plan),
                 CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
-                ToolResults = result.ToolResults,
-                ValidationResults = result.ValidationResults,
-                Errors = result.Errors,
+                ToolResults = result.ToolResults ?? "",
+                ValidationResults = result.ValidationResults ?? "",
+                Errors = result.Errors ?? "" ?? "",
                 ApprovalStatus = approvalStatus,
                 Status = workflowStatus,
                 IsSafeFailure = workflowStatus == "SafeFailure",
@@ -815,13 +821,15 @@ maintenance.History.Add(new MaintenanceHistory
 
             var workflow = new AgentWorkflow
             {
+                ApprovalUser = "",
+                ApprovalNote = "",
                 MaintenanceId = id,
                 Objective = "Revise Triage Complaint",
                 Plan = System.Text.Json.JsonSerializer.Serialize(result.Plan),
                 CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
-                ToolResults = result.ToolResults,
-                ValidationResults = result.ValidationResults,
-                Errors = result.Errors,
+                ToolResults = result.ToolResults ?? "",
+                ValidationResults = result.ValidationResults ?? "",
+                Errors = result.Errors ?? "" ?? "",
                 ApprovalStatus = approvalStatus,
                 Status = workflowStatus,
                 IsSafeFailure = workflowStatus == "SafeFailure",

@@ -149,6 +149,21 @@ class DraftComplaint(BaseModel):
     description: str
     categoryId: int
 
+    @field_validator("categoryId")
+    @classmethod
+    def validate_category_id(cls, v: int) -> int:
+        if v < 1 or v > 5:
+            raise ValueError(f"Category ID {v} is invalid. Must be between 1 and 5.")
+        return v
+    
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str) -> str:
+        if len(v) < 5 or "test" in v.lower() and len(v) < 10:
+            raise ValueError("Title is too short or generic. Provide a descriptive title of the actual issue.")
+        return v
+
+
 class ResidentChatResponse(BaseModel):
     success: bool
     status: str             # "clarifying" | "ready" | "error"

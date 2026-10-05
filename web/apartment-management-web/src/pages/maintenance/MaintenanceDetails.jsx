@@ -75,7 +75,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
       .then(data => setAiRecommendation(data))
       .catch(err => {
         console.error(err);
-        setAiRecommendation({ error: 'Failed to load AI recommendation.' });
+        setAiRecommendation({ error: 'Failed to connect to Python Agent on port 8000. Is it running?' });
       });
   };
 
@@ -132,7 +132,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
   };
 
   const loadAvailableTechs = () => {
-    fetchWithAuth(`${API_BASE}/maintenance/technicians`)
+    fetchWithAuth(`${API_BASE}/technicians`)
       .then(res => res.json())
       .then(data => {
         setAvailableTechs(data.filter(t => t.status === 'Available'));
