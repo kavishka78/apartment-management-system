@@ -70,7 +70,7 @@ class TriageRequest(BaseModel):
     manager_feedback: Optional[str] = None
 
 
-# â”€â”€â”€ Response models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Response models
 
 class AgentStep(BaseModel):
     """A visible, auditable unit of work; no hidden reasoning is retained."""
@@ -133,3 +133,25 @@ class TriageResponse(BaseModel):
 
 
 
+
+
+# Resident Chat Models
+
+class ChatMessage(BaseModel):
+    role: str       # "user" or "assistant"
+    content: str
+
+class ResidentChatRequest(BaseModel):
+    messages: List[ChatMessage]
+
+class DraftComplaint(BaseModel):
+    title: str
+    description: str
+    categoryId: int
+
+class ResidentChatResponse(BaseModel):
+    success: bool
+    status: str             # "clarifying" | "ready" | "error"
+    reply: str              # The text to show the user
+    draftComplaint: Optional[DraftComplaint] = None
+    error: Optional[str] = None

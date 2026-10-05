@@ -99,7 +99,29 @@ namespace ApartmentManagement.Api.Services
 
             throw new Exception("Invalid response format from Python AI agent.");
         }
-    }
+    
+        public async Task<ResidentChatResponseDto> ChatWithResidentAgentAsync(ResidentChatRequestDto request)
+        {
+            var url = $"{_pythonAgentUrl}/resident-intake";
+            var requestMsg = new HttpRequestMessage(HttpMethod.Post, url);
+            requestMsg.Content = JsonContent.Create(request);
+            if (!string.IsNullOrEmpty(_agentSharedSecret))
+            {
+                requestMsg.Headers.Add("x-agent-key", _agentSharedSecret);
+            }
+
+            var response = await _httpClient.SendAsync(requestMsg);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Agent failed: {response.StatusCode} - {err}");
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<ResidentChatResponseDto>();
+            return result ?? new ResidentChatResponseDto { Success = false, Error = "Deserialization failed" };
+        }
+    
+}
 }
 
 

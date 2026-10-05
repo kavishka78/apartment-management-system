@@ -1,5 +1,6 @@
 import { SkeletonTable } from "../../components/admin/SkeletonLoader";
 import { motion } from 'framer-motion';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5073/api';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiSearch, FiFilter } from 'react-icons/fi';
@@ -27,9 +28,9 @@ function Complaints() {
     const headers = { 'Authorization': `Bearer ${token}` };
 
     Promise.all([
-      fetch('http://localhost:5073/api/maintenance', { headers }).then(r => r.json()),
-      fetch('http://localhost:5073/api/maintenance/categories', { headers }).then(r => r.json()),
-      fetch('http://localhost:5073/api/maintenance/technicians', { headers }).then(r => r.json())
+      fetch(`${API_BASE}/maintenance`, { headers }).then(r => r.json()),
+      fetch(`${API_BASE}/maintenance/categories`, { headers }).then(r => r.json()),
+      fetch(`${API_BASE}/maintenance/technicians`, { headers }).then(r => r.json())
     ])
     .then(([maintData, catData, techData]) => {
       setComplaints(maintData);
