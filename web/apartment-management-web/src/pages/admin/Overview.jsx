@@ -51,6 +51,8 @@ export default function Overview() {
         ]);
 
         if (dashStats.status === "fulfilled") setStats(dashStats.value);
+        else setError(dashStats.reason?.message || "Failed to load dashboard data");
+
         if (wf.status === "fulfilled") setWorkflows(wf.value);
         else setWorkflows([]);
       } catch (err) {
