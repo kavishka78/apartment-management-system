@@ -1,7 +1,9 @@
+import { paymentFetch } from "../../services/api";
 import { useEffect, useState } from "react";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
 import "./CollectionReports.css";
+import "./PaymentAdminTheme.css";
 
 function CollectionReports() {
   const [report, setReport] = useState(null);
@@ -14,8 +16,8 @@ function CollectionReports() {
         setLoading(true);
         setErrorMessage("");
 
-        const response = await fetch(
-          "http://localhost:5073/api/reports/collections"
+        const response = await paymentFetch(
+          "/reports/collections"
         );
 
         if (!response.ok) {

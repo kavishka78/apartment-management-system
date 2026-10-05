@@ -13,10 +13,72 @@ const EMPTY_FORM = {
   name: "",
   description: "",
   capacity: "",
+  hourlyCost: "0.00",
   openTime: "08:00",
   closeTime: "22:00",
   isActive: true,
 };
+
+// Helper to map facility name to an appropriate SVG icon
+function getFacilityIcon(name = "") {
+  const n = name.toLowerCase();
+  if (n.includes("pool") || n.includes("swim")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M3 19c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M14 6.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM17.5 11l-3-3m0 0l-3 3m3-3v4" />
+      </svg>
+    );
+  }
+  if (n.includes("gym") || n.includes("fitness") || n.includes("workout")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 0a2.25 2.25 0 01-2.25-2.25v-1.5C1.5 7.01 2.51 6 3.75 6h.75M3.75 12a2.25 2.25 0 00-2.25 2.25v1.5c0 1.24 1.01 2.25 2.25 2.25h.75m16.5-6a2.25 2.25 0 012.25-2.25v-1.5c0-1.24-1.01-2.25-2.25-2.25h-.75m2.25 6a2.25 2.25 0 002.25 2.25v1.5c0 1.24-1.01 2.25-2.25 2.25h-.75M6.75 6v12m10.5-12v12" />
+      </svg>
+    );
+  }
+  if (n.includes("tennis") || n.includes("court") || n.includes("badminton") || n.includes("squash") || n.includes("basketball")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 0112.728 0M18.364 18.364a9 9 0 01-12.728 0" />
+      </svg>
+    );
+  }
+  if (n.includes("hall") || n.includes("party") || n.includes("club") || n.includes("event") || n.includes("lounge")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+    );
+  }
+  if (n.includes("bbq") || n.includes("grill") || n.includes("din") || n.includes("kitchen")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v3m-4-2v2m8-2v2M4 11h16m-1 0a7 7 0 01-14 0m2 0v6a2 2 0 002 2h6a2 2 0 002-2v-6" />
+      </svg>
+    );
+  }
+  if (n.includes("park") || n.includes("garden") || n.includes("playground") || n.includes("play")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zm0 0v-8m-4 4l4-4 4 4" />
+      </svg>
+    );
+  }
+  if (n.includes("sauna") || n.includes("spa") || n.includes("steam")) {
+    return (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v4m-4-2v3m8-3v3M4 14a8 8 0 0016 0H4z" />
+      </svg>
+    );
+  }
+  // Default building/amenity icon
+  return (
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.75a.75.75 0 00-.75-.75H4.5a.75.75 0 00-.75.75V21h15.75z" />
+    </svg>
+  );
+}
 
 export default function Facilities() {
   const [facilities, setFacilities] = useState([]);
@@ -125,14 +187,15 @@ export default function Facilities() {
     const facilityBookings = filteredBookings.filter(
       (b) => b.facilityId === facilityId
     );
-    const totalAllTime = bookings.filter(
-      (b) => b.facilityId === facilityId && b.status !== "Rejected"
-    ).length;
+    const totalBookedCapacity = facilityBookings.reduce(
+      (sum, b) => sum + (b.bookedCapacity || 1),
+      0
+    );
 
     return {
       count: facilityBookings.length,
       bookings: facilityBookings,
-      totalAllTime,
+      totalBookedCapacity,
     };
   };
 
@@ -163,6 +226,7 @@ export default function Facilities() {
       name: facility.name,
       description: facility.description,
       capacity: String(facility.capacity),
+      hourlyCost: String(facility.hourlyCost ?? "0.00"),
       openTime: facility.openTime?.substring(0, 5) || "08:00",
       closeTime: facility.closeTime?.substring(0, 5) || "22:00",
       isActive: facility.isActive,
@@ -230,6 +294,7 @@ export default function Facilities() {
         name: form.name,
         description: form.description,
         capacity: parseInt(form.capacity, 10),
+        hourlyCost: parseFloat(form.hourlyCost || "0"),
         openTime: form.openTime + ":00",
         closeTime: form.closeTime + ":00",
         isActive: form.isActive,
@@ -381,6 +446,7 @@ export default function Facilities() {
                 <tr>
                   <th>Facility</th>
                   <th>Operating Hours & Capacity</th>
+                  <th>Hourly Rate</th>
                   <th>Bookings ({filterRange})</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -389,7 +455,7 @@ export default function Facilities() {
               <tbody>
                 {facilities.length === 0 ? (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
+                    <td colSpan="6" style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
                       No facilities found. Click "Add Facility" to get started.
                     </td>
                   </tr>
@@ -401,10 +467,15 @@ export default function Facilities() {
                     return (
                       <tr key={f.id}>
                         <td>
-                          <div>
-                            <span className="facility-name">{f.name}</span>
-                            <div className="td-desc" style={{ marginTop: "2px" }}>
-                              {f.description}
+                          <div className="facility-cell">
+                            <span className="facility-icon-badge">
+                              {getFacilityIcon(f.name)}
+                            </span>
+                            <div>
+                              <span className="facility-name">{f.name}</span>
+                              <div className="td-desc" style={{ marginTop: "2px" }}>
+                                {f.description}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -412,9 +483,13 @@ export default function Facilities() {
                           <div style={{ fontSize: "13px", fontWeight: "500", color: "#334155" }}>
                             {formatTime(f.openTime)} – {formatTime(f.closeTime)}
                           </div>
-                          <div style={{ marginTop: "4px" }}>
-                            <span className="capacity-badge">Capacity: {f.capacity}</span>
+                          <div className="td-desc">Capacity: {f.capacity} spots</div>
+                        </td>
+                        <td>
+                          <div style={{ fontSize: "13.5px", fontWeight: "700", color: "#0f172a" }}>
+                            {f.hourlyCost > 0 ? `LKR ${Number(f.hourlyCost).toLocaleString("en-US", { minimumFractionDigits: 2 })} / hr` : "Free"}
                           </div>
+                          <div className="td-desc">per spot reserved</div>
                         </td>
                         <td>
                           <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
@@ -423,12 +498,12 @@ export default function Facilities() {
                             >
                               {bookingCount} {bookingCount === 1 ? "Booking" : "Bookings"}
                             </span>
-                            <span style={{ fontSize: "11px", color: "#64748b" }}>
-                              All-Time Total: {stats.totalAllTime}
+                            <span style={{ fontSize: "11.5px", fontWeight: "600", color: "#334155" }}>
+                              Booked Capacity: {stats.totalBookedCapacity} {stats.totalBookedCapacity === 1 ? "Spot" : "Spots"} ({filterRange === "today" ? "Today" : filterRange === "week" ? "This Week" : filterRange === "month" ? "This Month" : "Total"})
                             </span>
                           </div>
                         </td>
-                        <td>
+                        <td style={{ whiteSpace: "normal", minWidth: "160px", maxWidth: "220px" }}>
                           <span
                             className={`badge ${f.isActive ? "badge--success" : "badge--danger"}`}
                           >
@@ -437,14 +512,18 @@ export default function Facilities() {
                           {!f.isActive && f.deactivationReason && (
                             <div
                               style={{
-                                fontSize: "11px",
-                                color: "#dc2626",
-                                marginTop: "4px",
-                                maxWidth: "170px",
-                                lineHeight: "1.3",
+                                fontSize: "11.5px",
+                                color: "#b91c1c",
+                                marginTop: "6px",
+                                lineHeight: "1.4",
+                                wordBreak: "break-word",
+                                background: "#fef2f2",
+                                padding: "6px 8px",
+                                borderRadius: "6px",
+                                border: "1px solid #fecaca",
                               }}
                             >
-                              Reason: {f.deactivationReason}
+                              <strong>Reason:</strong> {f.deactivationReason}
                             </div>
                           )}
                         </td>
@@ -526,7 +605,7 @@ export default function Facilities() {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="fac-cap">Capacity</label>
+                  <label htmlFor="fac-cap">Capacity (Spots)</label>
                   <input
                     id="fac-cap"
                     name="capacity"
@@ -536,6 +615,21 @@ export default function Facilities() {
                     value={form.capacity}
                     onChange={handleChange}
                     placeholder="50"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="fac-cost">Hourly Cost (LKR / spot)</label>
+                  <input
+                    id="fac-cost"
+                    name="hourlyCost"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={form.hourlyCost}
+                    onChange={handleChange}
+                    placeholder="500.00"
                   />
                 </div>
 
@@ -564,16 +658,20 @@ export default function Facilities() {
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginTop: "12px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={form.isActive}
-                    onChange={handleChange}
-                  />
-                  <span>Active Facility</span>
-                </label>
+              <div className="form-group" style={{ marginTop: "16px" }}>
+                <div className="form-checkbox-container">
+                  <label htmlFor="fac-active" className="form-checkbox-label">
+                    <input
+                      id="fac-active"
+                      type="checkbox"
+                      name="isActive"
+                      checked={form.isActive}
+                      onChange={handleChange}
+                    />
+                    <span className="checkbox-text-title">Active Facility</span>
+                  </label>
+                  <p className="checkbox-text-desc">When active, residents can view and book this facility on the mobile app.</p>
+                </div>
               </div>
 
               <div className="form-actions">
@@ -706,7 +804,7 @@ export default function Facilities() {
                     <th>Resident ID</th>
                     <th>Date</th>
                     <th>Time Slot</th>
-                    <th>Status</th>
+                    <th>Booked Capacity</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -726,15 +824,8 @@ export default function Facilities() {
                           {b.startTime?.substring(0, 5)} – {b.endTime?.substring(0, 5)}
                         </td>
                         <td>
-                          <span
-                            className={`badge ${b.status === "Approved"
-                                ? "badge--success"
-                                : b.status === "Pending"
-                                  ? "badge--warning"
-                                  : "badge--danger"
-                              }`}
-                          >
-                            {b.status}
+                          <span className="capacity-badge" style={{ background: "#f1f5f9", color: "#334155", border: "1px solid #e2e8f0", fontWeight: "600", padding: "4px 10px", borderRadius: "6px" }}>
+                            Capacity: {b.bookedCapacity || 1} {(b.bookedCapacity || 1) === 1 ? "Spot" : "Spots"}
                           </span>
                         </td>
                       </tr>

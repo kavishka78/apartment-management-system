@@ -46,3 +46,27 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+.gradle/
+build/
+/android/app/src/main/gen/
+
+# Flutter/Dart/Android caching and secrets
+.dart_tool/
+local.properties
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# iOS/macOS Ephemeral build files
+ios/Flutter/ephemeral/
+macos/Flutter/ephemeral/
+
+# Mobile build caches and machine-specific files
+mobile/.dart_tool/
+mobile/android/local.properties
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/ios/Flutter/ephemeral/
+mobile/macos/Flutter/ephemeral/
+
+.env

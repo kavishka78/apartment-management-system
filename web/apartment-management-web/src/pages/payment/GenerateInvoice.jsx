@@ -1,9 +1,14 @@
+import { paymentFetch } from "../../services/api";
 import { useState } from "react";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
 import "./GenerateInvoice.css";
+import "./PaymentAdminTheme.css";
+import FacilityBookingInvoiceTable from "../../components/payment/FacilityBookingInvoiceTable";
 
 function GenerateInvoice() {
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [bookingRefresh, setBookingRefresh] = useState(0);
   const [formData, setFormData] = useState({
     residentId: "",
     apartmentId: "",
@@ -33,7 +38,24 @@ function GenerateInvoice() {
   setSuccessMessage("");
   setErrorMessage("");
 
-    console.log("Generate button clicked");
+  if (selectedBooking) {
+    try {
+      const response = await paymentFetch("/invoices/generate-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: selectedBooking.bookingId, apartmentId: Number(formData.apartmentId), amount: Number(formData.facilityCharge), dueDate: formData.dueDate }),
+      });
+      const result = await response.json();
+      if (!response.ok) { setErrorMessage(result.message || "Failed to generate invoice."); return; }
+      setSuccessMessage("Facility booking invoice generated successfully.");
+      setSelectedBooking(null);
+      setBookingRefresh((n) => n + 1);
+      setFormData({ residentId: "", apartmentId: "", billingMonth: "", dueDate: "", maintenanceFee: "", utilityCharge: "", parkingCharge: "", facilityCharge: "" });
+    } catch {
+      setErrorMessage("Unable to connect to the server. Please try again.");
+    }
+    return;
+  }
 
   const invoiceData = {
     residentId: Number(formData.residentId),
@@ -47,8 +69,8 @@ function GenerateInvoice() {
   };
 
   try {
-    const response = await fetch(
-      "http://localhost:5073/api/invoices/generate-monthly",
+    const response = await paymentFetch(
+      "/invoices/generate-monthly",
       {
         method: "POST",
         headers: {
@@ -109,12 +131,24 @@ setFormData({
           </div>
         </header>
 
+        <FacilityBookingInvoiceTable refreshKey={bookingRefresh} onSelect={(booking) => {
+          setSelectedBooking(booking);
+          setSuccessMessage("");
+          setErrorMessage("");
+          const [year, month] = String(booking.bookingDate).slice(0, 10).split("-").map(Number);
+          const billingMonth = `${year}-${String(month).padStart(2, "0")}`;
+          const due = new Date(year, month, 0);
+          setFormData((prev) => ({ ...prev, residentId: String(booking.residentId), apartmentId: String(booking.apartmentId), billingMonth, dueDate: `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}-${String(due.getDate()).padStart(2, "0")}`, maintenanceFee: "0", utilityCharge: "0", parkingCharge: "0", facilityCharge: String(booking.amount) }));
+        }} />
+
         <section className="generate-invoice-panel">
 
           <div className="generate-form-header">
   <h2>Invoice Details</h2>
-  <p>Enter the resident, apartment and monthly charge details.</p>
+  <p>{selectedBooking ? `Review the invoice details for ${selectedBooking.facilityName} booking #${selectedBooking.bookingId}.` : "Enter the resident, apartment and monthly charge details."}</p>
 </div>
+
+{selectedBooking && <div className="booking-selection-summary">Selected booking #{selectedBooking.bookingId}: {selectedBooking.facilityName} · {selectedBooking.residentName} · {selectedBooking.apartmentNumber} · {selectedBooking.startTime?.slice(0, 5)}–{selectedBooking.endTime?.slice(0, 5)}</div>}
 
 {successMessage && (
   <div className="invoice-message success-message">
@@ -180,7 +214,7 @@ setFormData({
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={selectedBooking ? { display: "none" } : undefined}>
                 <label>Maintenance Fee (Rs.)</label>
                 <input
                   type="number"
@@ -189,11 +223,11 @@ setFormData({
                   onChange={handleChange}
                   placeholder="0.00"
                   min="0"
-                  required
+                  required={!selectedBooking}
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={selectedBooking ? { display: "none" } : undefined}>
                 <label>Utility Charge (Rs.)</label>
                 <input
                   type="number"
@@ -205,7 +239,7 @@ setFormData({
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={selectedBooking ? { display: "none" } : undefined}>
                 <label>Parking Charge (Rs.)</label>
                 <input
                   type="number"
@@ -225,14 +259,16 @@ setFormData({
                   value={formData.facilityCharge}
                   onChange={handleChange}
                   placeholder="0.00"
-                  min="0"
+                  min={selectedBooking ? "0.01" : "0"}
+                  step="any"
+                  required={Boolean(selectedBooking)}
                 />
               </div>
 
             </div>
 
             <div className="form-actions">
-              <button type="button" className="cancel-btn">
+              <button type="button" className="cancel-btn" onClick={() => { setSelectedBooking(null); setFormData({ residentId: "", apartmentId: "", billingMonth: "", dueDate: "", maintenanceFee: "", utilityCharge: "", parkingCharge: "", facilityCharge: "" }); }}>
                 Cancel
               </button>
 

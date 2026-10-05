@@ -10,8 +10,6 @@ class ReceiptsScreen extends StatefulWidget {
 }
 
 class _ReceiptsScreenState extends State<ReceiptsScreen> {
-  // Temporary until authentication is connected.
-  static const int residentId = 6;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -31,9 +29,7 @@ class _ReceiptsScreenState extends State<ReceiptsScreen> {
     });
 
     final result =
-        await PaymentApiService.getReceiptsForResident(
-      residentId: residentId,
-    );
+        await PaymentApiService.getReceiptsForResident();
 
     if (!mounted) return;
 
@@ -319,16 +315,6 @@ class _ReceiptsScreenState extends State<ReceiptsScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 10),
-
-                _ReceiptInfoRow(
-                  title: 'Card',
-                  value: receipt[
-                              'cardLastFourDigits'] !=
-                          null
-                      ? '•••• ${receipt['cardLastFourDigits']}'
-                      : '-',
-                ),
               ],
             ),
           );

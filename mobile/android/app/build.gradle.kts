@@ -2,10 +2,11 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.example.mobile"
+    namespace = "apartment.management_hub"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +17,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.mobile"
+        applicationId = "apartment.management_hub"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -31,10 +32,16 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
+            // Disable lint checks for third-party libraries (Stripe SDK)
+            isMinifyEnabled = false
+            isShrinkResources = false
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
+    }
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
 }
 

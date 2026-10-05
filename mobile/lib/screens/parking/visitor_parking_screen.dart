@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/parking/parking_api_service.dart';
+import '../../services/auth/auth_service.dart';
 
 class VisitorParkingScreen extends StatefulWidget {
   const VisitorParkingScreen({super.key});
@@ -14,7 +15,7 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _vehicleController = TextEditingController();
-  DateTime _expectedArrival = DateTime.now().add(const Duration(hours: 2));
+  final DateTime _expectedArrival = DateTime.now().add(const Duration(hours: 2));
   bool _isSubmitting = false;
 
   List<dynamic> _activeVisitors = [];
@@ -52,8 +53,11 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
 
     setState(() => _isSubmitting = true);
 
+    final session = await AuthService.getSession();
+    final currentResidentId = (session != null && session.residentId > 0) ? session.residentId : 1;
+
     final res = await ParkingApiService.preRegisterVisitor(
-      residentId: 101, // Mock resident ID
+      residentId: currentResidentId,
       visitorName: _nameController.text,
       phoneNumber: _phoneController.text,
       vehicleNumber: _vehicleController.text,
@@ -279,23 +283,50 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
-                        labelText: 'Phone Number',
+                        labelText: 'Phone Number (e.g. 0771234567)',
                         prefixIcon: const Icon(Icons.phone_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'Enter phone number';
+                        }
+                        final cleaned = val.trim().replaceAll(RegExp(r'[\s\-]'), '');
+                        // Sri Lankan phone number standard: 10 digits starting with 0 (e.g. 0771234567, 0112345678)
+                        final phoneRegex = RegExp(r'^0\d{9}$');
+                        if (!phoneRegex.hasMatch(cleaned)) {
+                          return 'Enter valid 10-digit phone number (e.g. 0771234567)';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _vehicleController,
                       decoration: InputDecoration(
-                        labelText: 'Vehicle Number (For parking)',
+                        labelText: 'Vehicle Number (Optional, e.g. CAD-1234 / 300-1234)',
                         prefixIcon: const Icon(Icons.directions_car_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) return null; // Optional
+                        final cleaned = val.trim().toUpperCase();
+                        // Sri Lankan Vehicle Number Standards:
+                        // Modern: 2 or 3 letters (with optional 2-letter province like WP) followed by 4 digits (e.g., WP CAD-1234, CAD-1234, AB-1234)
+                        // Vintage/Old: 1-3 digits followed by 4 digits (e.g. 300-1234, 64-1234, 19-1234)
+                        // Motorbikes/Three Wheelers: e.g. WP BBD-1234, BZ-1234
+                        final slVehicleRegex = RegExp(
+                          r'^(?:[A-Z]{2}\s+)?(?:[A-Z]{1,3}|\d{1,3})[\s\-]?\d{4}$',
+                        );
+                        if (!slVehicleRegex.hasMatch(cleaned)) {
+                          return 'Enter valid LK Vehicle No. (e.g. CAD-1234, WP BBD-5678, 300-1234)';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 18),
                     SizedBox(
@@ -303,18 +334,22 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                       height: 48,
                       child: ElevatedButton.icon(
                         onPressed: _isSubmitting ? null : _submitVisitorPass,
-                        icon: const Icon(Icons.qr_code_2_rounded),
+                        icon: const Icon(Icons.badge_outlined, size: 20),
                         label: _isSubmitting
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                               )
-                            : const Text('Generate Gate Access Pass'),
+                            : const Text(
+                                'Generate Gate Access Pass',
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                              ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF17212B),
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          elevation: 0,
+                          shape: const StadiumBorder(),
                         ),
                       ),
                     ),
@@ -439,30 +474,25 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            OutlinedButton.icon(
+                            OutlinedButton(
                               onPressed: () => _cancelVisitorPass(passId),
-                              icon: const Icon(
-                                Icons.cancel_outlined,
-                                size: 16,
-                                color: Colors.red,
-                              ),
-                              label: const Text(
-                                'Cancel Pass',
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                ),
-                              ),
                               style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.red,
                                 side: const BorderSide(
                                   color: Color(0xFFFECACA),
                                 ),
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
+                                  horizontal: 14,
                                   vertical: 6,
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                shape: const StadiumBorder(),
+                              ),
+                              child: const Text(
+                                'Cancel Pass',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),

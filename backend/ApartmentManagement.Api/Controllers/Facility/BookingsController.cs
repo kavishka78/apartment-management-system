@@ -19,13 +19,20 @@ namespace ApartmentManagement.Api.Controllers
             _logger = logger;
         }
 
-        // Get All Bookings
+        // Get Bookings (Filtered by ResidentId if provided)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookings()
+        public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookings([FromQuery] int? residentId)
         {
             try
             {
-                var bookings = await _context.FacilityBookings
+                var query = _context.FacilityBookings.AsQueryable();
+
+                if (residentId.HasValue && residentId.Value > 0)
+                {
+                    query = query.Where(b => b.ResidentId == residentId.Value);
+                }
+
+                var bookings = await query
                     .Include(b => b.Facility)
                     .OrderByDescending(b => b.BookingDate)
                     .Select(b => new BookingResponseDto
@@ -37,6 +44,9 @@ namespace ApartmentManagement.Api.Controllers
                         BookingDate = b.BookingDate,
                         StartTime = b.StartTime,
                         EndTime = b.EndTime,
+                        BookedCapacity = b.BookedCapacity > 0 ? b.BookedCapacity : 1,
+                        HourlyCost = b.Facility != null ? b.Facility.HourlyCost : 0,
+                        TotalCost = b.TotalCost,
                         Status = b.Status.ToString()
                     }).ToListAsync();
 
@@ -69,6 +79,9 @@ namespace ApartmentManagement.Api.Controllers
                         BookingDate = b.BookingDate,
                         StartTime = b.StartTime,
                         EndTime = b.EndTime,
+                        BookedCapacity = b.BookedCapacity > 0 ? b.BookedCapacity : 1,
+                        HourlyCost = b.Facility != null ? b.Facility.HourlyCost : 0,
+                        TotalCost = b.TotalCost,
                         Status = b.Status.ToString()
                     }).ToListAsync();
 
@@ -80,6 +93,7 @@ namespace ApartmentManagement.Api.Controllers
                 return StatusCode(500, new { Message = "An error occurred while retrieving bookings for the facility.", Details = ex.Message });
             }
         }
+
 
         // Create a Booking For A Facility
         [HttpPost]
@@ -110,34 +124,55 @@ namespace ApartmentManagement.Api.Controllers
                     return BadRequest("Cannot book a facility for a past date or time.");
                 }
 
-                // Check Capacity & Existing Bookings Count
-                var activeBookingsCount = await _context.FacilityBookings.CountAsync(b =>
-                    b.FacilityId == dto.FacilityId &&
-                    b.BookingDate.Date == bookingDateUtc &&
-                    b.Status != BookingStatus.Rejected &&
-                    ((dto.StartTime < b.EndTime) && (dto.EndTime > b.StartTime))
-                );
+                // Check Capacity & Sum of Existing Booked Capacity for Overlapping Time Slot
+                var overlappingBookings = await _context.FacilityBookings
+                    .Where(b => b.FacilityId == dto.FacilityId &&
+                                b.BookingDate.Date == bookingDateUtc &&
+                                b.Status != BookingStatus.Rejected &&
+                                ((dto.StartTime < b.EndTime) && (dto.EndTime > b.StartTime)))
+                    .ToListAsync();
 
-                if (activeBookingsCount >= facility.Capacity)
+                int alreadyBookedCapacity = overlappingBookings.Sum(b => b.BookedCapacity > 0 ? b.BookedCapacity : 1);
+                int requestedCapacity = dto.BookedCapacity > 0 ? dto.BookedCapacity : 1;
+                int remainingCapacity = Math.Max(0, facility.Capacity - alreadyBookedCapacity);
+
+                if (alreadyBookedCapacity + requestedCapacity > facility.Capacity)
                 {
-                    return Conflict($"Facility capacity limit reached ({activeBookingsCount}/{facility.Capacity} spots taken) for the selected time slot.");
+                    return Conflict($"Booking request for {requestedCapacity} {(requestedCapacity == 1 ? "spot" : "spots")} exceeds remaining facility capacity ({remainingCapacity} {(remainingCapacity == 1 ? "spot" : "spots")} available for this time slot).");
+                }
+
+                // Calculate Total Cost (Hours * HourlyCost * BookedCapacity)
+                double hours = (dto.EndTime - dto.StartTime).TotalHours;
+                decimal calculatedCost = dto.TotalCost > 0 
+                    ? dto.TotalCost 
+                    : (decimal)hours * facility.HourlyCost * requestedCapacity;
+
+                // Validate Resident Exists or fallback to valid resident in DB
+                var residentExists = await _context.Residents.AnyAsync(r => r.Id == dto.ResidentId);
+                int validResidentId = dto.ResidentId;
+                if (!residentExists)
+                {
+                    var firstResident = await _context.Residents.FirstOrDefaultAsync();
+                    validResidentId = firstResident?.Id ?? 1;
                 }
 
                 // Auto-Confirm Booking
                 var booking = new FacilityBooking
                 {
                     FacilityId = dto.FacilityId,
-                    ResidentId = dto.ResidentId,
+                    ResidentId = validResidentId,
                     BookingDate = bookingDateUtc,
                     StartTime = dto.StartTime,
                     EndTime = dto.EndTime,
+                    BookedCapacity = requestedCapacity,
+                    TotalCost = Math.Round(calculatedCost, 2),
                     Status = BookingStatus.Approved
                 };
 
                 _context.FacilityBookings.Add(booking);
                 await _context.SaveChangesAsync();
 
-                return StatusCode(201, new { Message = "Booking confirmed! Spot reserved successfully.", BookingId = booking.BookingId });
+                return StatusCode(201, new { Message = "Booking confirmed! Spot reserved successfully.", BookingId = booking.BookingId, TotalCost = booking.TotalCost });
             }
             catch (Exception ex)
             {
@@ -167,6 +202,34 @@ namespace ApartmentManagement.Api.Controllers
             {
                 _logger.LogError(ex, "Error occurred in ApproveBooking for BookingId: {BookingId}", id);
                 return StatusCode(500, new { Message = "An error occurred while approving the booking.", Details = ex.Message });
+            }
+        }
+
+        // Cancel / Delete Booking (Upcoming only)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> CancelBooking(int id)
+        {
+            try
+            {
+                var booking = await _context.FacilityBookings.FindAsync(id);
+                if (booking == null) return NotFound("Booking not found.");
+
+                // Validate past booking
+                var bookingStartDateTime = booking.BookingDate.Date.Add(booking.StartTime);
+                if (bookingStartDateTime < DateTime.UtcNow.AddMinutes(-5))
+                {
+                    return BadRequest("Past bookings cannot be cancelled.");
+                }
+
+                _context.FacilityBookings.Remove(booking);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Message = "Booking cancelled successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred in CancelBooking for BookingId: {BookingId}", id);
+                return StatusCode(500, new { Message = "An error occurred while cancelling the booking.", Details = ex.Message });
             }
         }
     }

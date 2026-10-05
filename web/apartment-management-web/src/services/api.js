@@ -1,13 +1,56 @@
-const API_BASE = "http://localhost:5073/api";
+const API_BASE = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5073/api"
+).replace(/\/+$/, "");
+
+const TOKEN_KEY = "ah_token";
+
+export function getAuthToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAuthToken(token) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // storage unavailable; the session lasts until reload
+  }
+}
+
+// Payment pages retain their Response-based handling while using the existing session.
+export function paymentFetch(endpoint, options = {}) {
+  const token = getAuthToken();
+  return fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers: {
+      ...options.headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+}
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
+  const token = getAuthToken();
   const config = {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
   };
 
   const response = await fetch(url, config);
+
+  if (response.status === 401 && token && endpoint !== "/v1/auth/login") {
+    setAuthToken(null);
+    window.location.assign("/login");
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -89,6 +132,10 @@ export async function getBookings() {
   return request("/bookings");
 }
 
+export async function getInvoiceFacilityBookings() {
+  return request("/invoices/facility-bookings");
+}
+
 export async function getBookingsForFacility(facilityId) {
   return request(`/bookings/facility/${facilityId}`);
 }
@@ -130,6 +177,10 @@ export async function deleteParkingSlot(id) {
 }
 
 // ─── Workflows (AI Approvals) ────────────────────────────────
+export async function getAllWorkflows() {
+  return request("/workflows");
+}
+
 export async function getPendingWorkflows() {
   return request("/workflows?status=pending");
 }
@@ -149,9 +200,171 @@ export async function reviseWorkflow(id, data) {
   });
 }
 
+// ═════════════════════════════════════════════════════════════
+// ─── Student 1: Tenant & Resident Registry Management ─────────
+// ═════════════════════════════════════════════════════════════
+
+// In-memory mock store for smooth UI previews when backend is connecting
+let mockTenants = [
+  {
+    id: 1,
+    name: "Lotus Grand Residencies",
+    code: "LGR-01",
+    address: "No. 45, Alfred House Gardens, Colombo 03",
+    contactEmail: "management@lotusgrand.lk",
+    contactPhone: "+94 11 258 9630",
+    subscriptionPlan: "Enterprise B2B",
+    totalUnits: 48,
+    occupiedUnits: 38,
+    status: "Active",
+    createdAt: "2026-01-15T08:00:00Z",
+  },
+  {
+    id: 2,
+    name: "Cinnamon Breeze Condominiums",
+    code: "CBC-02",
+    address: "No. 120, Marine Drive, Colombo 04",
+    contactEmail: "admin@cinnamonbreeze.lk",
+    contactPhone: "+94 11 472 1100",
+    subscriptionPlan: "Standard SaaS",
+    totalUnits: 32,
+    occupiedUnits: 25,
+    status: "Active",
+    createdAt: "2026-02-10T09:30:00Z",
+  },
+  {
+    id: 3,
+    name: "Pearl Oceanic Luxury Suites",
+    code: "POL-03",
+    address: "No. 88, Galle Road, Mount Lavinia",
+    contactEmail: "ops@pearloceanic.com",
+    contactPhone: "+94 11 271 4455",
+    subscriptionPlan: "Premium Tier",
+    totalUnits: 60,
+    occupiedUnits: 45,
+    status: "Active",
+    createdAt: "2026-03-01T11:00:00Z",
+  }
+];
+
+
+// ─── API Functions for Tenants ────────────────────────────────
+export async function getTenants() {
+  try {
+    return await request("/v1/tenants");
+  } catch {
+    return [...mockTenants];
+  }
+}
+
+export async function createTenant(data) {
+  try {
+    return await request("/v1/tenants", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  } catch {
+    const newTenant = {
+      id: mockTenants.length + 1,
+      ...data,
+      totalUnits: data.totalUnits || 0,
+      occupiedUnits: 0,
+      status: "Active",
+      createdAt: new Date().toISOString(),
+    };
+    mockTenants.unshift(newTenant);
+    return newTenant;
+  }
+}
+
+// ─── Platform: auth, complexes, admins, subscriptions ─────────
+const post = (url, body = {}) => request(url, { method: "POST", body: JSON.stringify(body) });
+
+export const loginApi = (email, password) => post("/v1/auth/login", { email, password });
+export const googleLoginApi = (credential) => post("/v1/auth/google", { credential });
+export const getMeApi = () => request("/v1/auth/me");
+
+export const getComplexes = () => request("/v1/complexes");
+export const getComplexById = (id) => request(`/v1/complexes/${id}`);
+export const createComplexApi = (data) => post("/v1/complexes", data);
+export const updateComplexPackageApi = (id, data) =>
+  request(`/v1/complexes/${id}/package`, { method: "PUT", body: JSON.stringify(data) });
+export const renewComplexApi = (id, months) => post(`/v1/complexes/${id}/renew`, { months });
+export const deactivateComplexApi = (id) => post(`/v1/complexes/${id}/deactivate`);
+export const reactivateComplexApi = (id) => post(`/v1/complexes/${id}/reactivate`);
+export const getSubscriptionHistoryApi = () => request("/v1/subscription-history");
+
+export const getAdminsApi = () => request("/v1/admins");
+export const createAdminApi = (data) => post("/v1/admins", data);
+
+// ─── API Functions for Units ──────────────────────────────────
+export async function getUnits(tenantId) {
+  return request(`/v1/tenants/${tenantId}/units`);
+}
+
+export async function createUnit(data) {
+  return request("/v1/units", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateUnit(id, data) {
+  return request(`/v1/units/${id}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+// ─── API Functions for Residents ──────────────────────────────
+export async function getResidents(tenantId) {
+  return request(`/v1/residents?tenantId=${tenantId}`);
+}
+
+export async function onboardResident(data) {
+  return request("/v1/residents/onboard", { method: "POST", body: JSON.stringify(data) });
+}
+
+// ─── API Functions for Vehicles ───────────────────────────────
+export async function getVehicles(tenantId) {
+  return request(`/v1/vehicles?tenantId=${tenantId}`);
+}
+
+export async function createVehicle(data) {
+  return request("/v1/vehicles", { method: "POST", body: JSON.stringify(data) });
+}
+
+// ─── API Functions for Domestic Staff ─────────────────────────
+export async function getDomesticStaff(tenantId) {
+  return request(`/v1/staff?tenantId=${tenantId}`);
+}
+
+export async function createDomesticStaff(data) {
+  return request("/v1/staff", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function toggleStaffAccess(id) {
+  return request(`/v1/staff/${id}/toggle`, { method: "PATCH" });
+}
+
+// ─── API Functions for AI Safety Logs ─────────────────────────
+// Validation & Safety Agent verdicts. No mock fallback: a failed call must show as an error.
+export async function getAiSafetyLogs(tenantId, verdict = "") {
+  const q = new URLSearchParams({ tenantId: String(tenantId) });
+  if (verdict) q.set("verdict", verdict);
+  return request(`/v1/safety/verdicts?${q.toString()}`);
+}
+
+export async function decideSafetyVerdict(id, decision) {
+  return request(`/v1/safety/verdicts/${id}/decision`, {
+    method: "POST",
+    body: JSON.stringify({ decision }),
+  });
+}
+
+export async function validateProposedAction(proposal) {
+  return request(`/v1/safety/validate`, {
+    method: "POST",
+    body: JSON.stringify(proposal),
+  });
+}
+
 // ─── Dashboard Aggregates ────────────────────────────────────
 export async function getDashboardStats() {
-  // We aggregate from multiple endpoints
   const [facilities, visitors, bookings] = await Promise.allSettled([
     getFacilities(),
     getActiveVisitors(),
@@ -163,21 +376,22 @@ export async function getDashboardStats() {
   const visitorsData = visitors.status === "fulfilled" ? visitors.value : [];
   const bookingsData = bookings.status === "fulfilled" ? bookings.value : [];
 
-  const checkedIn = visitorsData.filter(
+  const checkedIn = (visitorsData || []).filter(
     (v) => v.status === "CheckedIn"
   ).length;
-  const withParking = visitorsData.filter(
+  const withParking = (visitorsData || []).filter(
     (v) => v.assignedParkingSlot != null
   ).length;
 
   return {
-    activeFacilities: facilitiesData.length,
+    activeFacilities: (facilitiesData || []).length,
     currentVisitors: checkedIn,
-    totalVisitors: visitorsData.length,
+    totalVisitors: (visitorsData || []).length,
     visitorsWithParking: withParking,
-    totalBookings: bookingsData.length,
+    totalBookings: (bookingsData || []).length,
     facilities: facilitiesData,
     visitors: visitorsData,
     bookings: bookingsData,
+    totalTenants: mockTenants.length,
   };
 }

@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../auth/auth_service.dart';
+
+import '../api_config.dart';
 
 class FacilityApiService {
-  // Use 10.0.2.2 for Android Emulator, localhost for iOS/Web
-  static const String baseUrl = 'http://10.0.2.2:5073/api';
+  static String get baseUrl => ApiConfig.baseUrl;
   static const Duration timeoutDuration = Duration(seconds: 10);
 
   // GET ALL FACILITIES
@@ -36,12 +38,18 @@ class FacilityApiService {
   }
 
   // GET ALL BOOKINGS FOR RESIDENT
-  static Future<Map<String, dynamic>> getBookings() async {
+  static Future<Map<String, dynamic>> getBookings([int? residentId]) async {
     try {
+      final session = AuthService.currentSession;
+      final targetResidentId = residentId ?? session?.residentId;
+      final uri = targetResidentId != null && targetResidentId > 0
+          ? Uri.parse('$baseUrl/bookings?residentId=$targetResidentId')
+          : Uri.parse('$baseUrl/bookings');
+
       final response = await http
           .get(
-            Uri.parse('$baseUrl/bookings'),
-            headers: {'Content-Type': 'application/json'},
+            uri,
+            headers: await AuthService.authHeaders(),
           )
           .timeout(timeoutDuration);
 
@@ -94,8 +102,10 @@ class FacilityApiService {
     required int facilityId,
     required int residentId,
     required DateTime bookingDate,
-    required String startTime, // Format "HH:mm:ss"
-    required String endTime, // Format "HH:mm:ss"
+    required String startTime,
+    required String endTime,
+    int bookedCapacity = 1,
+    double totalCost = 0.0,
   }) async {
     try {
       final response = await http
@@ -108,12 +118,13 @@ class FacilityApiService {
               'bookingDate': bookingDate.toIso8601String(),
               'startTime': startTime,
               'endTime': endTime,
+              'bookedCapacity': bookedCapacity,
+              'totalCost': totalCost,
             }),
           )
           .timeout(timeoutDuration);
 
       debugPrint('CREATE BOOKING STATUS: ${response.statusCode}');
-      debugPrint('CREATE BOOKING RESPONSE: ${response.body}');
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return {'success': true, 'message': 'Booking request submitted!'};
@@ -123,8 +134,16 @@ class FacilityApiService {
       if (response.body.isNotEmpty) {
         try {
           final decoded = jsonDecode(response.body);
-          if (decoded is Map && decoded['title'] != null) {
-            errorMsg = decoded['title'];
+          if (decoded is Map) {
+            if (decoded['message'] != null) {
+              errorMsg = decoded['message'].toString();
+            } else if (decoded['Message'] != null) {
+              errorMsg = decoded['Message'].toString();
+            } else if (decoded['title'] != null) {
+              errorMsg = decoded['title'].toString();
+            } else {
+              errorMsg = response.body;
+            }
           } else if (response.body.startsWith('"')) {
             errorMsg = response.body.replaceAll('"', '');
           } else {
@@ -139,6 +158,78 @@ class FacilityApiService {
     } catch (e) {
       debugPrint('CREATE BOOKING ERROR: $e');
       return {'success': false, 'message': 'Cannot connect to server (Timeout or Network Error)'};
+    }
+  }
+
+  // CANCEL / DELETE A BOOKING
+  static Future<Map<String, dynamic>> cancelBooking(int bookingId) async {
+    try {
+      final response = await http
+          .delete(
+            Uri.parse('$baseUrl/bookings/$bookingId'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(timeoutDuration);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'success': true, 'message': 'Booking cancelled successfully!'};
+      }
+
+      return {
+        'success': false,
+        'message': 'Failed to cancel booking (${response.statusCode})',
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Cannot connect to server (Timeout or Network Error)'};
+    }
+  }
+
+  // PLAN AGENTIC WORKFLOW (Resident Mobile AI)
+  static Future<Map<String, dynamic>> planAgenticWorkflow({
+    required String objective,
+    int residentId = 1,
+    String residentName = 'Kamal Perera (A-101)',
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/workflows/plan-facility-parking'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'objective': objective,
+              'residentId': residentId,
+              'residentName': residentName,
+            }),
+          )
+          .timeout(const Duration(seconds: 35));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        return {'success': true, 'data': decoded};
+      }
+      return {'success': false, 'message': 'Failed to execute AI workflow (${response.statusCode})'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  // APPROVE AGENTIC WORKFLOW (Resident High-Impact Confirmation)
+  static Future<Map<String, dynamic>> approveAgenticWorkflow(int workflowId) async {
+    try {
+      final response = await http
+          .put(
+            Uri.parse('$baseUrl/workflows/$workflowId/approve'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        return {'success': true, 'data': decoded};
+      }
+      return {'success': false, 'message': 'Failed to approve workflow'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
     }
   }
 }

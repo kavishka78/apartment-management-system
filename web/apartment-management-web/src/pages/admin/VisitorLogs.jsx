@@ -317,10 +317,10 @@ export default function VisitorLogs() {
       </div>
 
       {loading ? (
-        <div className="admin-loading">
-          <div className="spinner" />
-        </div>
-      ) : activeTab === "passes" ? (
+            <div className="admin-loading">
+            <div className="spinner" />
+          </div>
+          ) : activeTab === "passes" ? (
         /* TAB 1: VISITOR PASSES TABLE */
         <div className="admin-card">
           <div className="admin-table-wrap">
@@ -359,7 +359,7 @@ export default function VisitorLogs() {
                         <code className="access-code">{v.accessCode}</code>
                       </td>
                       <td>{formatDateTime(v.expectedArrival)}</td>
-                      <td>{v.checkInTime ? formatDateTime(v.checkInTime) : "—"}</td>
+                      <td>{v.checkInTime ? formatDateTime(v.checkInTime) : "â€”"}</td>
                       <td>
                         {v.assignedParkingSlot ? (
                           <span className="parking-slot-badge">{v.assignedParkingSlot}</span>
@@ -367,7 +367,7 @@ export default function VisitorLogs() {
                           <span style={{ color: "#94a3b8" }}>None</span>
                         )}
                       </td>
-                      <td>{v.vehicleNumber || "—"}</td>
+                      <td>{v.vehicleNumber || "â€”"}</td>
                       <td>
                         <span className={statusBadgeClass(v.status)}>
                           {v.status}
@@ -656,7 +656,7 @@ export default function VisitorLogs() {
 }
 
 function formatDateTime(str) {
-  if (!str) return "—";
+  if (!str) return "â€”";
   const d = new Date(str);
   return d.toLocaleString("en-US", {
     month: "short",

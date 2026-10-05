@@ -10,6 +10,7 @@ namespace ApartmentManagement.Api.DTOs
         public int Capacity { get; set; }
         public TimeSpan OpenTime { get; set; }
         public TimeSpan CloseTime { get; set; }
+        public decimal HourlyCost { get; set; }
         public bool IsActive { get; set; }
         public string? DeactivationReason { get; set; }
     }
@@ -30,6 +31,8 @@ namespace ApartmentManagement.Api.DTOs
         
         [Required]
         public TimeSpan CloseTime { get; set; }
+
+        public decimal HourlyCost { get; set; } = 0.00m;
 
         public bool IsActive { get; set; } = true;
 

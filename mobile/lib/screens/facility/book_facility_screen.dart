@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/facility/facility_api_service.dart';
+import '../../services/auth/auth_service.dart';
 
 class BookFacilityScreen extends StatefulWidget {
   final dynamic facility;
@@ -25,6 +26,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
     minute: TimeOfDay.now().minute,
   );
   bool _isSubmitting = false;
+  int _bookedCapacity = 1;
 
   List<dynamic> _facilityBookings = [];
   bool _isLoadingBookings = true;
@@ -132,7 +134,9 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
     if (!isActive) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('This facility is currently inactive and cannot be booked.'),
+          content: Text(
+            'This facility is currently inactive and cannot be booked.',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -182,12 +186,26 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
     final facilityId =
         widget.facility['id'] ?? widget.facility['facilityId'] ?? 1;
 
+    final hourlyRate = (widget.facility['hourlyCost'] != null)
+        ? (widget.facility['hourlyCost'] as num).toDouble()
+        : 0.0;
+    final startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+    double durationHours = (endMinutes - startMinutes) / 60.0;
+    if (durationHours < 0) durationHours = 0;
+    final totalBookingCost = durationHours * hourlyRate * _bookedCapacity;
+
+    final session = await AuthService.getSession();
+    final currentResidentId = (session != null && session.residentId > 0) ? session.residentId : 1;
+
     final result = await FacilityApiService.createBooking(
       facilityId: facilityId,
-      residentId: 101, // Mock resident ID
+      residentId: currentResidentId,
       bookingDate: _selectedDate,
       startTime: _formatTimeOfDay(_startTime),
       endTime: _formatTimeOfDay(_endTime),
+      bookedCapacity: _bookedCapacity,
+      totalCost: totalBookingCost,
     );
 
     if (mounted) {
@@ -223,6 +241,25 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
     final dateFormatted =
         '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
     final currentDayBookings = _dayBookings;
+    final currentDayTotalCapacity = currentDayBookings.fold<int>(
+      0,
+      (sum, b) =>
+          sum +
+          ((b['bookedCapacity'] != null && b['bookedCapacity'] is int && (b['bookedCapacity'] as int) > 0)
+              ? (b['bookedCapacity'] as int)
+              : 1),
+    );
+
+    final hourlyRate = (widget.facility['hourlyCost'] != null)
+        ? (widget.facility['hourlyCost'] as num).toDouble()
+        : 0.0;
+
+    final startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+    double durationHours = (endMinutes - startMinutes) / 60.0;
+    if (durationHours < 0) durationHours = 0;
+
+    final totalBookingCost = durationHours * hourlyRate * _bookedCapacity;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F8),
@@ -255,7 +292,8 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          (deactivationReason != null && deactivationReason.trim().isNotEmpty)
+                          (deactivationReason != null &&
+                                  deactivationReason.trim().isNotEmpty)
                               ? 'Facility Inactive: $deactivationReason'
                               : 'This facility is currently inactive and unavailable for bookings.',
                           style: TextStyle(
@@ -272,37 +310,93 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
               // Header Card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF17212B),
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name.toUpperCase(),
-                      style: const TextStyle(
-                        color: Color(0xFFB8C2CC),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.1,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            name.toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: hourlyRate > 0
+                                ? const Color(0xFF059669).withValues(alpha: 0.2)
+                                : Colors.blue.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: hourlyRate > 0
+                                  ? const Color(0xFF34D399)
+                                  : const Color(0xFF60A5FA),
+                            ),
+                          ),
+                          child: Text(
+                            hourlyRate > 0
+                                ? 'LKR ${hourlyRate.toStringAsFixed(2)} / hr'
+                                : 'Free Facility',
+                            style: TextStyle(
+                              color: hourlyRate > 0
+                                  ? const Color(0xFF6EE7B7)
+                                  : const Color(0xFF93C5FD),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Reserve Your Time Slot',
-                      style: const TextStyle(
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Reserve Time Slot',
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Capacity: $capacity spots per time slot | Auto-confirmed',
+                      'Capacity: $capacity spots per slot • Instantly confirmed',
                       style: const TextStyle(
-                        color: Color(0xFFD5DADF),
+                        color: Color(0xFF94A3B8),
                         fontSize: 13,
                       ),
                     ),
@@ -314,18 +408,30 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
 
               // Date Picker Field
               const Text(
-                'Select Booking Date',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                'Booking Date',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: Color(0xFF0F172A),
+                ),
               ),
               const SizedBox(height: 8),
               InkWell(
                 onTap: _selectDate,
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE8ECEF)),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0F172A).withValues(alpha: 0.02),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -333,20 +439,22 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                       Text(
                         dateFormatted,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
+                          color: Color(0xFF0F172A),
                         ),
                       ),
                       const Icon(
                         Icons.calendar_today_rounded,
-                        color: Color(0xFF17212B),
+                        color: Color(0xFF2563EB),
+                        size: 20,
                       ),
                     ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // Time Pickers Row
               Row(
@@ -358,21 +466,31 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                         const Text(
                           'Start Time',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: () => _selectTime(true),
+                          borderRadius: BorderRadius.circular(12),
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(15),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFFE8ECEF),
+                                color: const Color(0xFFE2E8F0),
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0F172A)
+                                      .withValues(alpha: 0.02),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -380,14 +498,15 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                                 Text(
                                   _startTime.format(context),
                                   style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
                                   ),
                                 ),
                                 const Icon(
-                                  Icons.access_time_rounded,
-                                  size: 20,
-                                  color: Colors.grey,
+                                  Icons.schedule_rounded,
+                                  size: 19,
+                                  color: Color(0xFF64748B),
                                 ),
                               ],
                             ),
@@ -396,7 +515,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,21 +523,31 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                         const Text(
                           'End Time',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: () => _selectTime(false),
+                          borderRadius: BorderRadius.circular(12),
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(15),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFFE8ECEF),
+                                color: const Color(0xFFE2E8F0),
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0F172A)
+                                      .withValues(alpha: 0.02),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -426,14 +555,15 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                                 Text(
                                   _endTime.format(context),
                                   style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
                                   ),
                                 ),
                                 const Icon(
-                                  Icons.access_time_rounded,
-                                  size: 20,
-                                  color: Colors.grey,
+                                  Icons.schedule_rounded,
+                                  size: 19,
+                                  color: Color(0xFF64748B),
                                 ),
                               ],
                             ),
@@ -444,28 +574,241 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 18),
+
+              // Booked Capacity / Guests Selector
+              const Text(
+                'Number of Spots',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.02),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$_bookedCapacity ${_bookedCapacity == 1 ? 'Spot Reserved' : 'Spots Reserved'}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Max facility capacity: $capacity spots',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        InkWell(
+                          onTap: _bookedCapacity > 1
+                              ? () => setState(() => _bookedCapacity--)
+                              : null,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: _bookedCapacity > 1
+                                  ? const Color(0xFFF1F5F9)
+                                  : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _bookedCapacity > 1
+                                    ? const Color(0xFFCBD5E1)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '–',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: _bookedCapacity > 1
+                                      ? const Color(0xFF0F172A)
+                                      : const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '$_bookedCapacity',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        InkWell(
+                          onTap:
+                              (capacity > 0 && _bookedCapacity < capacity) ||
+                                  capacity == 0
+                              ? () => setState(() => _bookedCapacity++)
+                              : null,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color:
+                                  (capacity == 0 || _bookedCapacity < capacity)
+                                  ? const Color(0xFF0F172A)
+                                  : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color:
+                                    (capacity == 0 ||
+                                        _bookedCapacity < capacity)
+                                    ? const Color(0xFF0F172A)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '+',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      (capacity == 0 ||
+                                          _bookedCapacity < capacity)
+                                      ? Colors.white
+                                      : const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              // Real-time Cost Estimation Card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: hourlyRate > 0 ? const Color(0xFFECFDF5) : const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: hourlyRate > 0 ? const Color(0xFFA7F3D0) : const Color(0xFFBFDBFE),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Estimated Booking Fee',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: hourlyRate > 0 ? const Color(0xFF047857) : const Color(0xFF1D4ED8),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          hourlyRate > 0
+                              ? '${durationHours.toStringAsFixed(1)} hrs × $_bookedCapacity ${_bookedCapacity == 1 ? 'spot' : 'spots'} @ LKR ${hourlyRate.toStringAsFixed(2)}/hr'
+                              : 'Complimentary resident access',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: hourlyRate > 0 ? const Color(0xFF065F46) : const Color(0xFF1E40AF),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      hourlyRate > 0
+                          ? 'LKR ${totalBookingCost.toStringAsFixed(2)}'
+                          : 'FREE',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: hourlyRate > 0 ? const Color(0xFF047857) : const Color(0xFF1D4ED8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
               const SizedBox(height: 24),
 
               SizedBox(
                 width: double.infinity,
-                height: 52,
+                height: 50,
                 child: ElevatedButton(
-                  onPressed: (_isSubmitting || !isActive) ? null : _submitBooking,
+                  onPressed: (_isSubmitting || !isActive)
+                      ? null
+                      : _submitBooking,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isActive ? const Color(0xFF17212B) : Colors.grey.shade300,
-                    foregroundColor: isActive ? Colors.white : Colors.grey.shade600,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                    backgroundColor: isActive
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF1F5F9),
+                    foregroundColor: isActive
+                        ? Colors.white
+                        : const Color(0xFF94A3B8),
+                    elevation: 0,
+                    shape: const StadiumBorder(),
                   ),
                   child: _isSubmitting
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
                       : Text(
-                          !isActive ? 'Facility Currently Inactive' : 'Instantly Book Spot',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                          !isActive
+                              ? 'Facility Currently Inactive'
+                              : 'Confirm Spot Booking',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: isActive
+                                ? Colors.white
+                                : const Color(0xFF94A3B8),
                           ),
                         ),
                 ),
@@ -487,7 +830,9 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: currentDayBookings.isNotEmpty
                           ? Colors.blue.shade50
@@ -495,7 +840,7 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${currentDayBookings.length} Booked',
+                      '$currentDayTotalCapacity ${currentDayTotalCapacity == 1 ? 'Spot Reserved' : 'Spots Reserved'}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -526,7 +871,10 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.check_circle_outline, color: Color(0xFF059669)),
+                      Icon(
+                        Icons.check_circle_outline,
+                        color: Color(0xFF059669),
+                      ),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -550,81 +898,61 @@ class _BookFacilityScreenState extends State<BookFacilityScreen> {
                     final b = currentDayBookings[index];
                     final startFormatted = _formatTimeString(b['startTime']);
                     final endFormatted = _formatTimeString(b['endTime']);
-                    final status = b['status'] ?? 'Approved';
+
+                    final bookedCap = (b['bookedCapacity'] != null && b['bookedCapacity'] is int && (b['bookedCapacity'] as int) > 0)
+                        ? (b['bookedCapacity'] as int)
+                        : 1;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE8ECEF)),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFFDBEAFE),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.access_time_filled_rounded,
+                              color: Color(0xFF2563EB),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.indigo.shade50,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.access_time_filled_rounded,
-                                  color: Colors.indigo.shade700,
-                                  size: 20,
+                              Text(
+                                '$startFormatted – $endFormatted',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: Color(0xFF0F172A),
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '$startFormatted - $endFormatted',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Color(0xFF17212B),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Spot Reserved',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(height: 2),
+                              Text(
+                                '$bookedCap ${bookedCap == 1 ? 'Spot Reserved' : 'Spots Reserved'}',
+                                style: const TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: status == 'Approved'
-                                  ? Colors.green.shade50
-                                  : Colors.orange.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: status == 'Approved'
-                                    ? Colors.green.shade200
-                                    : Colors.orange.shade200,
-                              ),
-                            ),
-                            child: Text(
-                              status,
-                              style: TextStyle(
-                                color: status == 'Approved'
-                                    ? Colors.green.shade800
-                                    : Colors.orange.shade800,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
                           ),
                         ],
                       ),

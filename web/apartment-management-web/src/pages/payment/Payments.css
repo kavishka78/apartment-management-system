@@ -834,25 +834,32 @@
 ========================= */
 
 @media print {
-  body * {
-    visibility: hidden !important;
+  /* When receipt modal is open, hide the page behind it and show only the receipt */
+  .receipt-modal-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    background: white !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    overflow: visible !important;
   }
 
-  #receipt-print-area,
-  #receipt-print-area * {
-    visibility: visible !important;
+  .receipt-modal {
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
   }
 
   #receipt-print-area {
-    position: absolute;
-
-    left: 0;
-    top: 0;
-
     width: 100%;
-
     box-sizing: border-box;
-
     background: #ffffff;
   }
 

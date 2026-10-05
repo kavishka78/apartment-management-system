@@ -39,6 +39,7 @@ namespace ApartmentManagement.Api.Controllers
                         Capacity = f.Capacity,
                         OpenTime = f.OpenTime,
                         CloseTime = f.CloseTime,
+                        HourlyCost = f.HourlyCost,
                         IsActive = f.IsActive,
                         DeactivationReason = f.DeactivationReason
                     }).ToListAsync();
@@ -67,6 +68,7 @@ namespace ApartmentManagement.Api.Controllers
                         Capacity = f.Capacity,
                         OpenTime = f.OpenTime,
                         CloseTime = f.CloseTime,
+                        HourlyCost = f.HourlyCost,
                         IsActive = f.IsActive,
                         DeactivationReason = f.DeactivationReason
                     }).FirstOrDefaultAsync();
@@ -91,10 +93,11 @@ namespace ApartmentManagement.Api.Controllers
                 var facility = new Facility
                 {
                     FacilityName = dto.Name,
-                    FacilityDescription = dto.Description,
+                    FacilityDescription = dto.Description ?? string.Empty,
                     Capacity = dto.Capacity,
                     OpenTime = dto.OpenTime,
                     CloseTime = dto.CloseTime,
+                    HourlyCost = dto.HourlyCost,
                     IsActive = dto.IsActive,
                     DeactivationReason = dto.IsActive ? null : dto.DeactivationReason
                 };
@@ -125,6 +128,7 @@ namespace ApartmentManagement.Api.Controllers
                 facility.Capacity = dto.Capacity;
                 facility.OpenTime = dto.OpenTime;
                 facility.CloseTime = dto.CloseTime;
+                facility.HourlyCost = dto.HourlyCost;
                 facility.IsActive = dto.IsActive;
                 facility.DeactivationReason = dto.IsActive ? null : dto.DeactivationReason;
                 facility.UpdatedAt = DateTime.UtcNow;

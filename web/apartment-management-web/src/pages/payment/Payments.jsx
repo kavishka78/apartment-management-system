@@ -1,7 +1,9 @@
+import { paymentFetch } from "../../services/api";
 import { useCallback, useEffect, useState } from "react";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
 import "./Payments.css";
+import "./PaymentAdminTheme.css";
 
 function Payments() {
   const [payments, setPayments] = useState([]);
@@ -53,8 +55,8 @@ function Payments() {
       params.append("status", status);
     }
 
-    return fetch(
-      `http://localhost:5073/api/payments?${params.toString()}`
+    return paymentFetch(
+      `/payments?${params.toString()}`
     )
       .then((response) => {
         if (!response.ok) {
@@ -93,8 +95,8 @@ function Payments() {
     setVerifyingId(paymentId);
 
     try {
-      const response = await fetch(
-        `http://localhost:5073/api/payments/${paymentId}/verify`,
+      const response = await paymentFetch(
+        `/payments/${paymentId}/verify`,
         {
           method: "POST",
         }
@@ -139,8 +141,8 @@ function Payments() {
     setReceiptLoading(true);
 
     try {
-      const response = await fetch(
-        `http://localhost:5073/api/payments/${paymentId}/receipt`
+      const response = await paymentFetch(
+        `/payments/${paymentId}/receipt`
       );
 
       if (!response.ok) {
@@ -292,7 +294,6 @@ function Payments() {
                       <th>Invoice</th>
                       <th>Amount</th>
                       <th>Method</th>
-                      <th>Card</th>
                       <th>Status</th>
                       <th>Paid Date</th>
                       <th>Action</th>
@@ -316,12 +317,6 @@ function Payments() {
 
                         <td>
                           {payment.paymentMethod}
-                        </td>
-
-                        <td>
-                          {payment.cardLastFourDigits
-                            ? `•••• ${payment.cardLastFourDigits}`
-                            : "-"}
                         </td>
 
                         <td>
@@ -475,15 +470,6 @@ function Payments() {
                   <span>Payment Method</span>
                   <strong>
                     {receipt.paymentMethod || "-"}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Card</span>
-                  <strong>
-                    {receipt.cardLastFourDigits
-                      ? `•••• ${receipt.cardLastFourDigits}`
-                      : "-"}
                   </strong>
                 </div>
 

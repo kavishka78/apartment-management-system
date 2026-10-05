@@ -12,8 +12,6 @@ class PaymentHistoryScreen extends StatefulWidget {
 
 class _PaymentHistoryScreenState
     extends State<PaymentHistoryScreen> {
-  // Temporary until authentication is connected.
-  static const int residentId = 6;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -32,9 +30,7 @@ class _PaymentHistoryScreenState
     });
 
     final result =
-        await PaymentApiService.getPaymentsForResident(
-      residentId: residentId,
-    );
+        await PaymentApiService.getPaymentsForResident();
 
     if (!mounted) return;
 
@@ -292,7 +288,7 @@ class _PaymentHistoryScreenState
                             BorderRadius.circular(20),
                       ),
                       child: Text(
-                        status,
+                        status == 'Successful' ? 'Awaiting verification' : status,
                         style: TextStyle(
                           color:
                               _statusColor(status),
@@ -346,16 +342,6 @@ class _PaymentHistoryScreenState
                   ),
                 ),
 
-                if (payment['cardLastFourDigits'] !=
-                    null) ...[
-                  const SizedBox(height: 10),
-                  _PaymentInfoRow(
-                    icon: Icons.lock_outline,
-                    title: 'Card',
-                    value:
-                        '•••• ${payment['cardLastFourDigits']}',
-                  ),
-                ],
               ],
             ),
           );

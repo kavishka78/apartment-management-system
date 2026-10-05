@@ -8,6 +8,10 @@ namespace ApartmentManagement.Api.Models
 
         public int ApartmentId { get; set; }
 
+        // Set for invoices created from a facility booking. The unique index
+        // prevents the same booking from being invoiced more than once.
+        public int? FacilityBookingId { get; set; }
+
         public string InvoiceNumber { get; set; } = string.Empty;
 
         public DateTime BillingMonth { get; set; }
@@ -21,6 +25,10 @@ namespace ApartmentManagement.Api.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public List<InvoiceItem> InvoiceItems { get; set; } = new();
+
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public bool CanPay => Status == "Pending" &&
+            !Payments.Any(p => p.Status == "Successful" || p.Status == "Verified");
 
         public List<Payment> Payments { get; set; } = new();
     }

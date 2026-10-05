@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/payment/payment_api_service.dart';
 import 'my_invoices_screen.dart';
+import 'payment_chat_screen.dart';
 
 import 'payment_history_screen.dart';
 import 'receipts_screen.dart';
@@ -15,8 +16,6 @@ class PaymentHomeScreen extends StatefulWidget {
 }
 
 class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
-  // Temporary until authentication is connected.
-  static const int residentId = 6;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -36,9 +35,7 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
       _errorMessage = null;
     });
 
-    final result = await PaymentApiService.getInvoices(
-      residentId: residentId,
-    );
+    final result = await PaymentApiService.getInvoices();
 
     if (!mounted) return;
 
@@ -58,7 +55,7 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
             invoice['status']?.toString().toLowerCase() ??
                 'pending';
 
-        if (status != 'paid') {
+        if (status != 'paid' && invoice['canPay'] == true) {
           outstanding +=
               double.tryParse(
                     invoice['totalAmount'].toString(),
@@ -115,6 +112,36 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
           ),
         ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Tooltip(
+              message: 'Open Payment AI Assistant',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () async {
+                    await Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const PaymentChatScreen()));
+                    if (mounted) _loadPaymentSummary();
+                  },
+                  child: Ink(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F0EF),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Color(0xFF24635F),
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
           IconButton(
             onPressed: _loadPaymentSummary,
             icon: const Icon(Icons.refresh),
@@ -146,6 +173,8 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
                           ),
                         ),
                       )
+                    : _errorMessage != null
+                    ? const Text('Balance unavailable', style: TextStyle(color: Colors.white))
                     : Column(
                         crossAxisAlignment:
                             CrossAxisAlignment.start,

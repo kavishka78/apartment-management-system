@@ -38,6 +38,9 @@ namespace ApartmentManagement.Api.Models
         public DateTime? CheckInTime {get;set;}
         public DateTime? CheckOutTime {get;set;}
 
+        [ForeignKey("ResidentId")]
+        public Resident? Resident { get; set; }
+
         public ParkingSlot? AssignedParkingSlot { get; set; }
     }
 

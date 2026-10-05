@@ -1,16 +1,76 @@
 using ApartmentManagement.Api.Data;
+using ApartmentManagement.Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 // Enable Npgsql legacy timestamp behavior for seamless DateTime support
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
+// Load .env file into environment variables if present
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
+if (!File.Exists(envPath))
+{
+    envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+}
+if (File.Exists(envPath))
+{
+    foreach (var line in File.ReadAllLines(envPath))
+    {
+        var trimmed = line.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("#")) continue;
+        var parts = trimmed.Split('=', 2);
+        if (parts.Length == 2)
+        {
+            var key = parts[0].Trim();
+            var val = parts[1].Trim().Trim('"').Trim('\'');
+            Environment.SetEnvironmentVariable(key, val);
+        }
+    }
+}
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
+var port = Environment.GetEnvironmentVariable("PORT");
+var urls = new List<string> { "http://+:8080", "http://+:5073" };
+if (!string.IsNullOrWhiteSpace(port) && port != "8080" && port != "5073")
+{
+    urls.Insert(0, $"http://+:{port}");
+}
+builder.WebHost.UseUrls(urls.ToArray());
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? string.Empty;
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    )
-);
+{
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        options.UseNpgsql(connectionString);
+    }
+});
+
+builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddScoped<INotificationService, EmailNotificationService>();
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = JwtTokenService.GetKey(builder.Configuration),
+            ClockSkew = TimeSpan.FromMinutes(1),
+        };
+    });
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -19,8 +79,31 @@ builder.Services.AddControllers()
             System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 
+// ── AI Triage service (calls Python FastAPI agent) ──────────────────────────
+builder.Services.AddHttpClient<IMaintenanceTriageService, MaintenanceTriageClient>(client =>
+{
+    var agentUrl = builder.Configuration["PythonAgentUrl"] ?? "http://localhost:8000";
+    client.BaseAddress = new Uri(agentUrl);
+    client.Timeout = TimeSpan.FromSeconds(60); // Gemini can be slow; allow up to 60 s
+});
+// ── Validation & Safety Agent (Python, separate port from the triage agent) ──
+builder.Services.AddHttpClient<SafetyValidationClient>(client =>
+{
+    var safetyUrl = builder.Configuration["SafetyAgentUrl"] ?? "http://localhost:8001";
+    client.BaseAddress = new Uri(safetyUrl);
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddHttpClient<FacilityAgentClient>(client =>
+{
+    var agentUrl = builder.Configuration["PythonAgentUrl"] ?? "http://localhost:8000";
+    client.BaseAddress = new Uri(agentUrl);
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
+
+// ── SLA escalation background service ───────────────────────────────────────
+builder.Services.AddHostedService<SlaEscalationService>();
+
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -28,30 +111,113 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.SetIsOriginAllowed(_ => true) // Allow web browser access from Vercel & local
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
-// Ensure DB columns exist for new properties
-using (var scope = app.Services.CreateScope())
+// Enable CORS immediately as the first middleware in the pipeline
+app.UseCors("ReactApp");
+
+// Run DB migration and seeding in a non-blocking background task so app starts instantly
+_ = Task.Run(() =>
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        dbContext.Database.ExecuteSqlRaw(@"
-            ALTER TABLE ""Facilities"" 
-            ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text;
-        ");
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        try
+        {
+            dbContext.Database.Migrate();
+            RegistrySeeder.SeedPlatform(dbContext);
+            RegistrySeeder.Seed(dbContext);
+            FacilitySeeder.Seed(dbContext);
+
+            if (!dbContext.UserAccounts.Any(u => u.Email == "technician@apartment.lk"))
+            {
+                var tech = new ApartmentManagement.Api.Models.UserAccount
+                {
+                    Name = "Test Technician",
+                    Email = "technician@apartment.lk",
+                    Phone = "0771234567",
+                    Role = "Technician",
+                    Status = "Active",
+                    AssignedAt = DateTime.UtcNow.ToString("O")
+                };
+                var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<ApartmentManagement.Api.Models.UserAccount>();
+                tech.PasswordHash = hasher.HashPassword(tech, "tech12345");
+                dbContext.UserAccounts.Add(tech);
+                dbContext.SaveChanges();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"DB Migration/Seed Notice: {ex.Message}");
+        }
+
+        try
+        {
+            dbContext.Database.ExecuteSqlRaw(@"
+                ALTER TABLE ""Facilities""
+                ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text,
+                ADD COLUMN IF NOT EXISTS ""HourlyCost"" numeric NOT NULL DEFAULT 0.0;
+
+                ALTER TABLE ""FacilityBookings""
+                ADD COLUMN IF NOT EXISTS ""BookedCapacity"" integer NOT NULL DEFAULT 1,
+                ADD COLUMN IF NOT EXISTS ""TotalCost"" numeric NOT NULL DEFAULT 0.0;
+
+                CREATE TABLE IF NOT EXISTS ""FacilityAgentWorkflows"" (
+                    ""Id"" SERIAL PRIMARY KEY,
+                    ""WorkflowId"" text NOT NULL,
+                    ""ResidentId"" integer NOT NULL DEFAULT 1,
+                    ""ResidentName"" text NOT NULL DEFAULT 'Resident',
+                    ""Objective"" text NOT NULL,
+                    ""AgentType"" text NOT NULL DEFAULT 'FacilityAndParkingAgent',
+                    ""PlanJson"" text NOT NULL DEFAULT '',
+                    ""ExtractedDataJson"" text NOT NULL DEFAULT '',
+                    ""ToolResultsJson"" text NOT NULL DEFAULT '',
+                    ""ProposalJson"" text NOT NULL DEFAULT '',
+                    ""ValidationStatus"" text NOT NULL DEFAULT 'Pending',
+                    ""RequiresApproval"" boolean NOT NULL DEFAULT true,
+                    ""Status"" text NOT NULL DEFAULT 'PendingApproval',
+                    ""CreatedAt"" timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    ""ActionedAt"" timestamp without time zone NULL,
+                    ""ActionedBy"" text NULL,
+                    ""ManagerNotes"" text NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS ""ResidentOtps"" (
+                    ""Id"" SERIAL PRIMARY KEY,
+                    ""Email"" varchar(150) NOT NULL,
+                    ""OtpCode"" varchar(10) NOT NULL,
+                    ""ExpiresAt"" timestamp without time zone NOT NULL,
+                    ""CreatedAt"" timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+
+                UPDATE ""FacilityAgentWorkflows"" SET ""Status"" = 'PendingApproval' WHERE ""Status"" = 'AutoApproved';
+            ");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"DB Auto-Migration Notice: {ex.Message}");
+        }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"DB Auto-Migration Notice: {ex.Message}");
+        Console.WriteLine($"Background DB Init Exception: {ex.Message}");
     }
-}
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -60,29 +226,23 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-app.UseCors("ReactApp");
-
-var summaries = new[]
+app.UseStaticFiles(); // For wwwroot if any
+var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
+if (!Directory.Exists(uploadsPath))
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    Directory.CreateDirectory(uploadsPath);
+}
 
-app.MapGet("/weatherforecast", () =>
+app.UseStaticFiles(new StaticFileOptions
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 
 app.MapControllers();
 
