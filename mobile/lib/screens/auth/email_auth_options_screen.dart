@@ -50,6 +50,11 @@ class _EmailAuthOptionsScreenState extends State<EmailAuthOptionsScreen> {
             '775386915415-22il525gfa91f75ks7pammtesfhik1um.apps.googleusercontent.com',
       );
 
+      // Force account picker to appear so user can choose the matching email
+      try {
+        await googleSignIn.signOut();
+      } catch (_) {}
+
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
