@@ -31,7 +31,8 @@ if (File.Exists(envPath))
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
-builder.WebHost.UseUrls("http://0.0.0.0:5073");
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5073";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
@@ -89,18 +90,19 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(options =>
 {
-    var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? string.Empty)
-        .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
     options.AddPolicy("ReactApp", policy =>
     {
-        policy.SetIsOriginAllowed(origin =>
-            {
-                return Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
-                    (uri.IsLoopback || allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase));
-            })
+        policy.SetIsOriginAllowed(_ => true) // Allow web browser access from Vercel & local
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -177,7 +179,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// CORS MUST be placed before any redirection, static files, or authentication/authorization
+app.UseCors("ReactApp");
 
 app.UseStaticFiles(); // For wwwroot if any
 var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
@@ -191,32 +194,6 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
     RequestPath = "/uploads"
 });
-
-
-app.UseCors("ReactApp");
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
 
 app.UseAuthentication();
 app.UseAuthorization();
