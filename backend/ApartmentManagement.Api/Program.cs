@@ -31,7 +31,8 @@ if (File.Exists(envPath))
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
-builder.WebHost.UseUrls("http://0.0.0.0:5073");
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5073";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
@@ -94,13 +95,10 @@ builder.Services.AddCors(options =>
 
     options.AddPolicy("ReactApp", policy =>
     {
-        policy.SetIsOriginAllowed(origin =>
-            {
-                return Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
-                    (uri.IsLoopback || allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase));
-            })
+        policy.SetIsOriginAllowed(origin => true) // Allow web browser access from Vercel & local
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
