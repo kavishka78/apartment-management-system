@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import PaymentSidebar from "../../components/payment/PaymentSidebar";
 import "./PaymentDashboard.css";
 import "./Payments.css";
+import "./PaymentAdminTheme.css";
 
 function Payments() {
   const [payments, setPayments] = useState([]);
@@ -293,7 +294,6 @@ function Payments() {
                       <th>Invoice</th>
                       <th>Amount</th>
                       <th>Method</th>
-                      <th>Card</th>
                       <th>Status</th>
                       <th>Paid Date</th>
                       <th>Action</th>
@@ -317,12 +317,6 @@ function Payments() {
 
                         <td>
                           {payment.paymentMethod}
-                        </td>
-
-                        <td>
-                          {payment.cardLastFourDigits
-                            ? `•••• ${payment.cardLastFourDigits}`
-                            : "-"}
                         </td>
 
                         <td>
@@ -476,15 +470,6 @@ function Payments() {
                   <span>Payment Method</span>
                   <strong>
                     {receipt.paymentMethod || "-"}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Card</span>
-                  <strong>
-                    {receipt.cardLastFourDigits
-                      ? `•••• ${receipt.cardLastFourDigits}`
-                      : "-"}
                   </strong>
                 </div>
 

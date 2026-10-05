@@ -112,14 +112,35 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            tooltip: 'Payment Assistant',
-            icon: const Icon(Icons.chat_outlined),
-            onPressed: () async {
-              await Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const PaymentChatScreen()));
-              if (mounted) _loadPaymentSummary();
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Tooltip(
+              message: 'Open Payment AI Assistant',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () async {
+                    await Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const PaymentChatScreen()));
+                    if (mounted) _loadPaymentSummary();
+                  },
+                  child: Ink(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F0EF),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Color(0xFF24635F),
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
           IconButton(
             onPressed: _loadPaymentSummary,

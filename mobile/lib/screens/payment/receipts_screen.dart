@@ -315,16 +315,6 @@ class _ReceiptsScreenState extends State<ReceiptsScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 10),
-
-                _ReceiptInfoRow(
-                  title: 'Card',
-                  value: receipt[
-                              'cardLastFourDigits'] !=
-                          null
-                      ? '•••• ${receipt['cardLastFourDigits']}'
-                      : '-',
-                ),
               ],
             ),
           );
