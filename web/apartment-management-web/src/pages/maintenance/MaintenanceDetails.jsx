@@ -132,7 +132,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
   };
 
   const loadAvailableTechs = () => {
-    fetchWithAuth('${API_BASE}/maintenance/technicians')
+    fetchWithAuth(`${API_BASE}/maintenance/technicians`)
       .then(res => res.json())
       .then(data => {
         setAvailableTechs(data.filter(t => t.status === 'Available'));
