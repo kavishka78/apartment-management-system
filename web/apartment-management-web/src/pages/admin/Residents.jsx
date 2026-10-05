@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getResidents, getUnits, onboardResident } from "../../services/api";
+import AiOnboardingAssistant from "../../components/admin/AiOnboardingAssistant";
 import { useAuth } from "../../context/AuthContext";
 import "./Residents.css";
 
@@ -397,6 +398,16 @@ export default function Residents() {
           </div>
         </div>
       )}
+
+      {/* AI onboarding draft: manager reviews, then creates through the same onboarding endpoint */}
+      <AiOnboardingAssistant
+        tenantId={activeTenantId}
+        onCreated={(name) => {
+          setToast({ type: "success", message: `Resident ${name} onboarded from AI draft.` });
+          setTimeout(() => setToast(null), 3500);
+          loadData();
+        }}
+      />
 
       {/* Onboard Resident Modal */}
       {showOnboardModal && (

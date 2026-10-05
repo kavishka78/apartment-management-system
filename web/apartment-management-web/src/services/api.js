@@ -315,6 +315,14 @@ export async function getResidents(tenantId) {
   return request(`/v1/residents?tenantId=${tenantId}`);
 }
 
+// AI draft from pasted text. Read-only: the manager still confirms with onboardResident.
+export async function draftResidentOnboarding(tenantId, text) {
+  return request("/v1/residents/onboard-draft", {
+    method: "POST",
+    body: JSON.stringify({ tenantId, text }),
+  });
+}
+
 export async function onboardResident(data) {
   return request("/v1/residents/onboard", { method: "POST", body: JSON.stringify(data) });
 }

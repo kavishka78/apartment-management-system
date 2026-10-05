@@ -86,6 +86,15 @@ builder.Services.AddHttpClient<IMaintenanceTriageService, MaintenanceTriageClien
     client.BaseAddress = new Uri(agentUrl);
     client.Timeout = TimeSpan.FromSeconds(60); // Gemini can be slow; allow up to 60 s
 });
+
+// ── Resident Onboarding Assistant (Python, read-only draft service) ──
+builder.Services.AddHttpClient<OnboardingAgentClient>(client =>
+{
+    var onboardingUrl = builder.Configuration["OnboardingAgentUrl"] ?? "http://localhost:8002";
+    client.BaseAddress = new Uri(onboardingUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
 // ── Validation & Safety Agent (Python, separate port from the triage agent) ──
 builder.Services.AddHttpClient<SafetyValidationClient>(client =>
 {
