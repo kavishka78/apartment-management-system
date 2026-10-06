@@ -4,6 +4,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../services/api_config.dart';
+import '../../services/auth/auth_service.dart';
 import '../../services/maintenance/maintenance_api_service.dart';
 import 'create_complaint_screen.dart';
 import 'my_complaints_screen.dart';
@@ -11,8 +13,6 @@ import 'maintenance_history_screen.dart';
 import 'notifications_screen.dart';
 import '../../models/maintenance/maintenance_model.dart';
 import '../../widgets/maintenance/repair_costs_bottom_sheet.dart';
-
-const int CURRENT_RESIDENT_ID = 1;
 
 class MaintenanceHomeScreen extends StatefulWidget {
   const MaintenanceHomeScreen({super.key});
@@ -36,24 +36,26 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
 
   Future<void> _loadStats() async {
     setState(() => _isLoading = true);
-    final result = await MaintenanceApiService.getComplaints(
-      residentId: CURRENT_RESIDENT_ID,
-    );
+    final result = await MaintenanceApiService.getComplaints();
+    final session = await AuthService.getSession();
 
     try {
-      final notifRes = await http.get(
-        Uri.parse(
-          'http://10.0.2.2:5073/api/Notifications/resident/$CURRENT_RESIDENT_ID',
-        ),
-      );
-      if (notifRes.statusCode == 200) {
-        final List<dynamic> notifs = json.decode(notifRes.body);
-        if (mounted) {
-          setState(() {
-            _unreadNotifications = notifs
-                .where((n) => n['isRead'] == false)
-                .length;
-          });
+      if (session != null) {
+        final notifRes = await http.get(
+          Uri.parse(
+            '${ApiConfig.baseUrl}/Notifications/resident/${session.residentId}',
+          ),
+          headers: await AuthService.authHeaders(),
+        );
+        if (notifRes.statusCode == 200) {
+          final List<dynamic> notifs = json.decode(notifRes.body);
+          if (mounted) {
+            setState(() {
+              _unreadNotifications = notifs
+                  .where((n) => n['isRead'] == false)
+                  .length;
+            });
+          }
         }
       }
     } catch (e) {
@@ -368,7 +370,6 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
                   'Track and analyze repair expenditures',
                   Icons.analytics_outlined,
                   () {
-                    if (_allTickets.isEmpty) return;
                     showModalBottomSheet(
                       context: context,
                       backgroundColor: Colors.transparent,

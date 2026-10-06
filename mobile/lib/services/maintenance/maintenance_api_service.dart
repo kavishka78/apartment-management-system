@@ -35,8 +35,12 @@ class MaintenanceApiService {
   // =========================================================
   // GET ALL COMPLAINTS (Supports filtering)
   // =========================================================
-  static Future<Map<String, dynamic>> getComplaints({int? residentId}) async {
+  static Future<Map<String, dynamic>> getComplaints() async {
     try {
+      final session = await AuthService.getSession();
+      if (session == null) {
+        return {'success': false, 'message': 'Please sign in to view your complaints.'};
+      }
       final response = await http.get(
         Uri.parse('$baseUrl/maintenance'),
         headers: await AuthService.authHeaders(),
@@ -45,11 +49,9 @@ class MaintenanceApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final List<dynamic> decoded = jsonDecode(response.body);
         
-        // Filter by residentId client-side if the API doesn't support residentId query param
-        List<dynamic> filtered = decoded;
-        if (residentId != null) {
-          filtered = decoded.where((item) => item['residentId'] == residentId).toList();
-        }
+        final filtered = decoded
+            .where((item) => item['residentId'] == session.residentId)
+            .toList();
         
         return {'success': true, 'data': filtered};
       }
