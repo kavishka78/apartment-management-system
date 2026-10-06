@@ -1,6 +1,7 @@
 ﻿const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5073/api';
 import { useState, useEffect, useCallback } from 'react';
 import { getAuthToken } from '../../services/api';
+import { MAINTENANCE_API_ORIGIN } from './maintenanceApi';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MdAutoAwesome, MdStar, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack, MdChevronRight, MdKeyboardArrowDown, MdBuild, MdFlag, MdPerson, MdAttachMoney, MdPhone, MdHome, MdPriorityHigh, MdDescription, MdAccessTime } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
@@ -511,7 +512,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' 
                   }}>
                     <img 
-                      src={`http://localhost:5073${ticket.photoPath}`} 
+                      src={`${MAINTENANCE_API_ORIGIN}${ticket.photoPath}`}
                       alt="Complaint evidence" 
                       style={{ display: 'block', maxWidth: '100%', maxHeight: '400px', objectFit: 'cover' }} 
                     />
