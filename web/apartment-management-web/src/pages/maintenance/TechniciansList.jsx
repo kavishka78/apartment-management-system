@@ -2,9 +2,12 @@ import { motion } from 'framer-motion';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { MdEngineering, MdPhone, MdAdd, MdEdit, MdDelete, MdClose, MdSearch, MdCameraAlt, MdAccessTime, MdKeyboardArrowDown, MdKeyboardArrowUp, MdCheck, MdVpnKey, MdToggleOn, MdToggleOff } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
+import Pagination from '../../components/Pagination';
+import useIsMobile from '../../hooks/useIsMobile';
 import '../payment/PaymentDashboard.css';
 import './Complaints.css';
 import '../admin/DomesticStaff.css';
+import { MAINTENANCE_API_BASE } from './maintenanceApi';
 
 function TechniciansList() {
   const [techs, setTechs] = useState([]);
@@ -16,6 +19,10 @@ function TechniciansList() {
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [skillFilter, setSkillFilter] = useState('All Skills');
   const [accessFilter, setAccessFilter] = useState('All Access');
+  const [currentPage, setCurrentPage] = useState(1);
+  const isMobile = useIsMobile();
+  const [desktopPageSize, setDesktopPageSize] = useState(15);
+  const pageSize = isMobile ? 10 : desktopPageSize;
 
   // Filter Dropdown Visibility
   const [openFilterDropdown, setOpenFilterDropdown] = useState(null); // 'status', 'skill', 'access'
@@ -46,8 +53,11 @@ function TechniciansList() {
   const [lightbox, setLightbox] = useState(null); // { src, name }
 
   const fetchTechs = useCallback(() => {
-    fetch('http://localhost:5073/api/technicians')
-      .then(res => res.json())
+    fetch(`${MAINTENANCE_API_BASE}/technicians`)
+      .then(async res => {
+        if (!res.ok) throw new Error(`Unable to load technicians (HTTP ${res.status}).`);
+        return res.json();
+      })
       .then(data => {
         setTechs(data);
         setLoading(false);
@@ -109,7 +119,9 @@ function TechniciansList() {
     if (!window.confirm('Are you sure you want to delete this technician?')) return;
     try {
       setLoading(true);
-      await fetch(`http://localhost:5073/api/technicians/${id}`, { method: 'DELETE' });
+      setCurrentPage(1);
+      const response = await fetch(`${MAINTENANCE_API_BASE}/technicians/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error(`Unable to delete technician (HTTP ${response.status}).`);
       fetchTechs();
     } catch (e) {
       console.error(e);
@@ -162,7 +174,7 @@ function TechniciansList() {
     try {
         setLoading(true);
         if (editingTech) {
-          const res = await fetch(`http://localhost:5073/api/technicians/${editingTech.id}`, {
+          const res = await fetch(`${MAINTENANCE_API_BASE}/technicians/${editingTech.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...payload, id: editingTech.id })
@@ -174,7 +186,7 @@ function TechniciansList() {
             return;
           }
         } else {
-          const res = await fetch('http://localhost:5073/api/technicians', {
+          const res = await fetch(`${MAINTENANCE_API_BASE}/technicians`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -213,6 +225,10 @@ function TechniciansList() {
     return matchesSearch && matchesStatus && matchesSkill && matchesAccess;
   });
 
+  const pageCount = Math.ceil(filteredTechs.length / pageSize);
+  const visiblePage = Math.min(currentPage, Math.max(1, pageCount));
+  const visibleTechs = filteredTechs.slice((visiblePage - 1) * pageSize, visiblePage * pageSize);
+
   const renderFilterDropdown = (value, setValue, options, id) => (
     <div style={{ position: 'relative' }}>
       <button
@@ -239,7 +255,7 @@ function TechniciansList() {
           {options.map((option, idx) => (
             <div
               key={idx}
-              onClick={() => { setValue(option); setOpenFilterDropdown(null); }}
+              onClick={() => { setValue(option); setCurrentPage(1); setOpenFilterDropdown(null); }}
               style={{
                 padding: '10px 16px', fontSize: '14px', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -293,7 +309,7 @@ function TechniciansList() {
                 type="text"
                 placeholder="Search technicians by name or skill..."
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                 className="search-pill-input"
               />
             </div>
@@ -319,6 +335,7 @@ function TechniciansList() {
               <p style={{ margin: 0, color: '#8a949e', fontSize: '13.5px' }}>{searchTerm ? 'Try a different search term.' : 'Add technicians to the system first.'}</p>
             </div>
           ) : (
+            <>
             <div className="table-wrapper">
               <table className="payment-table">
                 <thead>
@@ -335,7 +352,7 @@ function TechniciansList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTechs.map(t => {
+                  {visibleTechs.map(t => {
                     const sc = statusColor(t.status);
                     return (
                       <tr key={t.id}>
@@ -433,6 +450,16 @@ function TechniciansList() {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={visiblePage}
+              totalItems={filteredTechs.length}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 15, 25]}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => { setDesktopPageSize(size); setCurrentPage(1); }}
+              label="technicians"
+            />
+            </>
           )}
         </section>
 

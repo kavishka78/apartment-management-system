@@ -1,10 +1,13 @@
 import { SkeletonTable } from "../../components/admin/SkeletonLoader";
 import { motion } from 'framer-motion';
+import { MAINTENANCE_API_BASE } from './maintenanceApi';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiSearch, FiFilter } from 'react-icons/fi';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import CustomDropdown from '../../components/CustomDropdown';
+import Pagination from '../../components/Pagination';
+import useIsMobile from '../../hooks/useIsMobile';
 import '../payment/PaymentDashboard.css';
 import './Complaints.css';
 
@@ -18,6 +21,10 @@ function Complaints() {
   const [priorityFilter, setPriorityFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [techFilter, setTechFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const isMobile = useIsMobile();
+  const [desktopPageSize, setDesktopPageSize] = useState(15);
+  const pageSize = isMobile ? 10 : desktopPageSize;
 
   const [categories, setCategories] = useState([]);
   const [techs, setTechs] = useState([]);
@@ -27,9 +34,9 @@ function Complaints() {
     const headers = { 'Authorization': `Bearer ${token}` };
 
     Promise.all([
-      fetch('http://localhost:5073/api/maintenance', { headers }).then(r => r.json()),
-      fetch('http://localhost:5073/api/maintenance/categories', { headers }).then(r => r.json()),
-      fetch('http://localhost:5073/api/maintenance/technicians', { headers }).then(r => r.json())
+      fetch(`${MAINTENANCE_API_BASE}/maintenance`, { headers }).then(r => r.json()),
+      fetch(`${MAINTENANCE_API_BASE}/maintenance/categories`, { headers }).then(r => r.json()),
+      fetch(`${MAINTENANCE_API_BASE}/maintenance/technicians`, { headers }).then(r => r.json())
     ])
     .then(([maintData, catData, techData]) => {
       setComplaints(maintData);
@@ -51,6 +58,10 @@ function Complaints() {
     const matchesTech = techFilter ? c.technician?.id.toString() === techFilter : true;
     return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesTech;
   });
+
+  const pageCount = Math.ceil(filteredComplaints.length / pageSize);
+  const visiblePage = Math.min(currentPage, Math.max(1, pageCount));
+  const visibleComplaints = filteredComplaints.slice((visiblePage - 1) * pageSize, visiblePage * pageSize);
 
   return (
     <div className="payment-page">
@@ -84,7 +95,7 @@ function Complaints() {
                   type="text"
                   placeholder="Search complaints by title..."
                   value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                   className="search-pill-input"
                 />
                 <FiFilter className="search-pill-right-icon" />
@@ -92,7 +103,7 @@ function Complaints() {
 
               <CustomDropdown
                 value={statusFilter}
-                onChange={setStatusFilter}
+                onChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}
                 placeholder="All Statuses"
                 options={[
                   { value: '', label: 'All Statuses' },
@@ -106,7 +117,7 @@ function Complaints() {
 
               <CustomDropdown
                 value={priorityFilter}
-                onChange={setPriorityFilter}
+                onChange={(value) => { setPriorityFilter(value); setCurrentPage(1); }}
                 placeholder="All Priorities"
                 options={[
                   { value: '', label: 'All Priorities' },
@@ -119,7 +130,7 @@ function Complaints() {
 
               <CustomDropdown
                 value={categoryFilter}
-                onChange={setCategoryFilter}
+                onChange={(value) => { setCategoryFilter(value); setCurrentPage(1); }}
                 placeholder="All Categories"
                 options={[
                   { value: '', label: 'All Categories' },
@@ -129,7 +140,7 @@ function Complaints() {
 
               <CustomDropdown
                 value={techFilter}
-                onChange={setTechFilter}
+                onChange={(value) => { setTechFilter(value); setCurrentPage(1); }}
                 placeholder="All Technicians"
                 options={[
                   { value: '', label: 'All Technicians' },
@@ -147,6 +158,7 @@ function Complaints() {
               <p>Try adjusting your search or filters.</p>
             </div>
           ) : (
+            <>
             <div className="table-wrapper">
               <table className="payment-table">
                 <thead>
@@ -162,7 +174,7 @@ function Complaints() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredComplaints.map(c => (
+                  {visibleComplaints.map(c => (
                     <tr key={c.id}>
                       <td>#{c.id}</td>
                       <td>{c.title}</td>
@@ -189,6 +201,16 @@ function Complaints() {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={visiblePage}
+              totalItems={filteredComplaints.length}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 15, 25]}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => { setDesktopPageSize(size); setCurrentPage(1); }}
+              label="complaints"
+            />
+            </>
           )}
         </section>
       </motion.main>

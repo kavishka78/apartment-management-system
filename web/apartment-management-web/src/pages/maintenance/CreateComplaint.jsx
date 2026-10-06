@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import '../payment/PaymentDashboard.css';
 import '../payment/GenerateInvoice.css'; // Use the exact same styles as Invoice
+import { MAINTENANCE_API_BASE } from './maintenanceApi';
 
 function CreateComplaint() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ function CreateComplaint() {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5073/api/maintenance/categories')
+    fetch(`${MAINTENANCE_API_BASE}/maintenance/categories`)
       .then(res => res.json())
       .then(data => {
         setCategories(data);
@@ -43,7 +44,7 @@ function CreateComplaint() {
     setSuccessMessage("");
     setErrorMessage("");
     
-    fetch('http://localhost:5073/api/maintenance', {
+    fetch(`${MAINTENANCE_API_BASE}/maintenance`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -61,7 +62,7 @@ function CreateComplaint() {
         if (photoFile) {
           const formData = new FormData();
           formData.append('file', photoFile);
-          fetch(`http://localhost:5073/api/maintenance/${data.id}/photo`, {
+          fetch(`${MAINTENANCE_API_BASE}/maintenance/${data.id}/photo`, {
             method: 'POST',
             body: formData
           }).then(() => {

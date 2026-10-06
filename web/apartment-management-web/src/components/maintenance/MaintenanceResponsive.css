@@ -1,0 +1,281 @@
+.maintenance-mobile-header,
+.maintenance-menu-backdrop,
+.maintenance-sidebar-mobile-heading {
+  display: none;
+}
+
+@media (max-width: 750px) {
+  body.maintenance-menu-open {
+    overflow: hidden;
+  }
+
+  body.maintenance-page-active .payment-page {
+    display: block;
+    min-width: 0;
+  }
+
+  .maintenance-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 64px;
+    padding-left: 0;
+    background: #204a83;
+    border-bottom: 0;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+
+  .maintenance-mobile-brand {
+    display: flex;
+    align-self: stretch;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+    padding: 0 16px;
+    background: #204a83;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .maintenance-mobile-logo {
+    width: 31px;
+    height: 31px;
+    border-radius: 8px;
+    object-fit: contain;
+  }
+
+  .maintenance-menu-toggle {
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 17px;
+    border: 0;
+    background: #fde047;
+    color: #111827;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .maintenance-menu-backdrop {
+    position: fixed;
+    z-index: 100;
+    inset: 0;
+    display: block;
+    width: 100%;
+    border: 0;
+    background: rgba(15, 23, 42, 0.52);
+    cursor: default;
+  }
+
+  .maintenance-sidebar {
+    position: fixed;
+    z-index: 110;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(82vw, 320px);
+    min-height: 100dvh;
+    height: 100dvh;
+    padding: 20px 18px;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    box-shadow: 8px 0 28px rgba(15, 23, 42, 0.25);
+  }
+
+  .maintenance-sidebar-open {
+    transform: translateX(0);
+  }
+
+  .maintenance-sidebar-mobile-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: -4px 0 20px;
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .maintenance-sidebar-mobile-heading button {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .maintenance-sidebar .maintenance-logo {
+    margin-bottom: 28px;
+  }
+
+  body.maintenance-page-active .payment-content,
+  body.maintenance-page-active .payment-page .payment-content {
+    min-width: 0;
+    padding: 20px 16px;
+  }
+
+  body.maintenance-page-active .payment-header,
+  body.maintenance-page-active .payment-page .payment-header {
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 18px;
+  }
+
+  body.maintenance-page-active .payment-header h1,
+  body.maintenance-page-active .payment-page .payment-header h1 {
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  body.maintenance-page-active .page-description {
+    line-height: 1.5;
+  }
+
+  body.maintenance-page-active .payment-header > button {
+    align-self: stretch !important;
+    width: 100%;
+  }
+
+  body.maintenance-page-active .summary-grid,
+  body.maintenance-page-active .report-summary-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  body.maintenance-page-active .summary-card,
+  body.maintenance-page-active .report-summary-card,
+  body.maintenance-page-active .dashboard-panel {
+    padding: 16px;
+  }
+
+  body.maintenance-page-active .panel-heading {
+    gap: 14px;
+    padding-bottom: 16px;
+  }
+
+  body.maintenance-page-active .search-filter-row {
+    gap: 10px;
+  }
+
+  body.maintenance-page-active .search-pill {
+    flex-basis: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+
+  body.maintenance-page-active .search-filter-row .cd-wrapper,
+  body.maintenance-page-active .search-filter-row .cd-trigger {
+    width: 100%;
+  }
+
+  body.maintenance-page-active .table-wrapper {
+    margin-right: -16px;
+    padding-right: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.maintenance-page-active .payment-table {
+    min-width: 620px;
+  }
+
+  body.maintenance-page-active .payment-table th,
+  body.maintenance-page-active .payment-table td {
+    padding: 13px 12px;
+  }
+
+  body.maintenance-page-active .form-grid,
+  body.maintenance-page-active .md-info-grid,
+  body.maintenance-page-active .meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.maintenance-page-active .generate-form-header,
+  body.maintenance-page-active .generate-invoice-form,
+  body.maintenance-page-active .collection-overview-header,
+  body.maintenance-page-active .collection-rate-section {
+    padding: 18px;
+  }
+
+  body.maintenance-page-active .invoice-message,
+  body.maintenance-page-active .booking-selection-summary {
+    margin-right: 18px;
+    margin-left: 18px;
+  }
+
+  body.maintenance-page-active .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  body.maintenance-page-active .form-actions > button {
+    width: 100%;
+  }
+
+  body.maintenance-page-active .charts-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    margin-top: 20px !important;
+  }
+
+  body.maintenance-page-active .collection-rate-top,
+  body.maintenance-page-active .collection-rate-values {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  body.maintenance-page-active .invoice-report-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.maintenance-page-active .invoice-report-item {
+    min-height: 0;
+    padding: 18px;
+    border-right: 0;
+    border-bottom: 1px solid #e8e9e6;
+  }
+
+  body.maintenance-page-active .invoice-report-item:last-child {
+    border-bottom: 0;
+  }
+
+  body.maintenance-page-active .ticket-body,
+  body.maintenance-page-active .actions-section,
+  body.maintenance-page-active .action-box {
+    padding: 16px;
+  }
+
+  body.maintenance-page-active .ticket-desc {
+    padding: 14px;
+    overflow-wrap: anywhere;
+  }
+
+  body.maintenance-page-active .action-btn-dark,
+  body.maintenance-page-active .ai-btn {
+    width: 100%;
+  }
+
+  body.maintenance-page-active .custom-modal-scroll {
+    width: calc(100% - 32px) !important;
+    padding: 20px !important;
+  }
+}
+
+@media print {
+  .maintenance-mobile-header,
+  .maintenance-sidebar,
+  .maintenance-menu-backdrop {
+    display: none !important;
+  }
+}
