@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import { getAuthToken } from '../../services/api';
-import { MAINTENANCE_API_ORIGIN } from './maintenanceApi';
+import { MAINTENANCE_API_BASE, MAINTENANCE_API_ORIGIN } from './maintenanceApi';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MdAutoAwesome, MdStar, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack, MdChevronRight, MdKeyboardArrowDown, MdBuild, MdFlag, MdPerson, MdAttachMoney, MdPhone, MdHome, MdPriorityHigh, MdDescription, MdAccessTime } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
@@ -36,7 +36,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
   }, []);
 
   const fetchTicket = useCallback(() => {
-    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}`)
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}`)
       .then(res => res.json())
       .then(data => {
         setTicket(data);
@@ -58,7 +58,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
   useEffect(() => {
     if (aiRecommendation?.recommendedTechnicianId) {
-      fetchWithAuth(`http://localhost:5073/api/technicians/${aiRecommendation.recommendedTechnicianId}`)
+      fetchWithAuth(`${MAINTENANCE_API_BASE}/technicians/${aiRecommendation.recommendedTechnicianId}`)
         .then(res => res.json())
         .then(data => setRecommendedTech(data))
         .catch(err => console.error(err));
@@ -70,7 +70,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
   const loadAiTriage = () => {
     setAiRecommendation({ loading: true });
-    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/triage`, { method: 'POST' })
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/triage`, { method: 'POST' })
       .then(res => res.json())
       .then(data => setAiRecommendation(data))
       .catch(err => {
@@ -87,7 +87,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
     
     // Mark old workflow as revised first
     if (aiRecommendation?.workflowId) {
-      fetchWithAuth(`http://localhost:5073/api/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
+      fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision: 'RequestRevision', note: reviseFeedback, approvedBy: 'Manager' })
@@ -96,7 +96,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
     setAiRecommendation(null);
     setShowReviseForm(false);
-    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/revise`, {
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/revise`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ managerFeedback: reviseFeedback })
@@ -115,7 +115,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
     const handleReject = () => {
     // Mark workflow as rejected
     if (aiRecommendation?.workflowId) {
-      fetchWithAuth(`http://localhost:5073/api/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
+      fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision: 'Reject', note: 'Rejected by manager', approvedBy: 'Manager' })
@@ -123,7 +123,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
     }
 
     setAiRecommendation(null);
-    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/reject`, {
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/reject`, {
       method: 'POST'
     })
     .then(res => {
@@ -132,7 +132,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
   };
 
   const loadAvailableTechs = () => {
-    fetchWithAuth('http://localhost:5073/api/maintenance/technicians')
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/technicians`)
       .then(res => res.json())
       .then(data => {
         setAvailableTechs(data.filter(t => t.status === 'Available'));
@@ -143,7 +143,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
   const handleManualAssign = () => {
     if (!selectedTechId) return;
-    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/assign`, {
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/assign`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ technicianId: parseInt(selectedTechId) })
@@ -161,7 +161,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
       alert('Run AI triage before making an approval decision.');
       return;
     }
-    fetchWithAuth(`http://localhost:5073/api/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -177,7 +177,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
   };
 
   const handlePriorityChange = (newPriority) => {
-    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/priority`, {
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/priority`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ priority: newPriority })
@@ -196,12 +196,12 @@ const fetchWithAuth = useCallback((url, options = {}) => {
   };
 
   const handleStartWork = () => {
-    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/start`, { method: 'POST' })
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/start`, { method: 'POST' })
       .then(res => res.ok && fetchTicket());
   };
 
   const handleResolve = () => {
-    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/resolve`, {
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/resolve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repairCost: parseFloat(repairCost || 0), note })
@@ -215,7 +215,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
   const handleClose = () => {
     // Admin force-closes the ticket on behalf of resident or after manual verification
-    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/verify`, {
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isApproved: true, note: 'Admin forcibly closed ticket.' })
@@ -229,7 +229,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
   const handleAddComment = () => {
     if (!commentNote) return;
-    fetchWithAuth(`http://localhost:5073/api/maintenance/${id}/comments`, {
+    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ note: commentNote, role: 'Admin/Manager' })
