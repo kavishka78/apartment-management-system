@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/resident_maintenance_ai_service.dart';
 import '../../models/maintenance/resident_ai_response.dart';
 import '../../services/maintenance/maintenance_api_service.dart';
-import 'maintenance_home_screen.dart';
+import '../../services/auth/auth_service.dart';
 
 class ResidentAiAssistantScreen extends StatefulWidget {
   const ResidentAiAssistantScreen({Key? key}) : super(key: key);
@@ -119,8 +119,10 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
     setState(() => _isSubmitting = true);
     
     try {
+      final session = await AuthService.getSession();
+      if (session == null) throw Exception('Please sign in to create a complaint.');
       final response = await MaintenanceApiService.createComplaint(
-        residentId: CURRENT_RESIDENT_ID,
+        residentId: session.residentId,
         title: _finalDraft!.title,
         description: _finalDraft!.description,
         categoryId: _finalDraft!.categoryId,

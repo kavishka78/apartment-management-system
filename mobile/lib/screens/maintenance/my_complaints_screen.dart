@@ -6,7 +6,6 @@ import '../../services/maintenance/maintenance_api_service.dart';
 import '../../widgets/maintenance/maintenance_widgets.dart';
 import '../../widgets/maintenance/maintenance_skeleton.dart';
 import 'maintenance_details_screen.dart';
-import 'maintenance_home_screen.dart'; // for CURRENT_RESIDENT_ID
 
 class MyComplaintsScreen extends StatefulWidget {
   const MyComplaintsScreen({super.key});
@@ -38,9 +37,7 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
       _error = '';
     });
 
-    final result = await MaintenanceApiService.getComplaints(
-      residentId: CURRENT_RESIDENT_ID,
-    );
+    final result = await MaintenanceApiService.getComplaints();
 
     if (result['success'] == true) {
       final items = result['data'] as List;

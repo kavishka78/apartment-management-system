@@ -6,9 +6,6 @@ import '../../widgets/maintenance/maintenance_widgets.dart';
 import 'maintenance_details_screen.dart';
 import '../../widgets/maintenance/maintenance_skeleton.dart';
 
-// HARDCODED for now until Phase 1 JWT is complete
-const int CURRENT_RESIDENT_ID = 1;
-
 class MaintenanceHistoryScreen extends StatefulWidget {
   const MaintenanceHistoryScreen({super.key});
 
@@ -38,9 +35,7 @@ class _MaintenanceHistoryScreenState extends State<MaintenanceHistoryScreen> {
       _error = '';
     });
 
-    final result = await MaintenanceApiService.getComplaints(
-      residentId: CURRENT_RESIDENT_ID,
-    );
+    final result = await MaintenanceApiService.getComplaints();
 
     if (result['success'] == true) {
       final items = result['data'] as List;

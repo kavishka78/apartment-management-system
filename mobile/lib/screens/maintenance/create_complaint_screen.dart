@@ -5,8 +5,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../models/maintenance/maintenance_model.dart';
 import '../../services/maintenance/maintenance_api_service.dart';
+import '../../services/auth/auth_service.dart';
 import 'complaint_success_screen.dart';
-import 'maintenance_home_screen.dart'; // for CURRENT_RESIDENT_ID
 
 class CreateComplaintScreen extends StatefulWidget {
   const CreateComplaintScreen({super.key});
@@ -91,13 +91,20 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
       return;
     }
 
+    final session = await AuthService.getSession();
+    if (!mounted) return;
+    if (session == null) {
+      setState(() => _error = 'Please sign in to create a complaint.');
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
       _error = '';
     });
 
     final result = await MaintenanceApiService.createComplaint(
-      residentId: CURRENT_RESIDENT_ID,
+      residentId: session.residentId,
       categoryId: _selectedCategory!.id,
       title: _titleController.text.trim(),
       description: _descController.text.trim(),
