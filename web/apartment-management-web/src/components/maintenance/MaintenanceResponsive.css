@@ -4,6 +4,46 @@
   display: none;
 }
 
+/* Keep maintenance actions pill-shaped without changing shared payment buttons. */
+body.maintenance-page-active .payment-page :is(
+  .primary-btn,
+  .secondary-btn,
+  .generate-btn,
+  .cancel-btn,
+  .rect-btn
+) {
+  border-radius: 999px;
+}
+
+body.maintenance-page-active .payment-page .rect-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+body.maintenance-page-active .payment-page .rect-btn-dark {
+  background: #0f172a;
+  color: #fff;
+}
+
+body.maintenance-page-active .payment-page .rect-btn-outline {
+  background: #fff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+body.maintenance-page-active .payment-page .rect-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 @media (max-width: 750px) {
   body.maintenance-menu-open {
     overflow: hidden;

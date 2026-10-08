@@ -147,36 +147,87 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       body: SafeArea(
         child: _screens[_selectedIndex],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _changePage,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+          child: Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(44),
+              border: Border.all(color: const Color(0xFFE2E6E8)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x16000000),
+                  blurRadius: 20,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                _navItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
+                _navItem(
+                    1, Icons.apartment_outlined, Icons.apartment_rounded, 'Facilities'),
+                _navItem(2, Icons.local_parking_outlined,
+                    Icons.local_parking_rounded, 'Parking'),
+                _navItem(3, Icons.account_balance_wallet_outlined,
+                    Icons.account_balance_wallet_rounded, 'Payments'),
+                _navItem(4, Icons.person_outline_rounded,
+                    Icons.person_rounded, 'Profile'),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.apartment_outlined),
-            selectedIcon: Icon(Icons.apartment),
-            label: 'Facilities',
+        ),
+      ),
+    );
+  }
+
+  Widget _navItem(
+      int index, IconData icon, IconData selectedIcon, String label) {
+    final selected = _selectedIndex == index;
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _changePage(index),
+            borderRadius: BorderRadius.circular(40),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              height: 66,
+              decoration: BoxDecoration(
+                color: selected ? const Color(0xFFE9ECEE) : Colors.transparent,
+                borderRadius: BorderRadius.circular(40),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(selected ? selectedIcon : icon,
+                      size: 25, color: const Color(0xFF17212B)),
+                  const SizedBox(height: 3),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                        color: const Color(0xFF17212B),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.local_parking_outlined),
-            selectedIcon: Icon(Icons.local_parking),
-            label: 'Parking',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet),
-            label: 'Payments',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -3,6 +3,7 @@ import { MdAssignment, MdPlayArrow, MdCheckCircle } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';
 import Pagination from '../../components/Pagination';
 import useIsMobile from '../../hooks/useIsMobile';
+import { MAINTENANCE_API_BASE } from './maintenanceApi';
 import '../payment/PaymentDashboard.css';
 
 function WorkOrders() {
@@ -15,7 +16,7 @@ function WorkOrders() {
 
   useEffect(() => {
     const token = localStorage.getItem('ah_token');
-    fetch('http://localhost:5073/api/maintenance', {
+    fetch(`${MAINTENANCE_API_BASE}/maintenance`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())

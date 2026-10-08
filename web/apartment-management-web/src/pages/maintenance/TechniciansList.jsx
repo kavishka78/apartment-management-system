@@ -7,6 +7,7 @@ import useIsMobile from '../../hooks/useIsMobile';
 import '../payment/PaymentDashboard.css';
 import './Complaints.css';
 import '../admin/DomesticStaff.css';
+import { MAINTENANCE_API_BASE } from './maintenanceApi';
 
 function TechniciansList() {
   const [techs, setTechs] = useState([]);
@@ -52,8 +53,11 @@ function TechniciansList() {
   const [lightbox, setLightbox] = useState(null); // { src, name }
 
   const fetchTechs = useCallback(() => {
-    fetch('http://localhost:5073/api/technicians')
-      .then(res => res.json())
+    fetch(`${MAINTENANCE_API_BASE}/technicians`)
+      .then(async res => {
+        if (!res.ok) throw new Error(`Unable to load technicians (HTTP ${res.status}).`);
+        return res.json();
+      })
       .then(data => {
         setTechs(data);
         setLoading(false);
@@ -116,7 +120,8 @@ function TechniciansList() {
     try {
       setLoading(true);
       setCurrentPage(1);
-      await fetch(`http://localhost:5073/api/technicians/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${MAINTENANCE_API_BASE}/technicians/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error(`Unable to delete technician (HTTP ${response.status}).`);
       fetchTechs();
     } catch (e) {
       console.error(e);
@@ -169,7 +174,7 @@ function TechniciansList() {
     try {
         setLoading(true);
         if (editingTech) {
-          const res = await fetch(`http://localhost:5073/api/technicians/${editingTech.id}`, {
+          const res = await fetch(`${MAINTENANCE_API_BASE}/technicians/${editingTech.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...payload, id: editingTech.id })
@@ -181,7 +186,7 @@ function TechniciansList() {
             return;
           }
         } else {
-          const res = await fetch('http://localhost:5073/api/technicians', {
+          const res = await fetch(`${MAINTENANCE_API_BASE}/technicians`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

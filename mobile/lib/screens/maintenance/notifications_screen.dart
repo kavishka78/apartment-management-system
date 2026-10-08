@@ -1,12 +1,12 @@
 import '../../services/api_config.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-import 'maintenance_home_screen.dart';
-import '../../services/maintenance/maintenance_api_service.dart'; // for CURRENT_RESIDENT_ID
+import '../../services/maintenance/maintenance_api_service.dart';
 import '../../services/auth/auth_service.dart';
 import 'my_complaints_screen.dart';
 import 'maintenance_details_screen.dart';
@@ -212,9 +212,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             ),
                           );
 
-                          MaintenanceApiService.getComplaints(
-                                residentId: CURRENT_RESIDENT_ID,
-                              )
+                          MaintenanceApiService.getComplaints()
                               .then((result) {
                                 ScaffoldMessenger.of(context)
                                     .hideCurrentSnackBar();
