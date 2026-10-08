@@ -39,3 +39,8 @@ flutter:
   assets:
     - assets/images/
     - .env
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/InterVariable.ttf

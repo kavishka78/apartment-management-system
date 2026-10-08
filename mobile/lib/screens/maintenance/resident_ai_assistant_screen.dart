@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../services/resident_maintenance_ai_service.dart';
 import '../../models/maintenance/resident_ai_response.dart';
 import '../../services/maintenance/maintenance_api_service.dart';
@@ -19,7 +22,6 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
   final ScrollController _scrollController = ScrollController();
   final ResidentMaintenanceAiService _aiService =
       ResidentMaintenanceAiService();
-  
 
   List<Map<String, String>> _messages = [
     {
@@ -31,8 +33,6 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
   bool _isLoading = false;
   DraftComplaint? _finalDraft;
   bool _isSubmitting = false;
-
-
 
   // --- Local Chat History Logic ---
   Future<void> _saveChatHistory() async {
@@ -47,7 +47,9 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
     if (encodedData != null) {
       final List<dynamic> decodedList = json.decode(encodedData);
       setState(() {
-        _messages = decodedList.map((e) => Map<String, String>.from(e)).toList();
+        _messages = decodedList
+            .map((e) => Map<String, String>.from(e))
+            .toList();
       });
       // Scroll to bottom
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -61,7 +63,10 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No chat history found."), duration: Duration(seconds: 2)),
+        const SnackBar(
+          content: Text("No chat history found."),
+          duration: Duration(seconds: 2),
+        ),
       );
     }
   }
@@ -71,7 +76,10 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    setState(() { _messages.add({"role": "user", "content": text}); _isLoading = true; });
+    setState(() {
+      _messages.add({"role": "user", "content": text});
+      _isLoading = true;
+    });
     _saveChatHistory();
     _messageController.clear();
     _scrollToBottom();
@@ -81,7 +89,8 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
 
       setState(() {
         _messages.add({"role": "assistant", "content": response.reply});
-        if (response.status.toLowerCase() == 'ready' && response.draftComplaint != null) {
+        if (response.status.toLowerCase() == 'ready' &&
+            response.draftComplaint != null) {
           _finalDraft = response.draftComplaint;
         }
       });
@@ -113,14 +122,14 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
     });
   }
 
-  
   void _submitComplaint() async {
     if (_finalDraft == null) return;
     setState(() => _isSubmitting = true);
-    
+
     try {
       final session = await AuthService.getSession();
-      if (session == null) throw Exception('Please sign in to create a complaint.');
+      if (session == null)
+        throw Exception('Please sign in to create a complaint.');
       final response = await MaintenanceApiService.createComplaint(
         residentId: session.residentId,
         title: _finalDraft!.title,
@@ -128,10 +137,12 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
         categoryId: _finalDraft!.categoryId,
         priority: 'Medium', // Default for AI, manager triage fixes it
       );
-      
+
       if (response['success'] == true && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Maintenance request submitted successfully!')),
+          const SnackBar(
+            content: Text('Maintenance request submitted successfully!'),
+          ),
         );
         Navigator.pop(context, true); // True indicates refresh needed
       } else {
@@ -139,9 +150,8 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to submit: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -192,8 +202,7 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
               },
             ),
           ),
-          
-          
+
           if (_isLoading) _buildTypingIndicator(),
           _buildQuickReplies(),
           if (_finalDraft != null) _buildDraftCard(),
@@ -204,7 +213,6 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
     );
   }
 
-
   Widget _buildTypingIndicator() {
     return Align(
       alignment: Alignment.centerLeft,
@@ -213,15 +221,35 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: const Color(0xFF003893),
-          borderRadius: BorderRadius.circular(20).copyWith(bottomLeft: const Radius.circular(0)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))],
+          borderRadius: BorderRadius.circular(20)
+              .copyWith(bottomLeft: const Radius.circular(0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+            SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
             SizedBox(width: 8),
-            Text("Agent is typing...", style: TextStyle(color: Colors.white, fontStyle: FontStyle.italic)),
+            Text(
+              "Agent is typing...",
+              style: TextStyle(
+                color: Colors.white,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
           ],
         ),
       ),
@@ -257,12 +285,12 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         child: Text(
-            text,
-            style: TextStyle(
-              color: isUser ? Colors.white : Colors.black87,
-              fontSize: 15,
-            ),
+          text,
+          style: TextStyle(
+            color: isUser ? Colors.white : Colors.black87,
+            fontSize: 15,
           ),
+        ),
       ),
     );
   }
@@ -336,11 +364,9 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
     );
   }
 
-
-
   Widget _buildQuickReplies() {
     if (_messages.length > 1 || _isLoading) return const SizedBox.shrink();
-    
+
     final options = [
       {
         "text": "My kitchen sink is leaking water",
@@ -367,7 +393,7 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
         "bgColor": Colors.green.withValues(alpha: 0.1),
       },
     ];
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Column(
@@ -382,7 +408,10 @@ class _ResidentAiAssistantScreenState extends State<ResidentAiAssistantScreen> {
                 _sendMessage();
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.transparent, // They can be transparent by default like the screenshot
                   borderRadius: BorderRadius.circular(16),

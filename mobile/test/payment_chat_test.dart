@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile/models/auth/resident_session.dart';
 import 'package:mobile/services/auth/auth_service.dart';
 import 'package:mobile/screens/payment/payment_chat_screen.dart';
 import 'package:mobile/screens/payment/card_payment_screen.dart';
@@ -14,21 +14,12 @@ import 'package:mobile/screens/payment/card_payment_screen.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() async {
-    // Use ApiConfig's deployed backend default without loading local secrets.
-    dotenv.testLoad(fileInput: '');
     SharedPreferences.setMockInitialValues({});
     await AuthService.clearSession();
-    // Seed the saved session directly: login's push notifications are outside
-    // these payment widget tests and require a native Firebase app.
-    SharedPreferences.setMockInitialValues({
-      'auth_residentId': 101,
-      'auth_tenantId': 1,
-      'auth_token': 'fixture-jwt',
-      'auth_name': 'Resident',
-      'auth_email': 'resident@example.invalid',
-      'auth_phone': '',
-      'auth_unitNumber': 'A1',
-    });
+    await AuthService.saveSession(const ResidentSession(
+      residentId: 101, tenantId: 1, token: 'fixture-jwt', name: 'Resident',
+      email: 'resident@example.invalid', phone: '', unitNumber: 'A1',
+    ));
   });
 
   testWidgets('Chat forwards JWT and Pay Now reuses PaymentSheet, then hides paid actions', (tester) async {

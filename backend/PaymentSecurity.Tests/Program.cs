@@ -16,14 +16,12 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Production" });
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole().SetMinimumLevel(LogLevel.Error);
 builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> {
     ["Jwt:Key"] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48)),
     ["Jwt:Issuer"] = "payment-security-tests", ["Jwt:Audience"] = "payment-security-tests",
     ["Stripe:SecretKey"] = "test-placeholder-never-sent",
 });
 var db = new TestData();
-db.Complexes = new TestSet<Complex>();
 var resident = new Resident { Id = 101, TenantId = 1, FullName = "Fixture resident", Email = "one@example.invalid" };
 db.Residents.Add(resident);
 db.Residents.Add(new Resident { Id = 202, TenantId = 1, Email = "two@example.invalid" });
@@ -48,9 +46,6 @@ await db.SaveChangesAsync();
 
 builder.Services.AddSingleton<AppDbContext>(db);
 builder.Services.AddSingleton<JwtTokenService>();
-// PlatformController requires the same HTTP client factory as the API host.
-builder.Services.AddHttpClient();
-builder.Services.AddSingleton<INotificationService, TestNotificationService>();
 builder.Services.AddControllers().AddApplicationPart(typeof(InvoicesController).Assembly)
     .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o => {
@@ -107,6 +102,7 @@ try
     Check(me.GetProperty("role").GetString() == "Resident", "Resident /me does not resolve colliding UserAccount");
     me = (await Call(HttpMethod.Get, "/api/v1/auth/me", adminJwt, 200))!.Value;
     Check(me.GetProperty("role").GetString() == "ApartmentAdmin", "Admin /me preserved");
+    await Call(HttpMethod.Post, "/api/v1/auth/resident/dev-login", null, 404, new { email = resident.Email });
     var login = (await Call(HttpMethod.Post, "/api/v1/auth/login", null, 200,
         new { email = resident.Email, password = "fixture-password" }))!.Value;
     Check(login.GetProperty("user").GetProperty("id").GetInt32() == 707 &&
@@ -175,9 +171,6 @@ try
     Check(sqlDb.VisibleInvoices(principal).ToQueryString().Contains("ResidentId"), "PostgreSQL invoice scope translates");
     Check(sqlDb.VisiblePayments(principal).ToQueryString().Contains("ResidentId"), "PostgreSQL payment scope translates");
     Console.WriteLine($"PASS: {passed} JWT, ownership, admin workflow and PostgreSQL query assertions. No database was contacted.");
-    // Keep this production security assertion; run it after the payment checks
-    // so an enabled dev-login endpoint does not hide their results.
-    await Call(HttpMethod.Post, "/api/v1/auth/resident/dev-login", null, 404, new { email = resident.Email });
     if (args.Length > 0)
     {
         // Pass only short-lived fixture credentials to the child; never print JWTs.
@@ -201,10 +194,3 @@ try
     }
 }
 finally { await app.StopAsync(); }
-
-// Payment/auth checks do not send real emails or push notifications.
-sealed class TestNotificationService : INotificationService
-{
-    public Task SendEmailAsync(string toEmail, string subject, string body) => Task.CompletedTask;
-    public Task SendPushNotificationAsync(string? fcmToken, string title, string body) => Task.CompletedTask;
-}

@@ -1,54 +1,51 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import Landing from "./pages/Landing";
-import Login from "./pages/Login";
 import ModuleRoute from "./components/ModuleRoute";
-import TechnicianDashboard from './pages/technician/TechnicianDashboard';
 
+// Load each route only when it is first opened, keeping unrelated modules out of the initial download.
+const Landing = lazy(() => import("./pages/Landing"));
+const Login = lazy(() => import("./pages/Login"));
+const TechnicianDashboard = lazy(() => import("./pages/technician/TechnicianDashboard"));
 
-// ─── Payment Pages (teammate's code — untouched) ────────
-import PaymentDashboard from "./pages/payment/PaymentDashboard";
-import Invoices from "./pages/payment/Invoices";
-import GenerateInvoice from "./pages/payment/GenerateInvoice";
-import Payments from "./pages/payment/Payments";
-import OverdueAccounts from "./pages/payment/OverdueAccounts";
-import CollectionReports from "./pages/payment/CollectionReports";
+const PaymentDashboard = lazy(() => import("./pages/payment/PaymentDashboard"));
+const Invoices = lazy(() => import("./pages/payment/Invoices"));
+const GenerateInvoice = lazy(() => import("./pages/payment/GenerateInvoice"));
+const Payments = lazy(() => import("./pages/payment/Payments"));
+const OverdueAccounts = lazy(() => import("./pages/payment/OverdueAccounts"));
+const CollectionReports = lazy(() => import("./pages/payment/CollectionReports"));
 
-// ─── Super Admin Dedicated Portal Layout & Pages ─────────
-import SuperAdminLayout from "./pages/superadmin/SuperAdminLayout";
-import SuperAdminOverview from "./pages/superadmin/SuperAdminOverview";
-import SuperAdminComplexes from "./pages/superadmin/SuperAdminComplexes";
-import SuperAdminAdmins from "./pages/superadmin/SuperAdminAdmins";
-import SuperAdminSubscriptions from "./pages/superadmin/SuperAdminSubscriptions";
-import SuperAdminAiGovernance from "./pages/superadmin/SuperAdminAiGovernance";
+const SuperAdminLayout = lazy(() => import("./pages/superadmin/SuperAdminLayout"));
+const SuperAdminOverview = lazy(() => import("./pages/superadmin/SuperAdminOverview"));
+const SuperAdminComplexes = lazy(() => import("./pages/superadmin/SuperAdminComplexes"));
+const SuperAdminAdmins = lazy(() => import("./pages/superadmin/SuperAdminAdmins"));
+const SuperAdminSubscriptions = lazy(() => import("./pages/superadmin/SuperAdminSubscriptions"));
+const SuperAdminAiGovernance = lazy(() => import("./pages/superadmin/SuperAdminAiGovernance"));
 
-// ─── Apartment Admin Layout & Facilities Pages ───────────
-import AdminLayout from "./pages/admin/AdminLayout";
-import Overview from "./pages/admin/Overview";
-import Facilities from "./pages/admin/Facilities";
-import VisitorLogs from "./pages/admin/VisitorLogs";
-import AiApprovals from "./pages/admin/AiApprovals";
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const Overview = lazy(() => import("./pages/admin/Overview"));
+const Facilities = lazy(() => import("./pages/admin/Facilities"));
+const VisitorLogs = lazy(() => import("./pages/admin/VisitorLogs"));
+const AiApprovals = lazy(() => import("./pages/admin/AiApprovals"));
+const Units = lazy(() => import("./pages/admin/Units"));
+const Residents = lazy(() => import("./pages/admin/Residents"));
+const Vehicles = lazy(() => import("./pages/admin/Vehicles"));
+const DomesticStaff = lazy(() => import("./pages/admin/DomesticStaff"));
+const AiSafetyAuditor = lazy(() => import("./pages/admin/AiSafetyAuditor"));
 
-// ─── Student 1: Apartment Admin Pages (Scoped to Building)
-import Units from "./pages/admin/Units";
-import Residents from "./pages/admin/Residents";
-import Vehicles from "./pages/admin/Vehicles";
-import DomesticStaff from "./pages/admin/DomesticStaff";
-import AiSafetyAuditor from "./pages/admin/AiSafetyAuditor";
-
-// ─── Maintenance & Complaint Management Pages ─────────────
-import MaintenanceDashboard from "./pages/maintenance/MaintenanceDashboard";
-import Complaints from "./pages/maintenance/Complaints";
-import MaintenanceDetails from "./pages/maintenance/MaintenanceDetails";
-import TechniciansList from "./pages/maintenance/TechniciansList";
-import WorkOrders from "./pages/maintenance/WorkOrders";
-import SlaRisk from "./pages/maintenance/SlaRisk";
-import MaintenanceReports from "./pages/maintenance/MaintenanceReports";
+const MaintenanceDashboard = lazy(() => import("./pages/maintenance/MaintenanceDashboard"));
+const Complaints = lazy(() => import("./pages/maintenance/Complaints"));
+const MaintenanceDetails = lazy(() => import("./pages/maintenance/MaintenanceDetails"));
+const TechniciansList = lazy(() => import("./pages/maintenance/TechniciansList"));
+const WorkOrders = lazy(() => import("./pages/maintenance/WorkOrders"));
+const SlaRisk = lazy(() => import("./pages/maintenance/SlaRisk"));
+const MaintenanceReports = lazy(() => import("./pages/maintenance/MaintenanceReports"));
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <Suspense fallback={<div className="app-route-loading" role="status">Loading page...</div>}>
         <Routes>
           {/* Public landing page */}
           <Route path="/" element={<Landing />} />
@@ -99,6 +96,7 @@ function App() {
             {/* Catch-all */}
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );

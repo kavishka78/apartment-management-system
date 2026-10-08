@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+
 import '../auth/auth_service.dart';
 
 import '../api_config.dart';
@@ -9,18 +11,26 @@ class MaintenanceApiService {
   static String get baseUrl => ApiConfig.baseUrl;
 
   // Helper method for error handling consistency
-  static Map<String, dynamic> _handleError(http.Response? response, dynamic e, String defaultMessage) {
+  static Map<String, dynamic> _handleError(
+    http.Response? response,
+    dynamic e,
+    String defaultMessage,
+  ) {
     if (e != null) {
       debugPrint('MAINTENANCE API ERROR: $e');
       return {'success': false, 'message': 'Cannot connect to server: $e'};
     }
-    
+
     String errorMessage = defaultMessage;
     if (response != null && response.body.isNotEmpty) {
       try {
         final decoded = jsonDecode(response.body);
         if (decoded is Map<String, dynamic>) {
-          errorMessage = decoded['message'] ?? decoded['title'] ?? decoded['errors']?.toString() ?? defaultMessage;
+          errorMessage =
+              decoded['message'] ??
+              decoded['title'] ??
+              decoded['errors']?.toString() ??
+              defaultMessage;
         } else {
           errorMessage = response.body;
         }
@@ -39,7 +49,10 @@ class MaintenanceApiService {
     try {
       final session = await AuthService.getSession();
       if (session == null) {
-        return {'success': false, 'message': 'Please sign in to view your complaints.'};
+        return {
+          'success': false,
+          'message': 'Please sign in to view your complaints.',
+        };
       }
       final response = await http.get(
         Uri.parse('$baseUrl/maintenance'),
@@ -48,11 +61,11 @@ class MaintenanceApiService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final List<dynamic> decoded = jsonDecode(response.body);
-        
+
         final filtered = decoded
             .where((item) => item['residentId'] == session.residentId)
             .toList();
-        
+
         return {'success': true, 'data': filtered};
       }
       return _handleError(response, null, 'Failed to load complaints');
@@ -134,15 +147,18 @@ class MaintenanceApiService {
   // =========================================================
   // UPLOAD PHOTO
   // =========================================================
-  static Future<Map<String, dynamic>> uploadPhoto(int maintenanceId, String filePath) async {
+  static Future<Map<String, dynamic>> uploadPhoto(
+    int maintenanceId,
+    String filePath,
+  ) async {
     try {
       var request = http.MultipartRequest(
         'POST',
         Uri.parse('$baseUrl/maintenance/$maintenanceId/photo'),
       );
-      
+
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
-      
+
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
@@ -159,7 +175,9 @@ class MaintenanceApiService {
   // =========================================================
   // GET AI RECOMMENDATION (TRIAGE STATUS)
   // =========================================================
-  static Future<Map<String, dynamic>> getWorkflowSummary(int maintenanceId) async {
+  static Future<Map<String, dynamic>> getWorkflowSummary(
+    int maintenanceId,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/maintenance/$maintenanceId/workflows/latest'),
@@ -180,15 +198,16 @@ class MaintenanceApiService {
   // =========================================================
   // VERIFY RESOLUTION
   // =========================================================
-  static Future<Map<String, dynamic>> verifyResolution(int maintenanceId, bool isApproved, String? note) async {
+  static Future<Map<String, dynamic>> verifyResolution(
+    int maintenanceId,
+    bool isApproved,
+    String? note,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/maintenance/$maintenanceId/verify'),
         headers: await AuthService.authHeaders(),
-        body: jsonEncode({
-          'isApproved': isApproved,
-          'note': note,
-        }),
+        body: jsonEncode({'isApproved': isApproved, 'note': note}),
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -200,4 +219,3 @@ class MaintenanceApiService {
     }
   }
 }
-

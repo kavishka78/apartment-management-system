@@ -247,7 +247,7 @@ function CreateComplaint() {
               <button type="submit" className="generate-btn" style={{
                   padding: '11px 20px',
                   border: 'none',
-                  borderRadius: '8px',
+                  borderRadius: '999px',
                   background: '#0f172a',
                   color: 'white',
                   fontSize: '14px',
