@@ -1,4 +1,7 @@
+import '../../services/api_config.dart';
+
 import 'package:flutter/material.dart';
+
 import '../../models/maintenance/maintenance_model.dart';
 import '../../services/maintenance/maintenance_api_service.dart';
 import '../../widgets/maintenance/maintenance_widgets.dart';
@@ -17,7 +20,7 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
   String _error = '';
   List<MaintenanceTicket> _allTickets = [];
   List<MaintenanceTicket> _filteredTickets = [];
-  
+
   String _searchQuery = '';
   String _statusFilter = 'All';
   String _categoryFilter = 'All Categories';
@@ -36,17 +39,22 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
     });
 
     final result = await MaintenanceApiService.getComplaints();
-    
+
     if (result['success'] == true) {
       final items = result['data'] as List;
       if (mounted) {
         setState(() {
-          _allTickets = items.map((e) => MaintenanceTicket.fromJson(e)).toList();
-          
+          _allTickets = items
+              .map((e) => MaintenanceTicket.fromJson(e))
+              .toList();
+
           _allTickets.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          
+
           // Populate categories for filter
-          final cats = _allTickets.map((e) => e.category?.name ?? 'General').toSet().toList();
+          final cats = _allTickets
+              .map((e) => e.category?.name ?? 'General')
+              .toSet()
+              .toList();
           _categories = ['All Categories', ...cats];
 
           _applyFilters();
@@ -66,9 +74,10 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
   void _applyFilters() {
     setState(() {
       _filteredTickets = _allTickets.where((t) {
-        final matchesSearch = t.title.toLowerCase().contains(_searchQuery) ||
-                              t.description.toLowerCase().contains(_searchQuery);
-        
+        final matchesSearch =
+            t.title.toLowerCase().contains(_searchQuery) ||
+            t.description.toLowerCase().contains(_searchQuery);
+
         bool matchesStatus = false;
         if (_statusFilter == 'All') {
           // Keep Closed tickets out of the "All" active view
@@ -80,7 +89,8 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
         }
 
         final tCategory = t.category?.name ?? 'General';
-        final matchesCategory = _categoryFilter == 'All Categories' || tCategory == _categoryFilter;
+        final matchesCategory =
+            _categoryFilter == 'All Categories' || tCategory == _categoryFilter;
         return matchesSearch && matchesStatus && matchesCategory;
       }).toList();
     });
@@ -93,7 +103,11 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
       appBar: AppBar(
         title: const Text(
           'My Complaints',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w700, fontSize: 18),
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
         ),
         backgroundColor: const Color(0xFFF8F9FA),
         elevation: 0,
@@ -108,7 +122,7 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: const Color(0xFFE8ECEF)),
               ),
               child: TextField(
@@ -117,7 +131,10 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
                   hintStyle: TextStyle(color: Colors.grey),
                   prefixIcon: Icon(Icons.search, color: Colors.grey),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
                 onChanged: (val) {
                   _searchQuery = val.toLowerCase();
@@ -126,7 +143,7 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
               ),
             ),
           ),
-          
+
           // Filters Row
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
@@ -138,15 +155,25 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(999),
                       border: Border.all(color: const Color(0xFFE8ECEF)),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        borderRadius: BorderRadius.circular(16), dropdownColor: Colors.white, elevation: 8, value: _categoryFilter,
+                        borderRadius: BorderRadius.circular(16),
+                        dropdownColor: Colors.white,
+                        elevation: 8,
+                        value: _categoryFilter,
                         isExpanded: true,
-                        icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                        style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w500),
+                        icon: const Icon(
+                          Icons.arrow_drop_down,
+                          color: Colors.grey,
+                        ),
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                         onChanged: (String? newValue) {
                           if (newValue != null) {
                             setState(() {
@@ -155,10 +182,20 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
                             });
                           }
                         },
-                        items: _categories.map<DropdownMenuItem<String>>((String value) {
+                        items: _categories.map<DropdownMenuItem<String>>((
+                          String value,
+                        ) {
                           return DropdownMenuItem<String>(
                             value: value,
-                            child: Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Text(value, style: const TextStyle(fontSize: 14))),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                              ),
+                              child: Text(
+                                value,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
                           );
                         }).toList(),
                       ),
@@ -175,172 +212,247 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: ['All', 'Pending', 'Assigned', 'In Progress', 'Resolved'].map((status) {
-                final isSelected = _statusFilter == status;
+              children:
+                  ['All', 'Pending', 'Assigned', 'In Progress', 'Resolved'].map(
+                    (status) {
+                      final isSelected = _statusFilter == status;
 
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(status),
-                    selected: isSelected,
-                    selectedColor: const Color(0xFF2C3E50),
-                    checkmarkColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black87,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                    backgroundColor: Colors.white,
-                    side: BorderSide(
-                      color: isSelected ? const Color(0xFF2C3E50) : const Color(0xFFE8ECEF),
-                    ),
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _statusFilter = status;
-                          _applyFilters();
-                        });
-                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(status),
+                          selected: isSelected,
+                          selectedColor: const Color(0xFF2C3E50),
+                          checkmarkColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : Colors.black87,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
+                          backgroundColor: Colors.white,
+                          side: BorderSide(
+                            color: isSelected
+                                ? const Color(0xFF2C3E50)
+                                : const Color(0xFFE8ECEF),
+                          ),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                _statusFilter = status;
+                                _applyFilters();
+                              });
+                            }
+                          },
+                        ),
+                      );
                     },
-                  ),
-                );
-              }).toList(),
+                  ).toList(),
             ),
           ),
-          
+
           const SizedBox(height: 10),
 
           Expanded(
             child: _isLoading
                 ? const MaintenanceSkeleton(itemCount: 4)
                 : _error.isNotEmpty
-                    ? Center(child: Text(_error, style: const TextStyle(color: Colors.red)))
-                    : _filteredTickets.isEmpty
-                        ? const EmptyStateWidget(
-                            title: 'No complaints found',
-                            message: "You don't have any active maintenance requests matching the filters.",
-                            icon: Icons.list_alt,
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _loadTickets,
-                            color: const Color(0xFF1E2532),
-                            child: ListView.separated(
-                              padding: const EdgeInsets.all(20),
-                              itemCount: _filteredTickets.length,
-                              separatorBuilder: (_, _) => const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final t = _filteredTickets[index];
-                                return InkWell(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => MaintenanceDetailsScreen(ticketId: t.id),
-                                      ),
-                                    ).then((_) => _loadTickets());
-                                  },
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(16),
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_error, textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.red)),
+                          const SizedBox(height: 12),
+                          OutlinedButton(onPressed: _loadTickets, child: const Text('Retry')),
+                        ],
+                      ),
+                    ),
+                  )
+                : _filteredTickets.isEmpty
+                ? const EmptyStateWidget(
+                    title: 'No complaints found',
+                    message: "You don't have any active maintenance requests matching the filters.",
+                    icon: Icons.list_alt,
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadTickets,
+                    color: const Color(0xFF1E2532),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: _filteredTickets.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final t = _filteredTickets[index];
+                        return InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    MaintenanceDetailsScreen(ticketId: t.id),
+                              ),
+                            ).then((_) => _loadTickets());
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFFE8ECEF),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.02),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                if (t.photoPath != null &&
+                                    t.photoPath!.isNotEmpty)
+                                  Container(
+                                    width: 50,
+                                    height: 50,
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: const Color(0xFFE8ECEF)),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.02),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        )
-                                      ]
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        if (t.photoPath != null && t.photoPath!.isNotEmpty)
-                                          Container(
-                                            width: 50,
-                                            height: 50,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            clipBehavior: Clip.antiAlias,
-                                            child: Image.network(
-                                              'http://10.0.2.2:5073${t.photoPath}',
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) => 
-                                                const Icon(Icons.assignment_outlined, color: Color(0xFF1E2532), size: 28),
-                                            ),
-                                          )
-                                        else
-                                          const Padding(
-                                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                            child: Icon(Icons.assignment_outlined, color: Color(0xFF1E2532), size: 28),
-                                          ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    'TKT-${t.id}',
-                                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w600),
-                                                  ),
-                                                  Text(
-                                                    t.createdAt.toString().substring(0, 10),
-                                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                                                  )
-                                                ],
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Image.network(
+                                      '${ApiConfig.serverUrl}${t.photoPath}',
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const Icon(
+                                                Icons.assignment_outlined,
+                                                color: Color(0xFF1E2532),
+                                                size: 28,
                                               ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                t.title,
-                                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF17212B)),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 6),
-                                              Row(
-                                                children: [
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                    decoration: BoxDecoration(
-                                                      color: t.status == 'Pending' ? Colors.orange.shade50 : 
-                                                             t.status == 'In Progress' ? Colors.blue.shade50 :
-                                                             (t.status == 'Resolved' || t.status == 'Assigned') ? Colors.green.shade50 :
-                                                             t.status == 'Closed' ? Colors.red.shade50 :
-                                                             Colors.grey.shade100,
-                                                      borderRadius: BorderRadius.circular(6),
-                                                    ),
-                                                    child: Text(
-                                                      t.status,
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: t.status == 'Pending' ? Colors.orange.shade700 : 
-                                                               t.status == 'In Progress' ? Colors.blue.shade700 :
-                                                               (t.status == 'Resolved' || t.status == 'Assigned') ? Colors.green.shade700 :
-                                                               t.status == 'Closed' ? Colors.red.shade700 :
-                                                               Colors.grey.shade700,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Text(t.category?.name ?? 'General', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                                                ],
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                      ],
+                                    ),
+                                  )
+                                else
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 8,
+                                    ),
+                                    child: Icon(
+                                      Icons.assignment_outlined,
+                                      color: Color(0xFF1E2532),
+                                      size: 28,
                                     ),
                                   ),
-                                );
-                              },
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'TKT-${t.id}',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade500,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            t.createdAt.toString().substring(
+                                              0,
+                                              10,
+                                            ),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        t.title,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF17212B),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: t.status == 'Pending'
+                                                  ? Colors.orange.shade50
+                                                  : t.status == 'In Progress'
+                                                  ? Colors.blue.shade50
+                                                  : (t.status == 'Resolved' ||
+                                                        t.status == 'Assigned')
+                                                  ? Colors.green.shade50
+                                                  : t.status == 'Closed'
+                                                  ? Colors.red.shade50
+                                                  : Colors.grey.shade100,
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              t.status,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: t.status == 'Pending'
+                                                    ? Colors.orange.shade700
+                                                    : t.status == 'In Progress'
+                                                    ? Colors.blue.shade700
+                                                    : (t.status == 'Resolved' ||
+                                                          t.status ==
+                                                              'Assigned')
+                                                    ? Colors.green.shade700
+                                                    : t.status == 'Closed'
+                                                    ? Colors.red.shade700
+                                                    : Colors.grey.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            t.category?.name ?? 'General',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),

@@ -1,12 +1,19 @@
 using System.Security.Claims;
 using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.Models;
+using ApartmentManagement.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagement.Api.Controllers
 {
+    public class OnboardDraftRequest
+    {
+        public int TenantId { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
     public class OnboardResidentRequest
     {
         public int TenantId { get; set; }
@@ -32,8 +39,13 @@ namespace ApartmentManagement.Api.Controllers
     public class RegistryController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly OnboardingAgentClient _onboardingAgent;
 
-        public RegistryController(AppDbContext db) => _db = db;
+        public RegistryController(AppDbContext db, OnboardingAgentClient onboardingAgent)
+        {
+            _db = db;
+            _onboardingAgent = onboardingAgent;
+        }
 
         // An apartment admin may only touch their own complex, and only while its
         // subscription is active and the package includes the module.
@@ -67,10 +79,22 @@ namespace ApartmentManagement.Api.Controllers
             var denied = await Guard(unit.TenantId, "units");
             if (denied != null) return denied;
             if (string.IsNullOrWhiteSpace(unit.UnitNumber)) return BadRequest("Unit number is required.");
+            if (unit.NumberOfBedrooms <= 0) return BadRequest("Number of bedrooms must be at least 1.");
+            if (unit.NumberOfBathrooms <= 0) return BadRequest("Number of bathrooms must be at least 1.");
+            if (unit.SquareFeet <= 0) return BadRequest("Square feet must be greater than 0.");
 
             var number = unit.UnitNumber.Trim();
             if (await _db.Units.AnyAsync(u => u.TenantId == unit.TenantId && u.UnitNumber.ToLower() == number.ToLower()))
                 return Conflict($"Unit '{number}' already exists in this complex.");
+
+            // Check if admin has exceeded the unit limit set by SuperAdmin
+            var complex = await _db.Complexes.FindAsync(unit.TenantId);
+            if (complex != null)
+            {
+                var existingCount = await _db.Units.CountAsync(u => u.TenantId == unit.TenantId);
+                if (existingCount >= complex.TotalUnits)
+                    return Conflict($"Cannot create more than {complex.TotalUnits} units. Already created {existingCount}/{complex.TotalUnits}.");
+            }
 
             unit.Id = 0;
             unit.UnitNumber = number;
@@ -111,6 +135,35 @@ namespace ApartmentManagement.Api.Controllers
                 .Where(r => r.TenantId == tenantId)
                 .OrderByDescending(r => r.Id)
                 .ToListAsync();
+        }
+
+        // AI draft: turns pasted resident details into a draft with issues. Read-only; the manager confirms via residents/onboard.
+        [HttpPost("residents/onboard-draft")]
+        public async Task<IActionResult> DraftResidentOnboarding([FromBody] OnboardDraftRequest req)
+        {
+            if (req.TenantId <= 0) return BadRequest("TenantId is required.");
+            var denied = await Guard(req.TenantId, "residents");
+            if (denied != null) return denied;
+            if (string.IsNullOrWhiteSpace(req.Text)) return BadRequest("Paste the resident details first.");
+            if (req.Text.Length > 4000) return BadRequest("Text is too long (max 4000 characters).");
+
+            var units = await _db.Units
+                .Where(u => u.TenantId == req.TenantId)
+                .Select(u => new { id = u.Id, unitNumber = u.UnitNumber, status = u.Status })
+                .ToListAsync();
+            var emails = await _db.Residents
+                .Where(r => r.TenantId == req.TenantId && r.Email != null && r.Email != "")
+                .Select(r => r.Email!)
+                .ToListAsync();
+            var nationalIds = await _db.Residents
+                .Where(r => r.TenantId == req.TenantId && r.NationalId != null && r.NationalId != "")
+                .Select(r => r.NationalId!)
+                .ToListAsync();
+
+            var (status, body) = await _onboardingAgent.DraftAsync(req.TenantId, req.Text, units, emails, nationalIds);
+            if (status != 200)
+                return StatusCode(503, new { Message = "The onboarding assistant is unavailable. Enter the details manually." });
+            return Ok(body);
         }
 
         [HttpPost("residents/onboard")]
@@ -169,9 +222,20 @@ namespace ApartmentManagement.Api.Controllers
 
             if (unit != null)
             {
+                var wasAvailable = unit.Status == "Available";
                 unit.Status = "Occupied";
                 unit.CurrentResidentName = resident.FullName;
                 unit.CurrentResidentPhone = resident.PhoneNumber;
+
+                // Update complex occupancy count
+                if (wasAvailable)
+                {
+                    var complex = await _db.Complexes.FindAsync(req.TenantId);
+                    if (complex != null)
+                    {
+                        complex.OccupiedUnits++;
+                    }
+                }
             }
 
             await _db.SaveChangesAsync();

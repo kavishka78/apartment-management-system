@@ -25,8 +25,33 @@ namespace ApartmentManagement.Api.Controllers
             _context = context;
             _configuration = configuration;
 
-            StripeConfiguration.ApiKey =
-                _configuration["Stripe:SecretKey"];
+            var key = GetStripeSecretKey();
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                StripeConfiguration.ApiKey = key;
+            }
+        }
+
+        private string? GetStripeSecretKey()
+        {
+            var candidates = new[]
+            {
+                Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY"),
+                Environment.GetEnvironmentVariable("Stripe__SecretKey"),
+                _configuration["Stripe:SecretKey"],
+                _configuration["STRIPE_SECRET_KEY"]
+            };
+
+            foreach (var candidate in candidates)
+            {
+                if (!string.IsNullOrWhiteSpace(candidate) &&
+                    !candidate.Contains("YOUR_STRIPE") &&
+                    !candidate.Contains("Set your Stripe"))
+                {
+                    return candidate;
+                }
+            }
+            return null;
         }
 
 
@@ -41,6 +66,7 @@ namespace ApartmentManagement.Api.Controllers
         public async Task<IActionResult> CreatePaymentIntent([FromBody] CreatePaymentIntentRequest request)
         {
             var invoice = await _context.VisibleInvoices(User)
+                .Include(i => i.InvoiceItems)
                 .Include(i => i.Payments)
                 .FirstOrDefaultAsync(i => i.Id == request.InvoiceId);
 
@@ -51,6 +77,9 @@ namespace ApartmentManagement.Api.Controllers
                     message = "Invoice not found."
                 });
             }
+
+            if (invoice.AddOverduePenalty(DateTime.UtcNow))
+                await _context.SaveChangesAsync();
 
             if (invoice.Status != "Pending" || invoice.TotalAmount <= 0)
             {
@@ -72,6 +101,17 @@ namespace ApartmentManagement.Api.Controllers
                     message = "A successful payment already exists for this invoice."
                 });
             }
+
+            var stripeKey = GetStripeSecretKey();
+            if (string.IsNullOrWhiteSpace(stripeKey))
+            {
+                return BadRequest(new
+                {
+                    message = "Stripe Secret Key is not configured on backend server. Please configure Stripe:SecretKey in appsettings.json or environment variable STRIPE_SECRET_KEY."
+                });
+            }
+
+            StripeConfiguration.ApiKey = stripeKey;
 
             try
             {
@@ -110,11 +150,11 @@ namespace ApartmentManagement.Api.Controllers
                     currency = "lkr"
                 });
             }
-            catch (StripeException)
+            catch (StripeException ex)
             {
                 return BadRequest(new
                 {
-                    message = "Unable to create Stripe PaymentIntent."
+                    message = $"Unable to create Stripe PaymentIntent: {ex.Message}"
                 });
             }
         }

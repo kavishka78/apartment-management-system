@@ -36,7 +36,8 @@ public class EmailNotificationService : INotificationService
                     _logger.LogInformation($"[SENDGRID EMAIL SENT] To: {toEmail} | Subject: {subject}");
                     return;
                 }
-                _logger.LogWarning($"[SENDGRID FAIL] Status: {response.StatusCode}. Falling back to SMTP/log.");
+                var errorResponseBody = await response.Body.ReadAsStringAsync();
+                _logger.LogWarning($"[SENDGRID FAIL] Status: {response.StatusCode} | Error: {errorResponseBody}. Falling back to log.");
             }
             catch (Exception ex)
             {
@@ -79,7 +80,8 @@ public class EmailNotificationService : INotificationService
             }
         }
 
-        _logger.LogInformation($"[EMAIL LOGGED] To: {toEmail} | Subject: {subject} | Body: {body}");
+        _logger.LogError("Email delivery failed for {Recipient}: no working email provider is configured.", toEmail);
+        throw new InvalidOperationException("Email delivery is unavailable.");
     }
 
     public async Task SendPushNotificationAsync(string? fcmToken, string title, string body)

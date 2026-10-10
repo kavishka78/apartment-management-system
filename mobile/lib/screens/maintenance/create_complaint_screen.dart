@@ -1,6 +1,8 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../models/maintenance/maintenance_model.dart';
 import '../../services/maintenance/maintenance_api_service.dart';
 import '../../services/auth/auth_service.dart';
@@ -17,15 +19,15 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
-  
+
   bool _isLoading = true;
   bool _isSubmitting = false;
   String _error = '';
-  
+
   List<MaintenanceCategory> _categories = [];
   MaintenanceCategory? _selectedCategory;
   final String _selectedPriority = 'Pending Assessment';
-  
+
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
 
@@ -47,12 +49,15 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
   }
 
   Future<void> _loadCategories() async {
+    if (mounted) setState(() { _isLoading = true; _error = ''; });
     final result = await MaintenanceApiService.getCategories();
     if (mounted) {
       if (result['success'] == true) {
         final List<dynamic> items = result['data'];
         setState(() {
-          _categories = items.map((e) => MaintenanceCategory.fromJson(e)).toList();
+          _categories = items
+              .map((e) => MaintenanceCategory.fromJson(e))
+              .toList();
           _isLoading = false;
         });
       } else {
@@ -66,14 +71,18 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(source: source, imageQuality: 70);
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        imageQuality: 70,
+      );
       if (pickedFile != null) {
         setState(() {
           _imageFile = File(pickedFile.path);
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error picking image: $e')));
     }
   }
 
@@ -89,7 +98,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
       setState(() => _error = 'Please sign in to create a complaint.');
       return;
     }
-    
+
     setState(() {
       _isSubmitting = true;
       _error = '';
@@ -105,7 +114,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
 
     if (result['success'] == true) {
       final ticket = MaintenanceTicket.fromJson(result['data']);
-      
+
       if (_imageFile != null) {
         await MaintenanceApiService.uploadPhoto(ticket.id, _imageFile!.path);
       }
@@ -113,7 +122,9 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => ComplaintSuccessScreen(ticket: ticket)),
+          MaterialPageRoute(
+            builder: (_) => ComplaintSuccessScreen(ticket: ticket),
+          ),
         );
       }
     } else {
@@ -128,7 +139,9 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
 
   void _nextStep() {
     if (_currentStep == 0 && _selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a category.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a category.')),
+      );
       return;
     }
     if (_currentStep == 1) {
@@ -136,7 +149,10 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
     }
     if (_currentStep < 2) {
       setState(() => _currentStep++);
-      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else {
       _submitComplaint();
     }
@@ -145,7 +161,10 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
   void _prevStep() {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
-      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else {
       Navigator.pop(context);
     }
@@ -153,16 +172,36 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
 
   IconData _getCategoryIcon(String name) {
     final lower = name.toLowerCase();
-    if (lower.contains('plumb') || lower.contains('water')) return Icons.water_drop;
-    if (lower.contains('elect') || lower.contains('light')) return Icons.lightbulb_outline;
-    if (lower.contains('cool') || lower.contains('ac') || lower.contains('air') || lower.contains('hvac')) return Icons.ac_unit;
+    if (lower.contains('plumb') || lower.contains('water'))
+      return Icons.water_drop;
+    if (lower.contains('elect') || lower.contains('light'))
+      return Icons.lightbulb_outline;
+    if (lower.contains('cool') ||
+        lower.contains('ac') ||
+        lower.contains('air') ||
+        lower.contains('hvac'))
+      return Icons.ac_unit;
     if (lower.contains('appli')) return Icons.kitchen;
-    if (lower.contains('door') || lower.contains('lock') || lower.contains('key')) return Icons.door_front_door_outlined;
+    if (lower.contains('door') ||
+        lower.contains('lock') ||
+        lower.contains('key'))
+      return Icons.door_front_door_outlined;
     if (lower.contains('paint')) return Icons.format_paint;
     if (lower.contains('clean')) return Icons.cleaning_services;
     if (lower.contains('secur')) return Icons.security;
     if (lower.contains('elevat')) return Icons.elevator;
-    if (lower.contains('build') || lower.contains('struct')) return Icons.apartment;
+    if (lower.contains('build') || lower.contains('struct'))
+      return Icons.domain;
+
+    // New specific icons
+    if (lower.contains('carpent') || lower.contains('wood'))
+      return Icons.handyman;
+    if (lower.contains('pest') || lower.contains('bug'))
+      return Icons.pest_control;
+    if (lower.contains('landscap') || lower.contains('garden'))
+      return Icons.park;
+
+    // Default fallback
     return Icons.build;
   }
 
@@ -171,16 +210,29 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('New Request', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w700, fontSize: 18)),
+        title: const Text(
+          'New Request',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
         backgroundColor: const Color(0xFFF8F9FA),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 22),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: Colors.black87,
+            size: 22,
+          ),
           onPressed: _prevStep,
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF1E2532)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF1E2532)),
+            )
           : Column(
               children: [
                 _buildProgressHeader(),
@@ -197,8 +249,16 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.red.shade200),
                       ),
-                      child: Text(_error, style: TextStyle(color: Colors.red.shade800)),
+                      child: Text(
+                        _error,
+                        style: TextStyle(color: Colors.red.shade800),
+                      ),
                     ),
+                  ),
+                if (_categories.isEmpty && _error.isNotEmpty)
+                  OutlinedButton(
+                    onPressed: _loadCategories,
+                    child: const Text('Retry loading categories'),
                   ),
                 Expanded(
                   child: PageView(
@@ -243,7 +303,10 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
           decoration: BoxDecoration(
             color: isActive ? const Color(0xFF4FC3F7) : Colors.white,
             shape: BoxShape.circle,
-            border: Border.all(color: isActive ? const Color(0xFF4FC3F7) : Colors.grey.shade300, width: 2),
+            border: Border.all(
+              color: isActive ? const Color(0xFF4FC3F7) : Colors.grey.shade300,
+              width: 2,
+            ),
           ),
           child: Center(
             child: isActive && _currentStep > stepIndex
@@ -265,7 +328,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
             color: isActive ? const Color(0xFF4FC3F7) : Colors.grey.shade500,
           ),
-        )
+        ),
       ],
     );
   }
@@ -287,7 +350,14 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Select Category', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1E2532))),
+          const Text(
+            'Select Category',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1E2532),
+            ),
+          ),
           const SizedBox(height: 16),
           GridView.builder(
             shrinkWrap: true,
@@ -309,10 +379,21 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isSelected ? const Color(0xFF1E2532) : const Color(0xFFE8ECEF),
+                      color: isSelected
+                          ? const Color(0xFF1E2532)
+                          : const Color(0xFFE8ECEF),
                       width: isSelected ? 2 : 1,
                     ),
-                    boxShadow: isSelected ? [BoxShadow(color: const Color(0xFF1E2532).withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4))] : null,
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFF1E2532)
+                                  .withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -320,7 +401,9 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                       Icon(
                         _getCategoryIcon(cat.name),
                         size: 32,
-                        color: isSelected ? const Color(0xFF1E2532) : const Color(0xFF4FC3F7),
+                        color: isSelected
+                            ? const Color(0xFF1E2532)
+                            : const Color(0xFF4FC3F7),
                       ),
                       const SizedBox(height: 12),
                       Padding(
@@ -331,8 +414,12 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                           maxLines: 2,
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            color: isSelected ? const Color(0xFF1E2532) : Colors.grey.shade700,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? const Color(0xFF1E2532)
+                                : Colors.grey.shade700,
                           ),
                         ),
                       ),
@@ -356,10 +443,20 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Request Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1E2532))),
+            const Text(
+              'Request Details',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1E2532),
+              ),
+            ),
             const SizedBox(height: 20),
-            
-            const Text('Title', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+
+            const Text(
+              'Title',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _titleController,
@@ -368,14 +465,24 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.all(16),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
               ),
-              validator: (val) => val == null || val.isEmpty ? 'Title is required' : null,
+              validator: (val) =>
+                  val == null || val.isEmpty ? 'Title is required' : null,
             ),
             const SizedBox(height: 20),
 
-            const Text('Description', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const Text(
+              'Description',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _descController,
@@ -385,14 +492,24 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.all(16),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
               ),
-              validator: (val) => val == null || val.isEmpty ? 'Description is required' : null,
+              validator: (val) =>
+                  val == null || val.isEmpty ? 'Description is required' : null,
             ),
             const SizedBox(height: 24),
-            
-            const Text('Add Photos (Optional)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+
+            const Text(
+              'Add Photos (Optional)',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -403,21 +520,32 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                     margin: const EdgeInsets.only(right: 12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      image: DecorationImage(image: FileImage(_imageFile!), fit: BoxFit.cover),
+                      image: DecorationImage(
+                        image: FileImage(_imageFile!),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                     child: Stack(
                       children: [
                         Positioned(
-                          top: 4, right: 4,
+                          top: 4,
+                          right: 4,
                           child: InkWell(
                             onTap: () => setState(() => _imageFile = null),
                             child: Container(
                               padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                              child: const Icon(Icons.close, color: Colors.white, size: 16),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                             ),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -456,14 +584,27 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF1E2532).withValues(alpha: 0.3), style: BorderStyle.solid),
+                      border: Border.all(
+                        color: const Color(0xFF1E2532).withValues(alpha: 0.3),
+                        style: BorderStyle.solid,
+                      ),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
-                        Icon(Icons.add_a_photo_outlined, color: Color(0xFF1E2532)),
+                        Icon(
+                          Icons.add_a_photo_outlined,
+                          color: Color(0xFF1E2532),
+                        ),
                         SizedBox(height: 8),
-                        Text('Add Photo', style: TextStyle(fontSize: 12, color: Color(0xFF1E2532), fontWeight: FontWeight.w600)),
+                        Text(
+                          'Add Photo',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF1E2532),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -483,7 +624,14 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Review Request', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1E2532))),
+          const Text(
+            'Review Request',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1E2532),
+            ),
+          ),
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.all(20),
@@ -494,37 +642,60 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
             ),
             child: Column(
               children: [
-                _buildReviewRow(Icons.category, 'Category', _selectedCategory?.name ?? ''),
+                _buildReviewRow(
+                  Icons.category,
+                  'Category',
+                  _selectedCategory?.name ?? '',
+                ),
                 const Divider(height: 32),
                 _buildReviewRow(Icons.title, 'Title', _titleController.text),
                 const Divider(height: 32),
-                _buildReviewRow(Icons.description, 'Description', _descController.text),
+                _buildReviewRow(
+                  Icons.description,
+                  'Description',
+                  _descController.text,
+                ),
                 if (_imageFile != null) ...[
                   const Divider(height: 32),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.image, color: Color(0xFF4FC3F7), size: 24),
+                      const Icon(
+                        Icons.image,
+                        color: Color(0xFF4FC3F7),
+                        size: 24,
+                      ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Photo', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            const Text(
+                              'Photo',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: Image.file(_imageFile!, height: 100, width: 100, fit: BoxFit.cover),
+                              child: Image.file(
+                                _imageFile!,
+                                height: 100,
+                                width: 100,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ],
                         ),
-                      )
+                      ),
                     ],
-                  )
-                ]
+                  ),
+                ],
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -540,17 +711,27 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+              Text(
+                label,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
               const SizedBox(height: 4),
-              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E2532))),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E2532),
+                ),
+              ),
             ],
           ),
-        )
+        ),
       ],
     );
   }
 
-Widget _buildBottomActions() {
+  Widget _buildBottomActions() {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -564,15 +745,21 @@ Widget _buildBottomActions() {
               child: SizedBox(
                 height: 56,
                 child: OutlinedButton(
-                onPressed: _isSubmitting ? null : _prevStep,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF1E2532),
-                  side: const BorderSide(color: Color(0xFFE8ECEF), width: 1.5),
-                  shape: const StadiumBorder(),
+                  onPressed: _isSubmitting ? null : _prevStep,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF1E2532),
+                    side: const BorderSide(
+                      color: Color(0xFFE8ECEF),
+                      width: 1.5,
+                    ),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: const Text(
+                    'Back',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
                 ),
-                child: const Text('Back', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
               ),
-            ),
             ),
           if (_currentStep > 0) const SizedBox(width: 16),
           Expanded(
@@ -587,8 +774,21 @@ Widget _buildBottomActions() {
                   shape: const StadiumBorder(),
                 ),
                 child: _isSubmitting
-                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(_currentStep == 2 ? 'Submit Request' : 'Next', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        _currentStep == 2 ? 'Submit Request' : 'Next',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
               ),
             ),
           ),

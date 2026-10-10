@@ -2,6 +2,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.Models;
 
@@ -9,6 +11,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
 {
     [Route("api/technicians")]
     [ApiController]
+    [Authorize(Roles = "ApartmentAdmin,SuperAdmin,Technician")]
     public class TechniciansController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -23,7 +26,12 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         public async Task<IActionResult> GetTechnicians()
         {
             // We want to return technicians with their active workload count
-            var techs = await _context.Technicians.Where(t => t.Status != "Inactive").ToListAsync();
+            var isTechnician = User.IsInRole("Technician");
+            var email = User.FindFirstValue(ClaimTypes.Email)?.ToLower();
+            if (isTechnician && string.IsNullOrWhiteSpace(email)) return Forbid();
+            var techs = await _context.Technicians
+                .Where(t => t.Status != "Inactive" && (!isTechnician || t.Email != null && t.Email.ToLower() == email))
+                .ToListAsync();
             
             var workloads = await _context.Maintenances
                 .Where(m => m.Status == "Assigned" || m.Status == "In Progress")
@@ -56,11 +64,15 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         {
             var tech = await _context.Technicians.FindAsync(id);
             if (tech == null) return NotFound();
+            if (User.IsInRole("Technician") &&
+                !string.Equals(tech.Email, User.FindFirstValue(ClaimTypes.Email), StringComparison.OrdinalIgnoreCase))
+                return Forbid();
             return Ok(tech);
         }
 
         // POST: api/technicians
         [HttpPost]
+        [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
                 public async Task<IActionResult> CreateTechnician([FromBody] Technician technician)
         {
             string email = !string.IsNullOrWhiteSpace(technician.Email) 
@@ -85,7 +97,9 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
             // Create a matching UserAccount so the technician can log in
 
             
-            var generatedPassword = Guid.NewGuid().ToString().Substring(0, 8);
+            var generatedPassword = Convert.ToBase64String(
+                System.Security.Cryptography.RandomNumberGenerator.GetBytes(18))
+                .Replace('+', '-').Replace('/', '_');
 
             var userAccount = new UserAccount
             {
@@ -122,53 +136,45 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         {
             if (id != technician.Id) return BadRequest();
 
+            if (User.IsInRole("Technician"))
+            {
+                var existing = await _context.Technicians.FindAsync(id);
+                if (existing == null) return NotFound();
+                if (!string.Equals(existing.Email, User.FindFirstValue(ClaimTypes.Email), StringComparison.OrdinalIgnoreCase))
+                    return Forbid();
+                existing.Status = technician.Status == "Offline" ? "Offline" : "Available";
+                existing.PhotoBase64 = technician.PhotoBase64;
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+
             // Auto-generate passcode if it's missing
             if (string.IsNullOrWhiteSpace(technician.AccessPassCode))
             {
                 technician.AccessPassCode = $"TECH-{technician.Id:D3}";
             }
 
+            var targetEmail = !string.IsNullOrWhiteSpace(technician.Email)
+                ? technician.Email.Trim().ToLower()
+                : $"tech{technician.Id}@apartment.lk";
+            var existingUser = await _context.UserAccounts.FirstOrDefaultAsync(u =>
+                u.Role == "Technician" &&
+                (u.Phone == technician.ContactInformation || u.Email == targetEmail));
+            if (existingUser == null)
+                return Conflict(new { message = "This technician has no linked login account. Create a new technician instead." });
+
+            var duplicate = await _context.UserAccounts.AnyAsync(u =>
+                u.Id != existingUser.Id && u.Email.ToLower() == targetEmail);
+            if (duplicate)
+                return BadRequest(new { message = "This email is already in use by another account." });
+
             _context.Entry(technician).State = EntityState.Modified;
+            existingUser.Email = targetEmail;
+            existingUser.Name = technician.Name;
+            existingUser.Phone = technician.ContactInformation;
 
             try
             {
-                await _context.SaveChangesAsync();
-
-                // Sync with UserAccounts
-                var targetEmail = !string.IsNullOrWhiteSpace(technician.Email) 
-                    ? technician.Email.Trim().ToLower() 
-                    : $"tech{technician.Id}@apartment.lk";
-
-                // Ensure no OTHER user has this email
-                var duplicate = await _context.UserAccounts.FirstOrDefaultAsync(u => u.Email == targetEmail && u.Phone != technician.ContactInformation);
-                if (duplicate != null)
-                {
-                    return BadRequest(new { message = "This email is already in use by another account." });
-                }
-
-                var existingUser = await _context.UserAccounts.FirstOrDefaultAsync(u => u.Role == "Technician" && (u.Phone == technician.ContactInformation || u.Email == targetEmail));
-                
-                if (existingUser != null)
-                {
-                    existingUser.Email = targetEmail;
-                    existingUser.Name = technician.Name;
-                    existingUser.Phone = technician.ContactInformation;
-                }
-                else
-                {
-                    var newUser = new UserAccount
-                    {
-                        Name = technician.Name,
-                        Email = targetEmail,
-                        Phone = technician.ContactInformation,
-                        Role = "Technician",
-                        Status = "Active",
-                        AssignedAt = DateTime.UtcNow.ToString("O")
-                    };
-                    var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<UserAccount>();
-                    newUser.PasswordHash = hasher.HashPassword(newUser, "tech12345");
-                    _context.UserAccounts.Add(newUser);
-                }
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
@@ -186,6 +192,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
 
         // DELETE: api/technicians/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
         public async Task<IActionResult> DeleteTechnician(int id)
         {
             var tech = await _context.Technicians.FindAsync(id);

@@ -1,4 +1,5 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+﻿const API_BASE = MAINTENANCE_API_BASE;
+import { useState, useEffect, useCallback } from 'react';
 import { getAuthToken } from '../../services/api';
 import { MAINTENANCE_API_BASE, MAINTENANCE_API_ORIGIN } from './maintenanceApi';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -36,7 +37,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
   }, []);
 
   const fetchTicket = useCallback(() => {
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}`)
+    fetchWithAuth(`${API_BASE}/maintenance/${id}`)
       .then(res => res.json())
       .then(data => {
         setTicket(data);
@@ -58,7 +59,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
   useEffect(() => {
     if (aiRecommendation?.recommendedTechnicianId) {
-      fetchWithAuth(`${MAINTENANCE_API_BASE}/technicians/${aiRecommendation.recommendedTechnicianId}`)
+      fetchWithAuth(`${API_BASE}/technicians/${aiRecommendation.recommendedTechnicianId}`)
         .then(res => res.json())
         .then(data => setRecommendedTech(data))
         .catch(err => console.error(err));
@@ -70,12 +71,12 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
   const loadAiTriage = () => {
     setAiRecommendation({ loading: true });
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/triage`, { method: 'POST' })
+    fetchWithAuth(`${API_BASE}/maintenance/${id}/triage`, { method: 'POST' })
       .then(res => res.json())
       .then(data => setAiRecommendation(data))
       .catch(err => {
         console.error(err);
-        setAiRecommendation({ error: 'Failed to load AI recommendation.' });
+        setAiRecommendation({ error: 'Failed to connect to Python Agent on port 8000. Is it running?' });
       });
   };
 
@@ -87,7 +88,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
     
     // Mark old workflow as revised first
     if (aiRecommendation?.workflowId) {
-      fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
+      fetchWithAuth(`${API_BASE}/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision: 'RequestRevision', note: reviseFeedback, approvedBy: 'Manager' })
@@ -96,7 +97,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
     setAiRecommendation(null);
     setShowReviseForm(false);
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/revise`, {
+    fetchWithAuth(`${API_BASE}/maintenance/${id}/revise`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ managerFeedback: reviseFeedback })
@@ -115,7 +116,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
     const handleReject = () => {
     // Mark workflow as rejected
     if (aiRecommendation?.workflowId) {
-      fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
+      fetchWithAuth(`${API_BASE}/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision: 'Reject', note: 'Rejected by manager', approvedBy: 'Manager' })
@@ -123,7 +124,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
     }
 
     setAiRecommendation(null);
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/reject`, {
+    fetchWithAuth(`${API_BASE}/maintenance/${id}/reject`, {
       method: 'POST'
     })
     .then(res => {
@@ -132,7 +133,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
   };
 
   const loadAvailableTechs = () => {
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/technicians`)
+    fetchWithAuth(`${API_BASE}/technicians`)
       .then(res => res.json())
       .then(data => {
         setAvailableTechs(data.filter(t => t.status === 'Available'));
@@ -143,7 +144,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
   const handleManualAssign = () => {
     if (!selectedTechId) return;
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/assign`, {
+    fetchWithAuth(`${API_BASE}/maintenance/${id}/assign`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ technicianId: parseInt(selectedTechId) })
@@ -161,7 +162,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
       alert('Run AI triage before making an approval decision.');
       return;
     }
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
+    fetchWithAuth(`${API_BASE}/maintenance/workflows/${aiRecommendation.workflowId}/approval`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -177,7 +178,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
   };
 
   const handlePriorityChange = (newPriority) => {
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/priority`, {
+    fetchWithAuth(`${API_BASE}/maintenance/${id}/priority`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ priority: newPriority })
@@ -196,12 +197,12 @@ const fetchWithAuth = useCallback((url, options = {}) => {
   };
 
   const handleStartWork = () => {
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/start`, { method: 'POST' })
+    fetchWithAuth(`${API_BASE}/maintenance/${id}/start`, { method: 'POST' })
       .then(res => res.ok && fetchTicket());
   };
 
   const handleResolve = () => {
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/resolve`, {
+    fetchWithAuth(`${API_BASE}/maintenance/${id}/resolve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repairCost: parseFloat(repairCost || 0), note })
@@ -215,7 +216,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
   const handleClose = () => {
     // Admin force-closes the ticket on behalf of resident or after manual verification
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/verify`, {
+    fetchWithAuth(`${API_BASE}/maintenance/${id}/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isApproved: true, note: 'Admin forcibly closed ticket.' })
@@ -229,7 +230,7 @@ const fetchWithAuth = useCallback((url, options = {}) => {
 
   const handleAddComment = () => {
     if (!commentNote) return;
-    fetchWithAuth(`${MAINTENANCE_API_BASE}/maintenance/${id}/comments`, {
+    fetchWithAuth(`${API_BASE}/maintenance/${id}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ note: commentNote, role: 'Admin/Manager' })
@@ -539,8 +540,8 @@ const fetchWithAuth = useCallback((url, options = {}) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#6b5ce7', fontWeight: '600' }}>
                       <MdAutoAwesome size={20} className="spin-animation" /> Analyzing complaint with Gemini AI...
                     </div>
-                  ) : aiRecommendation.error ? (
-                    <p style={{ color: 'red' }}>{aiRecommendation.error}</p>
+                  ) : (aiRecommendation.error || aiRecommendation.status === 'Failed' || aiRecommendation.status === 'SafeFailure') ? (
+                    <p style={{ color: 'red' }}>{aiRecommendation.error || aiRecommendation.message || 'AI triage is currently unavailable.'}</p>
                   ) : (
                     <div className="ai-result-box" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>

@@ -255,6 +255,8 @@ class _InvoiceDetailsScreenState
 
     final invoiceItems =
         (invoice['invoiceItems'] as List?) ?? [];
+    final hasOverduePenalty = invoiceItems.any((item) =>
+        item is Map && item['chargeType']?.toString() == 'OverduePenalty');
 
     final invoiceNumber =
         invoice['invoiceNumber']?.toString() ??
@@ -277,6 +279,16 @@ class _InvoiceDetailsScreenState
     final dueDate = dueDateRaw.isNotEmpty
         ? dueDateRaw.substring(0, 10)
         : '-';
+
+    final dueDateDay = dueDateRaw.length >= 10
+        ? DateTime.tryParse(dueDateRaw.substring(0, 10))
+        : null;
+    final today = DateTime.now();
+    final todayDay = DateTime(today.year, today.month, today.day);
+    final daysUntilDue = dueDateDay?.difference(todayDay).inDays;
+    final showDueSoonNotice = invoice['canPay'] == true &&
+        daysUntilDue != null &&
+        daysUntilDue >= 0;
 
     final totalAmount =
         _formatAmount(invoice['totalAmount']);
@@ -336,6 +348,26 @@ class _InvoiceDetailsScreenState
                 ],
               ),
             ),
+
+            if (showDueSoonNotice) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF4DE),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  'This invoice is due on $dueDate. Pay by then to avoid the 5% overdue penalty.',
+                  style: const TextStyle(
+                    color: Color(0xFF8A5B12),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
 
             const SizedBox(height: 28),
 
@@ -398,6 +430,26 @@ class _InvoiceDetailsScreenState
             ),
 
             const SizedBox(height: 16),
+
+            if (hasOverduePenalty) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF4DE),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Text(
+                  'A one-time 5% penalty was added because this invoice passed its due date.',
+                  style: TextStyle(
+                    color: Color(0xFF8A5B12),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             Container(
               padding: const EdgeInsets.all(20),

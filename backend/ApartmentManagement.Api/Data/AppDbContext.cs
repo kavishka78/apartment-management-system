@@ -1,4 +1,5 @@
 using ApartmentManagement.Api.Models;
+using ApartmentManagement.Api.Models.Safety;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagement.Api.Data
@@ -44,6 +45,9 @@ namespace ApartmentManagement.Api.Data
         public DbSet<UserAccount> UserAccounts { get; set; }
         public DbSet<SubscriptionHistory> SubscriptionHistory { get; set; }
         public DbSet<ResidentOtp> ResidentOtps { get; set; }
+
+        // Validation & Safety Agent verdicts (one row per checked proposal)
+        public DbSet<SafetyVerdictLog> SafetyVerdictLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

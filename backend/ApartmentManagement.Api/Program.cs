@@ -31,14 +31,26 @@ if (File.Exists(envPath))
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
-var port = Environment.GetEnvironmentVariable("PORT") ?? "5073";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+var port = Environment.GetEnvironmentVariable("PORT");
+var urls = new List<string> { "http://+:8080", "http://+:5073" };
+if (!string.IsNullOrWhiteSpace(port) && port != "8080" && port != "5073")
+{
+    urls.Insert(0, $"http://+:{port}");
+}
+builder.WebHost.UseUrls(urls.ToArray());
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? string.Empty;
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    )
-);
+{
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        options.UseNpgsql(connectionString);
+    }
+});
 
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddScoped<INotificationService, EmailNotificationService>();
@@ -74,6 +86,22 @@ builder.Services.AddHttpClient<IMaintenanceTriageService, MaintenanceTriageClien
     client.BaseAddress = new Uri(agentUrl);
     client.Timeout = TimeSpan.FromSeconds(60); // Gemini can be slow; allow up to 60 s
 });
+
+// ── Resident Onboarding Assistant (Python, read-only draft service) ──
+builder.Services.AddHttpClient<OnboardingAgentClient>(client =>
+{
+    var onboardingUrl = builder.Configuration["OnboardingAgentUrl"] ?? "http://localhost:8002";
+    client.BaseAddress = new Uri(onboardingUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+// ── Validation & Safety Agent (Python, separate port from the triage agent) ──
+builder.Services.AddHttpClient<SafetyValidationClient>(client =>
+{
+    var safetyUrl = builder.Configuration["SafetyAgentUrl"] ?? "http://localhost:8001";
+    client.BaseAddress = new Uri(safetyUrl);
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 builder.Services.AddHttpClient<FacilityAgentClient>(client =>
 {
     var agentUrl = builder.Configuration["PythonAgentUrl"] ?? "http://localhost:8000";
@@ -90,12 +118,16 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors(options =>
 {
-    var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? string.Empty)
-        .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
     options.AddPolicy("ReactApp", policy =>
     {
-        policy.SetIsOriginAllowed(origin => true) // Allow web browser access from Vercel & local
+        policy.SetIsOriginAllowed(_ => true) // Allow web browser access from Vercel & local
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -104,69 +136,97 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Ensure DB columns exist for new properties
-using (var scope = app.Services.CreateScope())
+// Enable CORS immediately as the first middleware in the pipeline
+app.UseCors("ReactApp");
+
+// Run DB migration and seeding in a non-blocking background task so app starts instantly
+_ = Task.Run(() =>
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        dbContext.Database.Migrate();
-        RegistrySeeder.SeedPlatform(dbContext);
-        RegistrySeeder.Seed(dbContext);
-        FacilitySeeder.Seed(dbContext);
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        try
+        {
+            dbContext.Database.Migrate();
+            RegistrySeeder.SeedPlatform(dbContext);
+            RegistrySeeder.Seed(dbContext);
+            FacilitySeeder.Seed(dbContext);
+
+            if (!dbContext.UserAccounts.Any(u => u.Email == "technician@apartment.lk"))
+            {
+                var tech = new ApartmentManagement.Api.Models.UserAccount
+                {
+                    Name = "Test Technician",
+                    Email = "technician@apartment.lk",
+                    Phone = "0771234567",
+                    Role = "Technician",
+                    Status = "Active",
+                    AssignedAt = DateTime.UtcNow.ToString("O")
+                };
+                var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<ApartmentManagement.Api.Models.UserAccount>();
+                tech.PasswordHash = hasher.HashPassword(tech, "tech12345");
+                dbContext.UserAccounts.Add(tech);
+                dbContext.SaveChanges();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"DB Migration/Seed Notice: {ex.Message}");
+        }
+
+        try
+        {
+            dbContext.Database.ExecuteSqlRaw(@"
+                ALTER TABLE ""Facilities""
+                ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text,
+                ADD COLUMN IF NOT EXISTS ""HourlyCost"" numeric NOT NULL DEFAULT 0.0;
+
+                ALTER TABLE ""FacilityBookings""
+                ADD COLUMN IF NOT EXISTS ""BookedCapacity"" integer NOT NULL DEFAULT 1,
+                ADD COLUMN IF NOT EXISTS ""TotalCost"" numeric NOT NULL DEFAULT 0.0;
+
+                CREATE TABLE IF NOT EXISTS ""FacilityAgentWorkflows"" (
+                    ""Id"" SERIAL PRIMARY KEY,
+                    ""WorkflowId"" text NOT NULL,
+                    ""ResidentId"" integer NOT NULL DEFAULT 1,
+                    ""ResidentName"" text NOT NULL DEFAULT 'Resident',
+                    ""Objective"" text NOT NULL,
+                    ""AgentType"" text NOT NULL DEFAULT 'FacilityAndParkingAgent',
+                    ""PlanJson"" text NOT NULL DEFAULT '',
+                    ""ExtractedDataJson"" text NOT NULL DEFAULT '',
+                    ""ToolResultsJson"" text NOT NULL DEFAULT '',
+                    ""ProposalJson"" text NOT NULL DEFAULT '',
+                    ""ValidationStatus"" text NOT NULL DEFAULT 'Pending',
+                    ""RequiresApproval"" boolean NOT NULL DEFAULT true,
+                    ""Status"" text NOT NULL DEFAULT 'PendingApproval',
+                    ""CreatedAt"" timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    ""ActionedAt"" timestamp without time zone NULL,
+                    ""ActionedBy"" text NULL,
+                    ""ManagerNotes"" text NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS ""ResidentOtps"" (
+                    ""Id"" SERIAL PRIMARY KEY,
+                    ""Email"" varchar(150) NOT NULL,
+                    ""OtpCode"" varchar(10) NOT NULL,
+                    ""ExpiresAt"" timestamp without time zone NOT NULL,
+                    ""CreatedAt"" timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+
+                UPDATE ""FacilityAgentWorkflows"" SET ""Status"" = 'PendingApproval' WHERE ""Status"" = 'AutoApproved';
+            ");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"DB Auto-Migration Notice: {ex.Message}");
+        }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"DB Migration/Seed Notice: {ex.Message}");
+        Console.WriteLine($"Background DB Init Exception: {ex.Message}");
     }
-
-    try
-    {
-        dbContext.Database.ExecuteSqlRaw(@"
-            ALTER TABLE ""Facilities""
-            ADD COLUMN IF NOT EXISTS ""DeactivationReason"" text,
-            ADD COLUMN IF NOT EXISTS ""HourlyCost"" numeric NOT NULL DEFAULT 0.0;
-
-            ALTER TABLE ""FacilityBookings""
-            ADD COLUMN IF NOT EXISTS ""BookedCapacity"" integer NOT NULL DEFAULT 1,
-            ADD COLUMN IF NOT EXISTS ""TotalCost"" numeric NOT NULL DEFAULT 0.0;
-
-            CREATE TABLE IF NOT EXISTS ""FacilityAgentWorkflows"" (
-                ""Id"" SERIAL PRIMARY KEY,
-                ""WorkflowId"" text NOT NULL,
-                ""ResidentId"" integer NOT NULL DEFAULT 1,
-                ""ResidentName"" text NOT NULL DEFAULT 'Resident',
-                ""Objective"" text NOT NULL,
-                ""AgentType"" text NOT NULL DEFAULT 'FacilityAndParkingAgent',
-                ""PlanJson"" text NOT NULL DEFAULT '',
-                ""ExtractedDataJson"" text NOT NULL DEFAULT '',
-                ""ToolResultsJson"" text NOT NULL DEFAULT '',
-                ""ProposalJson"" text NOT NULL DEFAULT '',
-                ""ValidationStatus"" text NOT NULL DEFAULT 'Pending',
-                ""RequiresApproval"" boolean NOT NULL DEFAULT true,
-                ""Status"" text NOT NULL DEFAULT 'PendingApproval',
-                ""CreatedAt"" timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                ""ActionedAt"" timestamp without time zone NULL,
-                ""ActionedBy"" text NULL,
-                ""ManagerNotes"" text NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS ""ResidentOtps"" (
-                ""Id"" SERIAL PRIMARY KEY,
-                ""Email"" varchar(150) NOT NULL,
-                ""OtpCode"" varchar(10) NOT NULL,
-                ""ExpiresAt"" timestamp without time zone NOT NULL,
-                ""CreatedAt"" timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );
-
-            UPDATE ""FacilityAgentWorkflows"" SET ""Status"" = 'PendingApproval' WHERE ""Status"" = 'AutoApproved';
-        ");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"DB Auto-Migration Notice: {ex.Message}");
-    }
-}
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -174,8 +234,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseHttpsRedirection();
 
 app.UseStaticFiles(); // For wwwroot if any
 var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
@@ -190,58 +248,12 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
-
-app.UseCors("ReactApp");
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Seed Technician User
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    if (!db.UserAccounts.Any(u => u.Email == "technician@apartment.lk"))
-    {
-        var tech = new ApartmentManagement.Api.Models.UserAccount
-        {
-            Name = "Test Technician",
-            Email = "technician@apartment.lk",
-            Phone = "0771234567",
-            Role = "Technician",
-            Status = "Active",
-            AssignedAt = DateTime.UtcNow.ToString("O")
-        };
-        var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<ApartmentManagement.Api.Models.UserAccount>();
-        tech.PasswordHash = hasher.HashPassword(tech, "tech12345");
-        db.UserAccounts.Add(tech);
-        db.SaveChanges();
-    }
-}
+app.MapControllers();
 
 app.Run();
 

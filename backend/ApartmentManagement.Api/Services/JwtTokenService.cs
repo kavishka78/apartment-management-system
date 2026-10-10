@@ -17,7 +17,11 @@ namespace ApartmentManagement.Api.Services
             var secret = config["Jwt:Key"];
             if (string.IsNullOrWhiteSpace(secret) || secret.Length < 32 || secret.StartsWith("YOUR_"))
             {
-                secret = "dev-only-change-me-in-production-0123456789abcdef";
+                var environment = config["ASPNETCORE_ENVIRONMENT"] ?? config["DOTNET_ENVIRONMENT"];
+                if (string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase))
+                    secret = "dev-only-change-me-in-production-0123456789abcdef";
+                else
+                    throw new InvalidOperationException("Jwt:Key must be configured with at least 32 characters.");
             }
             return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         }

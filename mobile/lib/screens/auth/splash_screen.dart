@@ -90,52 +90,26 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF17212B),
+      backgroundColor: const Color(0xFF003B95),
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // App icon
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: const Icon(
-                  Icons.apartment_rounded,
-                  color: Colors.white,
-                  size: 48,
-                ),
+              Image.asset(
+                'assets/images/logo.png',
+                width: 220,
+                fit: BoxFit.contain,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               const Text(
-                'Smart Apartment',
+                'Apartment Hub',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Your home, simplified.',
-                style: TextStyle(
-                  color: Color(0xFFB8C2CC),
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 60),
-              const SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFB8C2CC)),
                 ),
               ),
             ],

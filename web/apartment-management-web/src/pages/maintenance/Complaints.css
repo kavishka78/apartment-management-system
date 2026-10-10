@@ -43,7 +43,7 @@
 .search-pill-input {
   flex: 1;
   border: none;
-  background: transparent;
+  background: transparent !important;
   outline: none;
   font-size: 14px;
   font-family: "Montserrat", sans-serif;
@@ -106,7 +106,7 @@
 }
 
 .custom-modal-scroll::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent !important;
   border-radius: 10px;
   margin: 20px 0;
 }

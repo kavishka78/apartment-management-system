@@ -9,6 +9,8 @@ import {
     MdChevronRight, MdOutlineBolt, MdWaterDrop, MdListAlt, MdImage, MdPhone, MdEmail } from 'react-icons/md';
 import './TechnicianDashboard.css';
 import TechnicianProfileDrawer from './TechnicianProfileDrawer';
+import { MAINTENANCE_API_BASE } from '../maintenance/maintenanceApi';
+import { getAuthToken } from '../../services/api';
 
 const statusStyle = (status) => {
     switch (status) {
@@ -100,7 +102,9 @@ export default function TechnicianDashboard() {
 
         const fetchTechnicianPhoto = async () => {
             try {
-                const response = await fetch('http://localhost:5073/api/technicians');
+                const response = await fetch(`${MAINTENANCE_API_BASE}/technicians`, {
+                    headers: { Authorization: `Bearer ${getAuthToken() || ''}` }
+                });
                 if (!response.ok) return;
 
                 const technicians = await response.json();
@@ -122,7 +126,7 @@ export default function TechnicianDashboard() {
         try {
             setLoading(true);
             const token = localStorage.getItem('ah_token');
-            const res = await fetch('http://localhost:5073/api/maintenance', {
+            const res = await fetch(`${MAINTENANCE_API_BASE}/maintenance`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch');
@@ -173,7 +177,7 @@ export default function TechnicianDashboard() {
 
     const handleStartWork = async (id) => {
         try {
-            const res = await fetch(`http://localhost:5073/api/maintenance/${id}/start`, {
+            const res = await fetch(`${MAINTENANCE_API_BASE}/maintenance/${id}/start`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('ah_token')}`, 'Content-Type': 'application/json' }
             });
@@ -186,14 +190,14 @@ export default function TechnicianDashboard() {
         try {
             if (activeAction === 'resolve') {
                 const cost = parseFloat(actionCost) || 0;
-                const res = await fetch(`http://localhost:5073/api/maintenance/${selectedJob.id}/resolve`, {
+                const res = await fetch(`${MAINTENANCE_API_BASE}/maintenance/${selectedJob.id}/resolve`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('ah_token')}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ note: actionNote, repairCost: cost })
                 });
                 if (res.ok) { setActiveAction(null); fetchJobs(); } else alert('Failed to resolve');
             } else {
-                const res = await fetch(`http://localhost:5073/api/maintenance/${selectedJob.id}/comments`, {
+                const res = await fetch(`${MAINTENANCE_API_BASE}/maintenance/${selectedJob.id}/comments`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('ah_token')}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ note: actionNote, role: 'Technician' })

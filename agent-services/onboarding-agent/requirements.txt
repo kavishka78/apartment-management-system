@@ -1,0 +1,9 @@
+# Resident Onboarding Assistant Python dependencies
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+python-dotenv==1.0.1
+httpx==0.28.1
+google-genai==1.16.0
+pytest==8.3.4
+pytest-asyncio==0.24.0
