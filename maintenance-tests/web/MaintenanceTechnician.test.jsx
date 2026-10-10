@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import WorkOrders from '../../web/apartment-management-web/src/pages/maintenance/WorkOrders.jsx';
 import TechnicianDashboard from '../../web/apartment-management-web/src/pages/technician/TechnicianDashboard.jsx';
 
@@ -11,14 +12,26 @@ const testState = vi.hoisted(() => ({
     role: 'Technician',
   },
   logout: vi.fn(),
-  navigate: vi.fn(),
 }));
 
 vi.mock('../../web/apartment-management-web/src/hooks/useIsMobile', () => ({ default: () => true }));
 vi.mock('../../web/apartment-management-web/src/components/maintenance/MaintenanceSidebar', () => ({ default: () => null }));
 vi.mock('../../web/apartment-management-web/src/pages/technician/TechnicianProfileDrawer', () => ({ default: () => null }));
 vi.mock('../../web/apartment-management-web/src/context/AuthContext', () => ({ useAuth: () => testState }));
-vi.mock('react-router-dom', () => ({ useNavigate: () => testState.navigate }));
+
+function RouteLocation() {
+  const { pathname } = useLocation();
+  return <span data-testid="route-location" data-path={pathname} />;
+}
+
+function renderDashboard() {
+  return render(
+    <MemoryRouter initialEntries={['/technician']}>
+      <RouteLocation />
+      <TechnicianDashboard />
+    </MemoryRouter>,
+  );
+}
 
 const orders = [
   {
@@ -83,7 +96,6 @@ describe('Maintenance and technician workflows', () => {
       phone: '+94710000000',
       role: 'Technician',
     };
-    testState.navigate.mockReset();
     window.localStorage.setItem('ah_token', 'test-technician-token');
   });
 
@@ -116,10 +128,10 @@ describe('Maintenance and technician workflows', () => {
     };
     const fetchMock = installFetchMock();
 
-    render(<TechnicianDashboard />);
+    renderDashboard();
 
     await waitFor(() => {
-      expect(testState.navigate).toHaveBeenCalledWith('/login');
+      expect(screen.getByTestId('route-location')).toHaveAttribute('data-path', '/login');
     });
     expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/api/maintenance'))).toBe(false);
   });
@@ -127,7 +139,7 @@ describe('Maintenance and technician workflows', () => {
   it('shows the empty state when the technician has no assigned jobs', async () => {
     installFetchMock([]);
 
-    render(<TechnicianDashboard />);
+    renderDashboard();
 
     expect(await screen.findByText('No work orders found.')).toBeInTheDocument();
   });
@@ -136,7 +148,7 @@ describe('Maintenance and technician workflows', () => {
     installFetchMock();
     window.innerWidth = 375;
 
-    const { container } = render(<TechnicianDashboard />);
+    const { container } = renderDashboard();
     const workOrderList = container.querySelector('.compact-list');
 
     await waitFor(() => {
@@ -159,7 +171,7 @@ describe('Maintenance and technician workflows', () => {
 
   it('starts an assigned repair with the technician authorization token', async () => {
     const fetchMock = installFetchMock();
-    const { container } = render(<TechnicianDashboard />);
+    const { container } = renderDashboard();
     const workOrderList = container.querySelector('.compact-list');
 
     await waitFor(() => {
@@ -183,7 +195,7 @@ describe('Maintenance and technician workflows', () => {
 
   it('submits a resolution note and repair cost for an in-progress job', async () => {
     const fetchMock = installFetchMock();
-    const { container } = render(<TechnicianDashboard />);
+    const { container } = renderDashboard();
     const workOrderList = container.querySelector('.compact-list');
 
     await waitFor(() => {
