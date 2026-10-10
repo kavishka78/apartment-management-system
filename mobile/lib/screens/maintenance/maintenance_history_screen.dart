@@ -108,7 +108,7 @@ class _MaintenanceHistoryScreenState extends State<MaintenanceHistoryScreen> {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: const Color(0xFFE8ECEF)),
               ),
               child: TextField(

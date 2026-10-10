@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
 import '../../models/auth/contact_check_result.dart';
 import '../../models/auth/resident_session.dart';
 
@@ -10,40 +12,24 @@ import '../api_config.dart';
 /// Endpoints used:
 ///   POST /api/v1/auth/resident/verify-contact  → check if phone/email is registered
 ///   POST /api/v1/auth/resident/firebase-token  → exchange Firebase token for app JWT
-///   POST /api/v1/auth/resident/dev-login       → instant developer/demo bypass login
 ///   GET  /api/v1/auth/me                       → validate a saved JWT
 class ResidentAuthApi {
   static String get _base => ApiConfig.v1Url;
 
   /// Verify 6-digit OTP code against backend
-  static Future<ResidentSession?> verifyOtp(String identifier, String otp) async {
+  static Future<ResidentSession?> verifyOtp(
+    String identifier,
+    String otp,
+  ) async {
     try {
       final response = await http
           .post(
             Uri.parse('$_base/auth/resident/verify-otp'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'identifier': identifier.trim(), 'otp': otp.trim()}),
-          )
-          .timeout(const Duration(seconds: 15));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return ResidentSession.fromJson(data);
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Instant developer / demo login without waiting for SMS OTP
-  static Future<ResidentSession?> devLogin([String identifier = 'kamal.perera@gmail.com']) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse('$_base/auth/resident/dev-login'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'email': identifier.trim()}),
+            body: jsonEncode({
+              'identifier': identifier.trim(),
+              'otp': otp.trim(),
+            }),
           )
           .timeout(const Duration(seconds: 15));
 
@@ -101,7 +87,8 @@ class ResidentAuthApi {
   ///
   /// Returns a [ResidentSession] on success, or null on failure.
   static Future<ResidentSession?> exchangeFirebaseToken(
-      String firebaseIdToken) async {
+    String firebaseIdToken,
+  ) async {
     try {
       final response = await http
           .post(
@@ -130,7 +117,8 @@ class ResidentAuthApi {
   /// Uses the existing `POST /api/v1/auth/google` endpoint already in
   /// PlatformController.cs.
   static Future<ResidentSession?> exchangeGoogleToken(
-      String googleIdToken) async {
+    String googleIdToken,
+  ) async {
     try {
       final response = await http
           .post(
@@ -162,9 +150,7 @@ class ResidentAuthApi {
       final response = await http
           .get(
             Uri.parse('$_base/auth/me'),
-            headers: {
-              'Authorization': 'Bearer $token',
-            },
+            headers: {'Authorization': 'Bearer $token'},
           )
           .timeout(const Duration(seconds: 10));
       return response.statusCode == 200;

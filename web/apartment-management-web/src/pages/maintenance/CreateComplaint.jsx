@@ -4,6 +4,9 @@ import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar'
 import '../payment/PaymentDashboard.css';
 import '../payment/GenerateInvoice.css'; // Use the exact same styles as Invoice
 import { MAINTENANCE_API_BASE } from './maintenanceApi';
+import { getAuthToken } from '../../services/api';
+
+const authHeaders = () => ({ Authorization: `Bearer ${getAuthToken() || ''}` });
 
 function CreateComplaint() {
   const navigate = useNavigate();
@@ -23,8 +26,11 @@ function CreateComplaint() {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    fetch(`${MAINTENANCE_API_BASE}/maintenance/categories`)
-      .then(res => res.json())
+    fetch(`${MAINTENANCE_API_BASE}/maintenance/categories`, { headers: authHeaders() })
+      .then(res => {
+        if (!res.ok) throw new Error(`Unable to load categories (HTTP ${res.status}).`);
+        return res.json();
+      })
       .then(data => {
         setCategories(data);
         if (data.length > 0) {
@@ -46,14 +52,17 @@ function CreateComplaint() {
     
     fetch(`${MAINTENANCE_API_BASE}/maintenance`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({
         ...formData,
         categoryId: parseInt(formData.categoryId),
         residentId: parseInt(formData.residentId) || 1
       })
     })
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error(`Unable to create complaint (HTTP ${res.status}).`);
+      return res.json();
+    })
     .then(data => {
       if (data.id) {
         setSuccessMessage("Complaint generated successfully.");
@@ -64,6 +73,7 @@ function CreateComplaint() {
           formData.append('file', photoFile);
           fetch(`${MAINTENANCE_API_BASE}/maintenance/${data.id}/photo`, {
             method: 'POST',
+            headers: authHeaders(),
             body: formData
           }).then(() => {
             setTimeout(() => navigate('/maintenance/complaints'), 1500);

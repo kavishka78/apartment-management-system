@@ -1,6 +1,8 @@
 import '../../services/api_config.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shimmer/shimmer.dart';
 
 import 'dart:convert';
 
@@ -113,10 +115,6 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF1E2532)),
-            onPressed: _loadStats,
-          ),
-          IconButton(
             icon: Stack(
               children: [
                 const Icon(Icons.notifications_none, color: Color(0xFF1E2532)),
@@ -181,240 +179,253 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 48),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Hero Card
-                Container(
-                  width: double.infinity,
-                  height: 190,
-                  clipBehavior: Clip.hardEdge,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F9FF),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: 280,
-                        child: Image.asset(
-                          'assets/images/maintenance_banner.jpg',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Positioned.fill(
-                        child: Container(
+              children:
+                  [
+                        // Hero Card
+                        Container(
+                          width: double.infinity,
+                          height: 190,
+                          clipBehavior: Clip.hardEdge,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFFF4F9FF),
-                                const Color(0xFFF4F9FF).withValues(alpha: 0.0),
-                              ],
-                              stops: const [0.55, 0.65],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
+                            color: const Color(0xFFF4F9FF),
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 15,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            children: [
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: 280,
+                                child: Image.asset(
+                                  'assets/images/maintenance_banner.jpg',
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFFF4F9FF),
+                                        const Color(0xFFF4F9FF)
+                                            .withValues(alpha: 0.0),
+                                      ],
+                                      stops: const [0.55, 0.65],
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFFF4F9FF),
+                                        const Color(0xFFF4F9FF)
+                                            .withValues(alpha: 0.0),
+                                      ],
+                                      stops: const [0.0, 0.20],
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'KEEP OUR COMMUNITY BETTER',
+                                      style: TextStyle(
+                                        color: Color(0xFF1E2532),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    const Text(
+                                      'Need a',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w900,
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                    const Text(
+                                      'Repair?',
+                                      style: TextStyle(
+                                        color: Color(0xFF1E88E5),
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w900,
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: 200,
+                                      child: const Text(
+                                        'Submit maintenance requests for plumbing, electrical, AC, or any general issues. We\'ll take care of it.',
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: 11,
+                                          height: 1.3,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFFF4F9FF),
-                                const Color(0xFFF4F9FF).withValues(alpha: 0.0),
-                              ],
-                              stops: const [0.0, 0.20],
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+
+                        const SizedBox(height: 24),
+
+                        // Stat Cards (Colored but reduced height by moving arrow up)
+                        Row(
                           children: [
-                            const Text(
-                              'KEEP OUR COMMUNITY BETTER',
-                              style: TextStyle(
-                                color: Color(0xFF1E2532),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1,
+                            Expanded(
+                              child: _buildStatCard(
+                                'Open Requests',
+                                _isLoading ? '-' : _openCount.toString(),
+                                "We're working on it",
+                                Icons.description_outlined,
+                                const Color(0xFFFFF0E6), // Peach bg
+                                const Color(0xFFFF7043), // Deep orange icon
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const MyComplaintsScreen(),
+                                  ),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Need a',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 26,
-                                fontWeight: FontWeight.w900,
-                                height: 1.1,
-                              ),
-                            ),
-                            const Text(
-                              'Repair?',
-                              style: TextStyle(
-                                color: Color(0xFF1E88E5),
-                                fontSize: 26,
-                                fontWeight: FontWeight.w900,
-                                height: 1.1,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: 200,
-                              child: const Text(
-                                'Submit maintenance requests for plumbing, electrical, AC, or any general issues. We\'ll take care of it.',
-                                style: TextStyle(
-                                  color: Colors.black87,
-                                  fontSize: 11,
-                                  height: 1.3,
-                                  fontWeight: FontWeight.w500,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildStatCard(
+                                'In Progress',
+                                _isLoading ? '-' : _inProgressCount.toString(),
+                                'Currently being handled',
+                                Icons.settings_outlined,
+                                const Color(0xFFE3F2FD), // Light blue bg
+                                const Color(0xFF1E88E5), // Deep blue icon
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const MyComplaintsScreen(),
+                                  ),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                ),
 
-                const SizedBox(height: 24),
+                        const SizedBox(height: 32),
 
-                // Stat Cards (Colored but reduced height by moving arrow up)
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Open Requests',
-                        _isLoading ? '-' : _openCount.toString(),
-                        "We're working on it",
-                        Icons.description_outlined,
-                        const Color(0xFFFFF0E6), // Peach bg
-                        const Color(0xFFFF7043), // Deep orange icon
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const MyComplaintsScreen(),
+                        // Services List (Original Navy Style)
+                        const Text(
+                          'Maintenance Services',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF1E2532),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        'In Progress',
-                        _isLoading ? '-' : _inProgressCount.toString(),
-                        'Currently being handled',
-                        Icons.settings_outlined,
-                        const Color(0xFFE3F2FD), // Light blue bg
-                        const Color(0xFF1E88E5), // Deep blue icon
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const MyComplaintsScreen(),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Quick access to all maintenance features',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
                           ),
                         ),
+                        const SizedBox(height: 16),
+
+                        _buildServiceListItem(
+                          'Report Issue',
+                          'Submit a new maintenance request',
+                          Icons.edit_note,
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CreateComplaintScreen(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        _buildServiceListItem(
+                          'My Complaints',
+                          'View and track your active requests',
+                          Icons.assignment_outlined,
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MyComplaintsScreen(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        _buildServiceListItem(
+                          'Maintenance History',
+                          'View your all maintenance history',
+                          Icons.history,
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MaintenanceHistoryScreen(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        _buildServiceListItem(
+                          'Cost Analysis',
+                          'View and track repair expenditures',
+                          Icons.analytics_outlined,
+                          () {
+                            showModalBottomSheet(
+                              context: context,
+                              backgroundColor: Colors.transparent,
+                              isScrollControlled: true,
+                              builder: (context) => RepairCostsBottomSheet(
+                                tickets: _allTickets
+                                    .where(
+                                      (t) =>
+                                          t.status == 'Resolved' ||
+                                          t.status == 'Closed',
+                                    )
+                                    .toList(),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 40),
+                      ]
+                      .animate(interval: 50.ms)
+                      .fadeIn(duration: 400.ms, curve: Curves.easeOut)
+                      .slideY(
+                        begin: 0.1,
+                        duration: 400.ms,
+                        curve: Curves.easeOut,
                       ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 32),
-
-                // Services List (Original Navy Style)
-                const Text(
-                  'Maintenance Services',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E2532),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Quick access to all maintenance features',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                ),
-                const SizedBox(height: 16),
-
-                _buildServiceListItem(
-                  'Report Issue',
-                  'Submit a new maintenance request',
-                  Icons.edit_note,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const CreateComplaintScreen(),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                _buildServiceListItem(
-                  'My Complaints',
-                  'View and track your active requests',
-                  Icons.assignment_outlined,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MyComplaintsScreen(),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                _buildServiceListItem(
-                  'Maintenance History',
-                  'View your completed and closed requests',
-                  Icons.history,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MaintenanceHistoryScreen(),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                _buildServiceListItem(
-                  'Cost Analysis',
-                  'Track and analyze repair expenditures',
-                  Icons.analytics_outlined,
-                  () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      isScrollControlled: true,
-                      builder: (context) => RepairCostsBottomSheet(
-                        tickets: _allTickets
-                            .where(
-                              (t) =>
-                                  t.status == 'Resolved' ||
-                                  t.status == 'Closed',
-                            )
-                            .toList(),
-                      ),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 40),
-              ],
             ),
           ),
         ),
@@ -468,14 +479,35 @@ class _MaintenanceHomeScreenState extends State<MaintenanceHomeScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(
-              count,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF1E2532),
+            if (count == '-')
+              Shimmer.fromColors(
+                baseColor: Colors.black12,
+                highlightColor: Colors.white,
+                child: Container(
+                  width: 30,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              )
+            else
+              TweenAnimationBuilder<int>(
+                tween: IntTween(begin: 0, end: int.tryParse(count) ?? 0),
+                duration: const Duration(milliseconds: 1500),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return Text(
+                    value.toString(),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF1E2532),
+                    ),
+                  );
+                },
               ),
-            ),
             const SizedBox(height: 4),
             Text(
               title,

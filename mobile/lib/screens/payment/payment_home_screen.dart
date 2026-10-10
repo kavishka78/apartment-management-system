@@ -7,7 +7,6 @@ import 'payment_chat_screen.dart';
 import 'payment_history_screen.dart';
 import 'receipts_screen.dart';
 
-
 class PaymentHomeScreen extends StatefulWidget {
   const PaymentHomeScreen({super.key});
 
@@ -16,7 +15,6 @@ class PaymentHomeScreen extends StatefulWidget {
 }
 
 class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
-
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -48,19 +46,13 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
       int outstandingCount = 0;
 
       for (final invoiceData in invoices) {
-        final invoice =
-            Map<String, dynamic>.from(invoiceData);
+        final invoice = Map<String, dynamic>.from(invoiceData);
 
-        final status =
-            invoice['status']?.toString().toLowerCase() ??
-                'pending';
+        final status = invoice['status']?.toString().toLowerCase() ?? 'pending';
 
         if (status != 'paid' && invoice['canPay'] == true) {
           outstanding +=
-              double.tryParse(
-                    invoice['totalAmount'].toString(),
-                  ) ??
-                  0;
+              double.tryParse(invoice['totalAmount'].toString()) ?? 0;
 
           outstandingCount++;
         }
@@ -75,7 +67,7 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
       setState(() {
         _errorMessage =
             result['message']?.toString() ??
-                'Failed to load payment information.';
+            'Failed to load payment information.';
         _isLoading = false;
       });
     }
@@ -121,8 +113,12 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
                   onTap: () async {
-                    await Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => const PaymentChatScreen()));
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PaymentChatScreen(),
+                      ),
+                    );
                     if (mounted) _loadPaymentSummary();
                   },
                   child: Ink(
@@ -152,7 +148,12 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
         onRefresh: _loadPaymentSummary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            20 + MediaQuery.of(context).padding.bottom,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -168,16 +169,16 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
                     ? const SizedBox(
                         height: 85,
                         child: Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                          ),
+                          child: CircularProgressIndicator(color: Colors.white),
                         ),
                       )
                     : _errorMessage != null
-                    ? const Text('Balance unavailable', style: TextStyle(color: Colors.white))
+                    ? const Text(
+                        'Balance unavailable',
+                        style: TextStyle(color: Colors.white),
+                      )
                     : Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
                             'Outstanding Balance',
@@ -188,9 +189,7 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            _formatAmount(
-                              _outstandingBalance,
-                            ),
+                            _formatAmount(_outstandingBalance),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 30,
@@ -220,10 +219,7 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: Color(0xFFB84A4A),
-                      ),
+                      const Icon(Icons.error_outline, color: Color(0xFFB84A4A)),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -255,14 +251,12 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
               PaymentOptionCard(
                 icon: Icons.receipt_long_outlined,
                 title: 'My Invoices',
-                subtitle:
-                    'View your current and previous invoices',
+                subtitle: 'View your current and previous invoices',
                 onTap: () async {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          const MyInvoicesScreen(),
+                      builder: (context) => const MyInvoicesScreen(),
                     ),
                   );
 
@@ -276,14 +270,12 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
               PaymentOptionCard(
                 icon: Icons.history_rounded,
                 title: 'Payment History',
-                subtitle:
-                    'View your previous payment transactions',
+                subtitle: 'View your previous payment transactions',
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          const PaymentHistoryScreen(),
+                      builder: (context) => const PaymentHistoryScreen(),
                     ),
                   );
                 },
@@ -294,14 +286,12 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
               PaymentOptionCard(
                 icon: Icons.description_outlined,
                 title: 'Receipts',
-                subtitle:
-                    'View and print your payment receipts',
+                subtitle: 'View and print your payment receipts',
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          const ReceiptsScreen(),
+                      builder: (context) => const ReceiptsScreen(),
                     ),
                   );
                 },
@@ -315,21 +305,15 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFE8ECEF),
-                  ),
+                  border: Border.all(color: const Color(0xFFE8ECEF)),
                 ),
                 child: const Row(
                   children: [
-                    Icon(
-                      Icons.lock_outline_rounded,
-                      color: Color(0xFF788477),
-                    ),
+                    Icon(Icons.lock_outline_rounded, color: Color(0xFF788477)),
                     SizedBox(width: 14),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Secure Payments',
@@ -341,10 +325,7 @@ class _PaymentHomeScreenState extends State<PaymentHomeScreen> {
                           SizedBox(height: 3),
                           Text(
                             'Your payment information is handled securely.',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                            ),
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
                           ),
                         ],
                       ),
@@ -386,9 +367,7 @@ class PaymentOptionCard extends StatelessWidget {
           padding: const EdgeInsets.all(17),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFFE8ECEF),
-            ),
+            border: Border.all(color: const Color(0xFFE8ECEF)),
           ),
           child: Row(
             children: [
@@ -399,16 +378,12 @@ class PaymentOptionCard extends StatelessWidget {
                   color: const Color(0xFFEEF1F2),
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFF17212B),
-                ),
+                child: Icon(icon, color: const Color(0xFF17212B)),
               ),
               const SizedBox(width: 15),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
@@ -421,18 +396,12 @@ class PaymentOptionCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Colors.grey,
-              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.grey),
             ],
           ),
         ),

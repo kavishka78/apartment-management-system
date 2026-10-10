@@ -27,6 +27,8 @@ dependencies:
   pinput: ^5.0.0
   firebase_messaging: ^15.2.10
   flutter_dotenv: ^5.2.1
+  shimmer: ^4.0.0
+  flutter_animate: ^4.5.2
 
 dev_dependencies:
   flutter_test:

@@ -15,7 +15,9 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _vehicleController = TextEditingController();
-  final DateTime _expectedArrival = DateTime.now().add(const Duration(hours: 2));
+  final DateTime _expectedArrival = DateTime.now().add(
+    const Duration(hours: 2),
+  );
   bool _isSubmitting = false;
 
   List<dynamic> _activeVisitors = [];
@@ -54,7 +56,9 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
     setState(() => _isSubmitting = true);
 
     final session = await AuthService.getSession();
-    final currentResidentId = (session != null && session.residentId > 0) ? session.residentId : 1;
+    final currentResidentId = (session != null && session.residentId > 0)
+        ? session.residentId
+        : 1;
 
     final res = await ParkingApiService.preRegisterVisitor(
       residentId: currentResidentId,
@@ -200,7 +204,12 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          20 + MediaQuery.of(context).padding.bottom,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -293,7 +302,10 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                         if (val == null || val.trim().isEmpty) {
                           return 'Enter phone number';
                         }
-                        final cleaned = val.trim().replaceAll(RegExp(r'[\s\-]'), '');
+                        final cleaned = val.trim().replaceAll(
+                          RegExp(r'[\s\-]'),
+                          '',
+                        );
                         // Sri Lankan phone number standard: 10 digits starting with 0 (e.g. 0771234567, 0112345678)
                         final phoneRegex = RegExp(r'^0\d{9}$');
                         if (!phoneRegex.hasMatch(cleaned)) {
@@ -313,7 +325,8 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                         ),
                       ),
                       validator: (val) {
-                        if (val == null || val.trim().isEmpty) return null; // Optional
+                        if (val == null || val.trim().isEmpty)
+                          return null; // Optional
                         final cleaned = val.trim().toUpperCase();
                         // Sri Lankan Vehicle Number Standards:
                         // Modern: 2 or 3 letters (with optional 2-letter province like WP) followed by 4 digits (e.g., WP CAD-1234, CAD-1234, AB-1234)
@@ -339,11 +352,17 @@ class _VisitorParkingScreenState extends State<VisitorParkingScreen> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Text(
                                 'Generate Gate Access Pass',
-                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
                               ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF17212B),

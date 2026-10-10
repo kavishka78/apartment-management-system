@@ -49,6 +49,7 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
   }
 
   Future<void> _loadCategories() async {
+    if (mounted) setState(() { _isLoading = true; _error = ''; });
     final result = await MaintenanceApiService.getCategories();
     if (mounted) {
       if (result['success'] == true) {
@@ -253,6 +254,11 @@ class _CreateComplaintScreenState extends State<CreateComplaintScreen> {
                         style: TextStyle(color: Colors.red.shade800),
                       ),
                     ),
+                  ),
+                if (_categories.isEmpty && _error.isNotEmpty)
+                  OutlinedButton(
+                    onPressed: _loadCategories,
+                    child: const Text('Retry loading categories'),
                   ),
                 Expanded(
                   child: PageView(

@@ -84,7 +84,12 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
         onRefresh: _loadData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            16 + MediaQuery.of(context).padding.bottom,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -158,7 +163,9 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                             ),
                           ),
                           style: TextButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: 0.12),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.12,
+                            ),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 6,
@@ -589,13 +596,16 @@ class _FacilitiesListScreenState extends State<FacilitiesListScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            (facility['hourlyCost'] != null && (facility['hourlyCost'] as num) > 0)
+                            (facility['hourlyCost'] != null &&
+                                    (facility['hourlyCost'] as num) > 0)
                                 ? 'LKR ${(facility['hourlyCost'] as num).toStringAsFixed(2)} / hr per spot'
                                 : 'Free of Charge',
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.bold,
-                              color: (facility['hourlyCost'] != null && (facility['hourlyCost'] as num) > 0)
+                              color:
+                                  (facility['hourlyCost'] != null &&
+                                      (facility['hourlyCost'] as num) > 0)
                                   ? const Color(0xFF047857)
                                   : const Color(0xFF2563EB),
                             ),
