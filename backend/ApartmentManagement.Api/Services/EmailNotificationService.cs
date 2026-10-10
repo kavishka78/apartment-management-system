@@ -80,7 +80,8 @@ public class EmailNotificationService : INotificationService
             }
         }
 
-        _logger.LogInformation($"[EMAIL LOGGED] To: {toEmail} | Subject: {subject} | Body: {body}");
+        _logger.LogError("Email delivery failed for {Recipient}: no working email provider is configured.", toEmail);
+        throw new InvalidOperationException("Email delivery is unavailable.");
     }
 
     public async Task SendPushNotificationAsync(string? fcmToken, string title, string body)

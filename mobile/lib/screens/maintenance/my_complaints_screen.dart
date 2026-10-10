@@ -122,7 +122,7 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: const Color(0xFFE8ECEF)),
               ),
               child: TextField(
@@ -155,7 +155,7 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(999),
                       border: Border.all(color: const Color(0xFFE8ECEF)),
                     ),
                     child: DropdownButtonHideUnderline(
@@ -261,9 +261,17 @@ class _MyComplaintsScreenState extends State<MyComplaintsScreen> {
                 ? const MaintenanceSkeleton(itemCount: 4)
                 : _error.isNotEmpty
                 ? Center(
-                    child: Text(
-                      _error,
-                      style: const TextStyle(color: Colors.red),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_error, textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.red)),
+                          const SizedBox(height: 12),
+                          OutlinedButton(onPressed: _loadTickets, child: const Text('Retry')),
+                        ],
+                      ),
                     ),
                   )
                 : _filteredTickets.isEmpty

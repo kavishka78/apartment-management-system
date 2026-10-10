@@ -18,7 +18,17 @@ class MaintenanceApiService {
   ) {
     if (e != null) {
       debugPrint('MAINTENANCE API ERROR: $e');
-      return {'success': false, 'message': 'Cannot connect to server: $e'};
+      return {
+        'success': false,
+        'message': 'Cannot reach the maintenance server. Check the API URL and connection.',
+      };
+    }
+
+    if (response?.statusCode == 401) {
+      return {'success': false, 'message': 'Session expired. Please sign in again (HTTP 401).'};
+    }
+    if (response?.statusCode == 403) {
+      return {'success': false, 'message': 'Your account cannot access maintenance (HTTP 403).'};
     }
 
     String errorMessage = defaultMessage;
@@ -37,8 +47,8 @@ class MaintenanceApiService {
       } catch (_) {
         errorMessage = response.body;
       }
-      errorMessage = '$errorMessage (${response.statusCode})';
     }
+    if (response != null) errorMessage = '$errorMessage (HTTP ${response.statusCode})';
     return {'success': false, 'message': errorMessage};
   }
 
@@ -156,6 +166,8 @@ class MaintenanceApiService {
         'POST',
         Uri.parse('$baseUrl/maintenance/$maintenanceId/photo'),
       );
+      final token = await AuthService.getToken();
+      if (token.isNotEmpty) request.headers['Authorization'] = 'Bearer $token';
 
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
 

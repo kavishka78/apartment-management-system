@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.DTOs.Maintenance;
 
@@ -9,6 +10,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
 {
     [Route("api/reports/maintenance")]
     [ApiController]
+    [Authorize(Roles = "ApartmentAdmin,SuperAdmin")]
     public class MaintenanceReportsController : ControllerBase
     {
         private readonly AppDbContext _context;

@@ -1,7 +1,7 @@
-﻿const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5073/api';
+﻿const API_BASE = MAINTENANCE_API_BASE;
 import { useState, useEffect, useCallback } from 'react';
 import { getAuthToken } from '../../services/api';
-import { MAINTENANCE_API_ORIGIN } from './maintenanceApi';
+import { MAINTENANCE_API_BASE, MAINTENANCE_API_ORIGIN } from './maintenanceApi';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MdAutoAwesome, MdStar, MdPlayArrow, MdCheckCircle, MdClose, MdComment, MdArrowBack, MdChevronRight, MdKeyboardArrowDown, MdBuild, MdFlag, MdPerson, MdAttachMoney, MdPhone, MdHome, MdPriorityHigh, MdDescription, MdAccessTime } from 'react-icons/md';
 import MaintenanceSidebar from '../../components/maintenance/MaintenanceSidebar';

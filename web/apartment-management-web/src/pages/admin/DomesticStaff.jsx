@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { getDomesticStaff, getResidents, createDomesticStaff, toggleStaffAccess } from "../../services/api";
+import { getDomesticStaff, getResidents, createDomesticStaff, toggleStaffAccess, getAuthToken } from "../../services/api";
+import { MAINTENANCE_API_BASE } from "../maintenance/maintenanceApi";
 import { useAuth } from "../../context/AuthContext";
 import "./DomesticStaff.css";
 
@@ -27,7 +28,9 @@ export default function DomesticStaff() {
     const [sList, rList, techsList] = await Promise.all([
       getDomesticStaff(activeTenantId),
       getResidents(activeTenantId),
-      fetch('http://localhost:5073/api/technicians').then(r => r.json()).catch(() => [])
+      fetch(`${MAINTENANCE_API_BASE}/technicians`, {
+        headers: { Authorization: `Bearer ${getAuthToken() || ''}` }
+      }).then(r => r.ok ? r.json() : []).catch(() => [])
     ]);
 
     const mappedTechs = (techsList || []).map(t => ({

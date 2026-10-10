@@ -2,8 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pinput/pinput.dart';
+
 import '../../services/auth/auth_service.dart';
 import '../../services/auth/resident_auth_api.dart';
+import '../../models/auth/resident_session.dart';
 import '../main_navigation_screen.dart';
 
 /// Handles both Phone OTP and Email OTP verification in a single screen.
@@ -14,11 +16,11 @@ import '../main_navigation_screen.dart';
 ///   • Verification → Firebase ID token → backend JWT.
 ///
 /// When [contactType] is "email":
-///   • Firebase sends a 6-digit email OTP (sign-in with email link / OOB code).
-///   • Same flow thereafter.
+///   • The backend emails a 6-digit OTP.
+///   • The backend verifies the code and returns an app session.
 class OtpVerifyScreen extends StatefulWidget {
-  final String contact;        // Phone number or email
-  final String contactType;    // "phone" | "email"
+  final String contact; // Phone number or email
+  final String contactType; // "phone" | "email"
   final String residentName;
   final String unitNumber;
   final String complexName;
@@ -42,10 +44,11 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
   // Firebase phone verification state
   String? _verificationId;
 
-  bool _isSending = true;   // Sending the OTP to Firebase
+  bool _isSending = true; // Sending the OTP to Firebase
   bool _isVerifying = false; // Verifying the OTP the user typed
   bool _canResend = false;
   int _resendCountdown = 60;
+  int _resendGeneration = 0;
 
   String? _errorMessage;
 
@@ -57,6 +60,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
 
   @override
   void dispose() {
+    _resendGeneration++;
     _pinController.dispose();
     super.dispose();
   }
@@ -64,11 +68,13 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
   // ── OTP Sending ────────────────────────────────────────────────────────────
 
   Future<void> _sendOtp() async {
+    _resendGeneration++;
     setState(() {
       _isSending = true;
       _errorMessage = null;
       _canResend = false;
       _resendCountdown = 60;
+      _verificationId = null;
     });
 
     if (widget.contactType == 'phone') {
@@ -76,8 +82,6 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
     } else {
       await _sendEmailOtp();
     }
-
-    _startResendCountdown();
   }
 
   Future<void> _sendPhoneOtp() async {
@@ -94,7 +98,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
             setState(() {
               _isSending = false;
               _errorMessage =
-                  'SMS delivery notice (${e.code}): Enter evaluation code 123456 to continue.';
+                  'Could not send the SMS code (${e.code}). Please try again.';
             });
           }
         },
@@ -104,6 +108,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
               _verificationId = verificationId;
               _isSending = false;
             });
+            _startResendCountdown();
           }
         },
         codeAutoRetrievalTimeout: (String verificationId) {
@@ -119,7 +124,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
       if (mounted) {
         setState(() {
           _isSending = false;
-          _errorMessage = 'SMS service notice: Enter evaluation code 123456 to continue.';
+          _errorMessage = 'Could not send the SMS code. Please try again.';
         });
       }
     }
@@ -127,18 +132,33 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
 
   Future<void> _sendEmailOtp() async {
     try {
-      // Trigger backend API to send email via SendGrid
-      await ResidentAuthApi.verifyContact(widget.contact);
+      final result = await ResidentAuthApi.verifyContact(widget.contact);
+      if (!mounted) return;
+      if (!result.found) {
+        setState(
+          () => _errorMessage =
+              'Could not send the email code. Please try again.',
+        );
+        return;
+      }
+      _startResendCountdown();
     } catch (_) {
+      if (mounted) {
+        setState(
+          () => _errorMessage =
+              'Could not send the email code. Please try again.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
   }
 
   void _startResendCountdown() {
+    final generation = _resendGeneration;
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) return false;
+      if (!mounted || generation != _resendGeneration) return false;
       setState(() {
         _resendCountdown--;
         if (_resendCountdown <= 0) _canResend = true;
@@ -150,7 +170,13 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
   // ── OTP Verification ───────────────────────────────────────────────────────
 
   Future<void> _verifyOtp(String code) async {
-    if (code.length != 6) return;
+    if (code.length != 6 || _isVerifying) return;
+    if (widget.contactType == 'phone' && _verificationId == null) {
+      setState(
+        () => _errorMessage = 'Wait for the SMS code or request a new one.',
+      );
+      return;
+    }
 
     setState(() {
       _isVerifying = true;
@@ -158,8 +184,28 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
     });
 
     try {
-      // Verify randomly generated 6-digit OTP code with backend API
-      final session = await ResidentAuthApi.verifyOtp(widget.contact, code);
+      ResidentSession? session;
+
+      if (widget.contactType == 'phone') {
+        // Phone login: Verify the SMS code with Firebase first
+        final credential = PhoneAuthProvider.credential(
+          verificationId: _verificationId!,
+          smsCode: code,
+        );
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(
+          credential,
+        );
+        final idToken = await userCredential.user?.getIdToken();
+
+        if (idToken != null) {
+          // Exchange the Firebase token with our backend
+          session = await ResidentAuthApi.exchangeFirebaseToken(idToken);
+        }
+      } else {
+        // Email login: Verify the 6-digit OTP code with backend API
+        session = await ResidentAuthApi.verifyOtp(widget.contact, code);
+      }
+
       if (session != null && session.isValid) {
         await AuthService.saveSession(session);
         if (!mounted) return;
@@ -173,7 +219,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
       if (mounted) {
         setState(() {
           _isVerifying = false;
-          _errorMessage = 'Invalid verification code. Please check your email and try again.';
+          _errorMessage = 'Invalid verification code. Please check your code and try again.';
         });
         _pinController.clear();
       }
@@ -189,42 +235,55 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
   }
 
   Future<void> _signInWithCredential(AuthCredential credential) async {
-    final userCredential =
-        await FirebaseAuth.instance.signInWithCredential(credential);
-    final firebaseIdToken = await userCredential.user?.getIdToken();
+    try {
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+      final firebaseIdToken = await userCredential.user?.getIdToken();
 
-    if (firebaseIdToken == null) {
+      if (firebaseIdToken == null) {
+        if (mounted) {
+          setState(() {
+            _isVerifying = false;
+            _errorMessage =
+                'Could not retrieve authentication token. Please try again.';
+          });
+        }
+        return;
+      }
+
+      // Exchange Firebase token for our app's JWT
+      final session = await ResidentAuthApi.exchangeFirebaseToken(
+        firebaseIdToken,
+      );
+
+      if (!mounted) return;
+
+      if (session == null || !session.isValid) {
+        setState(() {
+          _isVerifying = false;
+          _errorMessage = 'Your account could not be verified by the server.\nPlease contact your building admin.';
+        });
+        return;
+      }
+
+      await AuthService.saveSession(session);
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+        (_) => false,
+      );
+    } catch (_) {
       if (mounted) {
         setState(() {
           _isVerifying = false;
-          _errorMessage = 'Could not retrieve authentication token. Please try again.';
+          _errorMessage =
+              'Automatic verification failed. Please enter the SMS code.';
         });
       }
-      return;
     }
-
-    // Exchange Firebase token for our app's JWT
-    final session = await ResidentAuthApi.exchangeFirebaseToken(firebaseIdToken);
-
-    if (!mounted) return;
-
-    if (session == null || !session.isValid) {
-      setState(() {
-        _isVerifying = false;
-        _errorMessage =
-            'Your account could not be verified by the server.\nPlease contact your building admin.';
-      });
-      return;
-    }
-
-    await AuthService.saveSession(session);
-
-    if (!mounted) return;
-
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-      (_) => false,
-    );
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -252,7 +311,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
@@ -260,8 +321,11 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.verified_user_outlined,
-                            color: Color(0xFFB8C2CC), size: 14),
+                        const Icon(
+                          Icons.verified_user_outlined,
+                          color: Color(0xFFB8C2CC),
+                          size: 14,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           isPhone ? 'Phone Verification' : 'Email Verification',
@@ -286,7 +350,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                   Text(
                     isPhone
                         ? 'We sent a 6-digit code to\n${widget.contact}'
-                        : 'We sent a sign-in link to\n${widget.contact}',
+                        : 'We sent a 6-digit code to\n${widget.contact}',
                     style: const TextStyle(
                       color: Color(0xFF8A9BAB),
                       fontSize: 14,
@@ -315,16 +379,22 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                       // Unit info chip
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF17212B).withValues(alpha: 0.06),
+                          color: const Color(0xFF17212B)
+                              .withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.home_outlined,
-                                size: 16, color: Color(0xFF17212B)),
+                            const Icon(
+                              Icons.home_outlined,
+                              size: 16,
+                              color: Color(0xFF17212B),
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               'Unit ${widget.unitNumber} · ${widget.complexName}',
@@ -350,14 +420,17 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color(0xFF17212B)),
+                                  Color(0xFF17212B),
+                                ),
                               ),
                             ),
                             SizedBox(width: 8),
                             Text(
-                              'Requesting carrier SMS…',
+                              'Sending verification code…',
                               style: TextStyle(
-                                  fontSize: 12, color: Color(0xFF5A6A77)),
+                                fontSize: 12,
+                                color: Color(0xFF5A6A77),
+                              ),
                             ),
                           ],
                         ),
@@ -384,8 +457,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                                color: const Color(0xFFDDE2E7)),
+                            border: Border.all(color: const Color(0xFFDDE2E7)),
                           ),
                         ),
                         focusedPinTheme: PinTheme(
@@ -400,7 +472,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                                color: const Color(0xFF17212B), width: 2),
+                              color: const Color(0xFF17212B),
+                              width: 2,
+                            ),
                           ),
                         ),
                         onCompleted: _verifyOtp,
@@ -408,84 +482,60 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
 
                       const SizedBox(height: 12),
 
-                      // Quick Demo / Testing autofill
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          _pinController.text = '123456';
-                          _verifyOtp('123456');
-                        },
-                        icon: const Icon(Icons.bolt_rounded,
-                            size: 16, color: Color(0xFF10B981)),
-                        label: const Text(
-                          'Auto-fill Test Code (123456)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF17212B),
+                      const SizedBox(height: 28),
+
+                      // Verify button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: ElevatedButton(
+                          onPressed: _isVerifying
+                              ? null
+                              : () => _verifyOtp(_pinController.text),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF17212B),
+                            foregroundColor: Colors.white,
+                            shape: const StadiumBorder(),
+                            elevation: 0,
                           ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF0FDF4),
-                          side: const BorderSide(
-                              color: Color(0xFF10B981), width: 1.2),
-                          shape: const StadiumBorder(),
+                          child: _isVerifying
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Text(
+                                  'Verify & Sign In',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
 
-                        const SizedBox(height: 28),
+                      const SizedBox(height: 20),
 
-                        // Verify button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 54,
-                          child: ElevatedButton(
-                            onPressed: _isVerifying
-                                ? null
-                                : () => _verifyOtp(_pinController.text),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF17212B),
-                              foregroundColor: Colors.white,
-                              shape: const StadiumBorder(),
-                              elevation: 0,
-                            ),
-                            child: _isVerifying
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      valueColor:
-                                          AlwaysStoppedAnimation<Color>(
-                                              Colors.white),
-                                    ),
-                                  )
-                                : const Text(
-                                    'Verify & Sign In',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                      // Resend
+                      TextButton(
+                        onPressed: _canResend ? _sendOtp : null,
+                        child: Text(
+                          _canResend
+                              ? 'Resend OTP'
+                              : 'Resend in ${_resendCountdown}s',
+                          style: TextStyle(
+                            color: _canResend
+                                ? const Color(0xFF17212B)
+                                : const Color(0xFFADB8C2),
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-
-                        const SizedBox(height: 20),
-
-                        // Resend
-                        TextButton(
-                          onPressed: _canResend ? _sendOtp : null,
-                          child: Text(
-                            _canResend
-                                ? 'Resend OTP'
-                                : 'Resend in ${_resendCountdown}s',
-                            style: TextStyle(
-                              color: _canResend
-                                  ? const Color(0xFF17212B)
-                                  : const Color(0xFFADB8C2),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                      ),
 
                       // Error banner
                       if (_errorMessage != null) ...[
@@ -496,14 +546,16 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFEEEE),
                             borderRadius: BorderRadius.circular(14),
-                            border:
-                                Border.all(color: const Color(0xFFFFCCCC)),
+                            border: Border.all(color: const Color(0xFFFFCCCC)),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.error_outline_rounded,
-                                  color: Color(0xFFCC4444), size: 18),
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                color: Color(0xFFCC4444),
+                                size: 18,
+                              ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
@@ -530,4 +582,3 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
     );
   }
 }
-

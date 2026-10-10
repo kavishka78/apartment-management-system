@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../models/profile/profile_models.dart';
 import '../../services/auth/auth_service.dart';
 import '../../services/profile/profile_api_service.dart';
@@ -44,7 +45,9 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
     if (_profile == null) return;
     final nameCtrl = TextEditingController(text: _profile!.fullName);
     final phoneCtrl = TextEditingController(text: _profile!.phoneNumber);
-    final emergencyCtrl = TextEditingController(text: _profile!.emergencyContact ?? '');
+    final emergencyCtrl = TextEditingController(
+      text: _profile!.emergencyContact ?? '',
+    );
 
     showDialog(
       context: context,
@@ -113,7 +116,9 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out from your resident account?'),
+        content: const Text(
+          'Are you sure you want to sign out from your resident account?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -171,7 +176,12 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
           : RefreshIndicator(
               onRefresh: _loadProfile,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  20,
+                  20,
+                  20 + MediaQuery.of(context).padding.bottom,
+                ),
                 child: Column(
                   children: [
                     // Resident Identity Card
@@ -223,7 +233,9 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                           const SizedBox(height: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(20),
@@ -250,12 +262,14 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
                             onTap: () {
-                              final resId = _profile?.id ?? session?.residentId ?? 0;
+                              final resId =
+                                  _profile?.id ?? session?.residentId ?? 0;
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) =>
-                                      VehicleRegistrationScreen(residentId: resId),
+                                  builder: (_) => VehicleRegistrationScreen(
+                                    residentId: resId,
+                                  ),
                                 ),
                               ).then((_) => _loadProfile());
                             },
@@ -264,13 +278,18 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFE8ECEF)),
+                                border: Border.all(
+                                  color: const Color(0xFFE8ECEF),
+                                ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.directions_car_rounded,
-                                      color: Color(0xFF17212B), size: 24),
+                                  const Icon(
+                                    Icons.directions_car_rounded,
+                                    color: Color(0xFF17212B),
+                                    size: 24,
+                                  ),
                                   const SizedBox(height: 8),
                                   Text(
                                     '${_profile?.vehiclesCount ?? 0}',
@@ -296,7 +315,8 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
                             onTap: () {
-                              final resId = _profile?.id ?? session?.residentId ?? 0;
+                              final resId =
+                                  _profile?.id ?? session?.residentId ?? 0;
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -310,13 +330,18 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFE8ECEF)),
+                                border: Border.all(
+                                  color: const Color(0xFFE8ECEF),
+                                ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.badge_outlined,
-                                      color: Color(0xFF17212B), size: 24),
+                                  const Icon(
+                                    Icons.badge_outlined,
+                                    color: Color(0xFF17212B),
+                                    size: 24,
+                                  ),
                                   const SizedBox(height: 8),
                                   Text(
                                     '${_profile?.staffCount ?? 0}',
@@ -352,158 +377,214 @@ class _ProfileHomeScreenState extends State<ProfileHomeScreen> {
                       child: Material(
                         color: Colors.white,
                         child: Column(
-                        children: [
-                          ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(Icons.family_restroom_rounded,
-                                  color: Colors.blue.shade700, size: 20),
-                            ),
-                            title: const Text(
-                              'Household Members',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 14),
-                            ),
-                            subtitle: Text(
-                              '${_profile?.householdMembers.length ?? 0} members registered',
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
-                            ),
-                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                                size: 14, color: Colors.grey),
-                            onTap: () {
-                              final resId = _profile?.id ?? session?.residentId ?? 0;
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      HouseholdMembersScreen(residentId: resId),
+                          children: [
+                            ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                              ).then((_) => _loadProfile());
-                            },
-                          ),
-                          const Divider(height: 1, indent: 60),
-                          ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.directions_car_rounded,
-                                  color: Color(0xFF17212B), size: 20),
-                            ),
-                            title: const Text(
-                              'My Registered Vehicles',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 14),
-                            ),
-                            subtitle: Text(
-                              '${_profile?.vehiclesCount ?? 0} vehicles linked to unit',
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
-                            ),
-                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                                size: 14, color: Colors.grey),
-                            onTap: () {
-                              final resId = _profile?.id ?? session?.residentId ?? 0;
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      VehicleRegistrationScreen(residentId: resId),
+                                child: Icon(
+                                  Icons.family_restroom_rounded,
+                                  color: Colors.blue.shade700,
+                                  size: 20,
                                 ),
-                              ).then((_) => _loadProfile());
-                            },
-                          ),
-                          const Divider(height: 1, indent: 60),
-                          ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.purple.shade50,
-                                borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Icon(Icons.badge_outlined,
-                                  color: Colors.purple.shade800, size: 20),
-                            ),
-                            title: const Text(
-                              'Domestic Staff & Gate Passes',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 14),
-                            ),
-                            subtitle: Text(
-                              '${_profile?.staffCount ?? 0} helpers authorized',
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
-                            ),
-                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                                size: 14, color: Colors.grey),
-                            onTap: () {
-                              final resId = _profile?.id ?? session?.residentId ?? 0;
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      DomesticStaffScreen(residentId: resId),
+                              title: const Text(
+                                'Household Members',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
                                 ),
-                              ).then((_) => _loadProfile());
-                            },
-                          ),
-                          const Divider(height: 1, indent: 60),
-                          ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Icon(Icons.phone_outlined,
-                                  color: Colors.green.shade700, size: 20),
-                            ),
-                            title: const Text(
-                              'Contact Info',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 14),
-                            ),
-                            subtitle: Text(
-                              phone.isNotEmpty ? phone : email,
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
-                            ),
-                            trailing: const Icon(Icons.check_circle,
-                                size: 16, color: Colors.green),
-                          ),
-                          const Divider(height: 1, indent: 60),
-                          ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.amber.shade50,
-                                borderRadius: BorderRadius.circular(10),
+                              subtitle: Text(
+                                '${_profile?.householdMembers.length ?? 0} members registered',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
                               ),
-                              child: Icon(Icons.emergency_outlined,
-                                  color: Colors.amber.shade800, size: 20),
+                              trailing: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14,
+                                color: Colors.grey,
+                              ),
+                              onTap: () {
+                                final resId =
+                                    _profile?.id ?? session?.residentId ?? 0;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => HouseholdMembersScreen(
+                                      residentId: resId,
+                                    ),
+                                  ),
+                                ).then((_) => _loadProfile());
+                              },
                             ),
-                            title: const Text(
-                              'Emergency Contact',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 14),
+                            const Divider(height: 1, indent: 60),
+                            ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.directions_car_rounded,
+                                  color: Color(0xFF17212B),
+                                  size: 20,
+                                ),
+                              ),
+                              title: const Text(
+                                'My Registered Vehicles',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${_profile?.vehiclesCount ?? 0} vehicles linked to unit',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              trailing: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14,
+                                color: Colors.grey,
+                              ),
+                              onTap: () {
+                                final resId =
+                                    _profile?.id ?? session?.residentId ?? 0;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => VehicleRegistrationScreen(
+                                      residentId: resId,
+                                    ),
+                                  ),
+                                ).then((_) => _loadProfile());
+                              },
                             ),
-                            subtitle: Text(
-                              _profile?.emergencyContact?.isNotEmpty == true
-                                  ? _profile!.emergencyContact!
-                                  : 'Not set (Tap edit to add)',
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            const Divider(height: 1, indent: 60),
+                            ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.shade50,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.badge_outlined,
+                                  color: Colors.purple.shade800,
+                                  size: 20,
+                                ),
+                              ),
+                              title: const Text(
+                                'Domestic Staff & Gate Passes',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${_profile?.staffCount ?? 0} helpers authorized',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              trailing: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14,
+                                color: Colors.grey,
+                              ),
+                              onTap: () {
+                                final resId =
+                                    _profile?.id ?? session?.residentId ?? 0;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        DomesticStaffScreen(residentId: resId),
+                                  ),
+                                ).then((_) => _loadProfile());
+                              },
                             ),
-                          ),
-                        ],
+                            const Divider(height: 1, indent: 60),
+                            ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.phone_outlined,
+                                  color: Colors.green.shade700,
+                                  size: 20,
+                                ),
+                              ),
+                              title: const Text(
+                                'Contact Info',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              subtitle: Text(
+                                phone.isNotEmpty ? phone : email,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              trailing: const Icon(
+                                Icons.check_circle,
+                                size: 16,
+                                color: Colors.green,
+                              ),
+                            ),
+                            const Divider(height: 1, indent: 60),
+                            ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade50,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.emergency_outlined,
+                                  color: Colors.amber.shade800,
+                                  size: 20,
+                                ),
+                              ),
+                              title: const Text(
+                                'Emergency Contact',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              subtitle: Text(
+                                _profile?.emergencyContact?.isNotEmpty == true
+                                    ? _profile!.emergencyContact!
+                                    : 'Not set (Tap edit to add)',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-
-                      ),
-const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
                     // Logout Button
                     SizedBox(
@@ -511,8 +592,11 @@ const SizedBox(height: 24),
                       height: 50,
                       child: ElevatedButton.icon(
                         onPressed: _handleLogout,
-                        icon: const Icon(Icons.logout_rounded,
-                            size: 18, color: Colors.white),
+                        icon: const Icon(
+                          Icons.logout_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
                         label: const Text(
                           'Sign Out',
                           style: TextStyle(

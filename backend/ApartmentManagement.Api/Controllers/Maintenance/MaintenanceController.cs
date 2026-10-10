@@ -133,6 +133,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                 {
                     query = query.Where(m => m.ResidentId == rId);
                 }
+                else return Forbid();
             }
             else if (User.IsInRole("Technician"))
             {
@@ -142,6 +143,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                 {
                     query = query.Where(m => m.TechnicianId == technician.Id);
                 }
+                else return Forbid();
             }
 
             var maintenances = await query.OrderByDescending(m => m.CreatedAt).ToListAsync();
@@ -1036,7 +1038,7 @@ maintenance.History.Add(new MaintenanceHistory
             return Ok("Categories synced.");
         }
 
-        [AllowAnonymous]
+        [Authorize(Roles = "SuperAdmin")]
         [HttpPost("seed")]
         public async Task<IActionResult> SeedData()
         {
@@ -1082,7 +1084,7 @@ maintenance.History.Add(new MaintenanceHistory
             return Ok("Sample data seeded successfully.");
         }
 
-        [AllowAnonymous]
+        [Authorize(Roles = "SuperAdmin")]
         [HttpPost("setup-db")]
         public async Task<IActionResult> SetupDb()
         {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getAuthToken } from '../../services/api';
+import { MAINTENANCE_API_BASE } from '../maintenance/maintenanceApi';
 import { MdClose, MdVpnKey, MdOutlinePhotoCamera, MdToggleOn, MdToggleOff, MdPerson, MdPhone, MdEmail, MdError } from 'react-icons/md';
 
 export default function TechnicianProfileDrawer({ isOpen, onClose }) {
@@ -30,7 +31,9 @@ export default function TechnicianProfileDrawer({ isOpen, onClose }) {
         const fetchDetails = async () => {
             setLoading(true);
             try {
-                const res = await fetch('http://localhost:5073/api/technicians');
+                const res = await fetch(`${MAINTENANCE_API_BASE}/technicians`, {
+                    headers: { Authorization: `Bearer ${getAuthToken() || ''}` }
+                });
                 if (res.ok) {
                     const data = await res.json();
                     const me = data.find(t => t.email.toLowerCase() === currentUser.email.toLowerCase());
@@ -50,9 +53,9 @@ export default function TechnicianProfileDrawer({ isOpen, onClose }) {
         const newStatus = tech.status === 'Available' ? 'Offline' : 'Available';
         try {
             const updatedTech = { ...tech, status: newStatus };
-            const res = await fetch(`http://localhost:5073/api/technicians/${tech.id}`, {
+            const res = await fetch(`${MAINTENANCE_API_BASE}/technicians/${tech.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAuthToken() || ''}` },
                 body: JSON.stringify(updatedTech)
             });
             if (res.ok) {
@@ -72,9 +75,9 @@ export default function TechnicianProfileDrawer({ isOpen, onClose }) {
             const base64String = reader.result;
             try {
                 const updatedTech = { ...tech, photoBase64: base64String };
-                const res = await fetch(`http://localhost:5073/api/technicians/${tech.id}`, {
+                const res = await fetch(`${MAINTENANCE_API_BASE}/technicians/${tech.id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAuthToken() || ''}` },
                     body: JSON.stringify(updatedTech)
                 });
                 if (res.ok) {
@@ -105,7 +108,7 @@ export default function TechnicianProfileDrawer({ isOpen, onClose }) {
 
         setIsSavingPass(true);
         try {
-            const res = await fetch('http://localhost:5073/api/v1/auth/change-password', {
+            const res = await fetch(`${MAINTENANCE_API_BASE}/v1/auth/change-password`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',

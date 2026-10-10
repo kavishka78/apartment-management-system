@@ -8,6 +8,9 @@ import '../payment/PaymentDashboard.css';
 import './Complaints.css';
 import '../admin/DomesticStaff.css';
 import { MAINTENANCE_API_BASE } from './maintenanceApi';
+import { getAuthToken } from '../../services/api';
+
+const authHeaders = () => ({ Authorization: `Bearer ${getAuthToken() || ''}` });
 
 function TechniciansList() {
   const [techs, setTechs] = useState([]);
@@ -53,7 +56,7 @@ function TechniciansList() {
   const [lightbox, setLightbox] = useState(null); // { src, name }
 
   const fetchTechs = useCallback(() => {
-    fetch(`${MAINTENANCE_API_BASE}/technicians`)
+    fetch(`${MAINTENANCE_API_BASE}/technicians`, { headers: authHeaders() })
       .then(async res => {
         if (!res.ok) throw new Error(`Unable to load technicians (HTTP ${res.status}).`);
         return res.json();
@@ -120,7 +123,7 @@ function TechniciansList() {
     try {
       setLoading(true);
       setCurrentPage(1);
-      const response = await fetch(`${MAINTENANCE_API_BASE}/technicians/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${MAINTENANCE_API_BASE}/technicians/${id}`, { method: 'DELETE', headers: authHeaders() });
       if (!response.ok) throw new Error(`Unable to delete technician (HTTP ${response.status}).`);
       fetchTechs();
     } catch (e) {
@@ -176,7 +179,7 @@ function TechniciansList() {
         if (editingTech) {
           const res = await fetch(`${MAINTENANCE_API_BASE}/technicians/${editingTech.id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
             body: JSON.stringify({ ...payload, id: editingTech.id })
           });
           if (!res.ok) {
@@ -188,7 +191,7 @@ function TechniciansList() {
         } else {
           const res = await fetch(`${MAINTENANCE_API_BASE}/technicians`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
             body: JSON.stringify(payload)
           });
           if (!res.ok) {
@@ -201,15 +204,13 @@ function TechniciansList() {
           const tempPass = createdData.temporaryPassword || createdData.TemporaryPassword;
           if (tempPass) {
             setCreatedPassword(tempPass);
-          } else {
-            setCreatedPassword("tech12345 (Restart backend to enable random passwords)");
           }
         }
         setShowModal(false);
         fetchTechs();
       } catch (e) {
         console.error('Save failed', e);
-        alert('Error: ' + e.message + '\nIf this says Failed to fetch, the C# backend is completely down. Did you restart it?');
+        alert('Could not save technician: ' + e.message + '. Check the API connection and your sign-in.');
         setLoading(false);
       }
   };
