@@ -16,6 +16,8 @@ namespace ApartmentManagement.Api.Services
             string slaRisk = "Low",
 
             string managerFeedback = "");
+
+        Task<ResidentChatResponseDto> ChatWithResidentAgentAsync(ResidentChatRequestDto request);
     }
 }
 

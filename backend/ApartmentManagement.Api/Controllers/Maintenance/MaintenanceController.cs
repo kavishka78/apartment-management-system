@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,8 +7,10 @@ using Microsoft.EntityFrameworkCore;
 using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.Models;
 using ApartmentManagement.Api.DTOs.Maintenance;
+using ApartmentManagement.Api.DTOs.Safety;
 using ApartmentManagement.Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace ApartmentManagement.Api.Controllers.Maintenance
 {
@@ -37,18 +39,70 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
         private readonly AppDbContext _context;
         private readonly IMaintenanceTriageService _aiService;
         private readonly INotificationService _notificationService;
+        private readonly SafetyValidationClient _safety;
 
-        public MaintenanceController(AppDbContext context, IMaintenanceTriageService aiService, INotificationService notificationService)
+        public MaintenanceController(AppDbContext context, IMaintenanceTriageService aiService, INotificationService notificationService, SafetyValidationClient safety)
         {
             _context = context;
             _aiService = aiService;
             _notificationService = notificationService;
+            _safety = safety;
+        }
+
+        // Validation & Safety gate for committing a repair. Returns an error result to stop the action,
+        // or null when the action may proceed.
+        private async Task<ActionResult?> SafetyGateAsync(Models.Maintenance maintenance, int tenantId)
+        {
+            var key = $"maintenance:{maintenance.Id}";
+            var latest = await _context.SafetyVerdictLogs
+                .Where(v => v.WorkflowId == key)
+                .OrderByDescending(v => v.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (latest?.Verdict == "needs_human")
+            {
+                if (latest.HumanDecision == "approved") return null;
+                if (latest.HumanDecision == "rejected") return StatusCode(403, "A manager rejected this repair in the safety audit.");
+                return StatusCode(409, $"Awaiting manager approval in the safety audit (verdict {latest.Id}).");
+            }
+
+            int.TryParse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier), out var userId);
+            var isSuperAdmin = User.IsInRole("SuperAdmin");
+
+            var verdict = await _safety.ValidateAsync(new ProposedActionDto
+            {
+                WorkflowId = key,
+                TenantId = tenantId,
+                ProposedBy = "maintenance_assign",
+                Requester = new RequesterDto
+                {
+                    UserId = userId,
+                    Role = isSuperAdmin ? "SuperAdmin" : "ApartmentAdmin",
+                    TenantId = tenantId,
+                },
+                Action = new ActionTargetDto
+                {
+                    Type = "approve_repair",
+                    TargetTenantId = tenantId,
+                    TargetResourceId = key,
+                    AmountLkr = maintenance.RepairCost,
+                },
+            });
+
+            return verdict.Verdict switch
+            {
+                "block" => StatusCode(403, verdict.Reason),
+                "needs_human" => StatusCode(409, $"Awaiting manager approval in the safety audit (verdict {verdict.TraceId})."),
+                _ => null,
+            };
         }
 
         private async Task<AgentWorkflow> RecordTriageServiceFailureAsync(int maintenanceId, string objective, Exception exception)
         {
             var workflow = new AgentWorkflow
             {
+                ApprovalUser = "",
+                ApprovalNote = "",
                 MaintenanceId = maintenanceId,
                 Objective = objective,
                 ApprovalStatus = "Failed",
@@ -79,6 +133,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                 {
                     query = query.Where(m => m.ResidentId == rId);
                 }
+                else return Forbid();
             }
             else if (User.IsInRole("Technician"))
             {
@@ -88,6 +143,7 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                 {
                     query = query.Where(m => m.TechnicianId == technician.Id);
                 }
+                else return Forbid();
             }
 
             var maintenances = await query.OrderByDescending(m => m.CreatedAt).ToListAsync();
@@ -216,14 +272,16 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
                     bool isValid = allowedCats.Contains(result.Category) && allowedPris.Contains(result.Priority);
 
                     var workflow = new AgentWorkflow
-                    {
+            {
+                ApprovalUser = "",
+                ApprovalNote = "",
                         MaintenanceId = newId,
                         Objective = "Auto-Triage Complaint and Assign Technician",
                         Plan = System.Text.Json.JsonSerializer.Serialize(result.Plan),
                         CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
-                        ToolResults = result.ToolResults,
-                        ValidationResults = result.ValidationResults,
-                        Errors = result.Errors,
+                        ToolResults = result.ToolResults ?? "",
+                        ValidationResults = result.ValidationResults ?? "",
+                        Errors = result.Errors ?? "" ?? "",
                         ApprovalStatus = (result.RecommendedTechnicianId == null || !isValid) ? "Failed" : "Pending",
                         Status = (result.RecommendedTechnicianId == null || !isValid) ? "SafeFailure" : "PendingApproval",
                         IsSafeFailure = result.RecommendedTechnicianId == null || !isValid,
@@ -348,6 +406,13 @@ namespace ApartmentManagement.Api.Controllers.Maintenance
 
             var tech = await _context.Technicians.FindAsync(request.TechnicianId);
             if (tech == null) return BadRequest("Invalid technician.");
+
+            var complexId = maintenance.Resident?.TenantId;
+            if (complexId == null) return BadRequest("This ticket is not linked to a complex.");
+            if (!User.IsInRole("SuperAdmin") && User.FindFirstValue("tenantId") != complexId.ToString()) return Forbid();
+
+            var safetyDenied = await SafetyGateAsync(maintenance, complexId.Value);
+            if (safetyDenied != null) return safetyDenied;
 
             maintenance.TechnicianId = request.TechnicianId;
             maintenance.Status = "Assigned";
@@ -617,13 +682,15 @@ maintenance.History.Add(new MaintenanceHistory
             // Persist Agent Workflow State
             var workflow = new AgentWorkflow
             {
+                ApprovalUser = "",
+                ApprovalNote = "",
                 MaintenanceId = id,
                 Objective = "Triage Complaint and Assign Technician",
                 Plan = System.Text.Json.JsonSerializer.Serialize(result.Plan),
                 CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
-                ToolResults = result.ToolResults,
-                ValidationResults = result.ValidationResults,
-                Errors = result.Errors,
+                ToolResults = result.ToolResults ?? "",
+                ValidationResults = result.ValidationResults ?? "",
+                Errors = result.Errors ?? "" ?? "",
                 ApprovalStatus = approvalStatus,
                 Status = workflowStatus,
                 IsSafeFailure = workflowStatus == "SafeFailure",
@@ -815,13 +882,15 @@ maintenance.History.Add(new MaintenanceHistory
 
             var workflow = new AgentWorkflow
             {
+                ApprovalUser = "",
+                ApprovalNote = "",
                 MaintenanceId = id,
                 Objective = "Revise Triage Complaint",
                 Plan = System.Text.Json.JsonSerializer.Serialize(result.Plan),
                 CompletedSteps = System.Text.Json.JsonSerializer.Serialize(result.CompletedSteps),
-                ToolResults = result.ToolResults,
-                ValidationResults = result.ValidationResults,
-                Errors = result.Errors,
+                ToolResults = result.ToolResults ?? "",
+                ValidationResults = result.ValidationResults ?? "",
+                Errors = result.Errors ?? "" ?? "",
                 ApprovalStatus = approvalStatus,
                 Status = workflowStatus,
                 IsSafeFailure = workflowStatus == "SafeFailure",
@@ -969,7 +1038,7 @@ maintenance.History.Add(new MaintenanceHistory
             return Ok("Categories synced.");
         }
 
-        [AllowAnonymous]
+        [Authorize(Roles = "SuperAdmin")]
         [HttpPost("seed")]
         public async Task<IActionResult> SeedData()
         {
@@ -1015,7 +1084,7 @@ maintenance.History.Add(new MaintenanceHistory
             return Ok("Sample data seeded successfully.");
         }
 
-        [AllowAnonymous]
+        [Authorize(Roles = "SuperAdmin")]
         [HttpPost("setup-db")]
         public async Task<IActionResult> SetupDb()
         {
@@ -1147,6 +1216,23 @@ return Ok("Database setup successfully");
                 }).OrderByDescending(h => h.CreatedAt).ToList()
             };
         }
+
+        [HttpPost("chat")]
+        [Authorize(Roles = "Resident")]
+        public async Task<IActionResult> ChatWithAssistant([FromBody] ResidentChatRequestDto request)
+        {
+            try
+            {
+                var response = await _aiService.ChatWithResidentAgentAsync(request);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error communicating with Resident AI: {ex}");
+                return StatusCode(500, new { success = false, error = "Failed to communicate with AI Assistant." });
+            }
+        }
+
     }
 }
 

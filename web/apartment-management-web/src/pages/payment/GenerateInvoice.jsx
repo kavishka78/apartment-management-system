@@ -14,9 +14,6 @@ function GenerateInvoice() {
     apartmentId: "",
     billingMonth: "",
     dueDate: "",
-    maintenanceFee: "",
-    utilityCharge: "",
-    parkingCharge: "",
     facilityCharge: "",
   });
 
@@ -50,7 +47,7 @@ function GenerateInvoice() {
       setSuccessMessage("Facility booking invoice generated successfully.");
       setSelectedBooking(null);
       setBookingRefresh((n) => n + 1);
-      setFormData({ residentId: "", apartmentId: "", billingMonth: "", dueDate: "", maintenanceFee: "", utilityCharge: "", parkingCharge: "", facilityCharge: "" });
+      setFormData({ residentId: "", apartmentId: "", billingMonth: "", dueDate: "", facilityCharge: "" });
     } catch {
       setErrorMessage("Unable to connect to the server. Please try again.");
     }
@@ -62,9 +59,9 @@ function GenerateInvoice() {
     apartmentId: Number(formData.apartmentId),
     billingMonth: `${formData.billingMonth}-01`,
     dueDate: formData.dueDate,
-    maintenanceFee: Number(formData.maintenanceFee) || 0,
-    utilityCharge: Number(formData.utilityCharge) || 0,
-    parkingCharge: Number(formData.parkingCharge) || 0,
+    maintenanceFee: 0,
+    utilityCharge: 0,
+    parkingCharge: 0,
     facilityCharge: Number(formData.facilityCharge) || 0,
   };
 
@@ -100,9 +97,6 @@ setFormData({
   apartmentId: "",
   billingMonth: "",
   dueDate: "",
-  maintenanceFee: "",
-  utilityCharge: "",
-  parkingCharge: "",
   facilityCharge: "",
 });
 
@@ -138,7 +132,7 @@ setFormData({
           const [year, month] = String(booking.bookingDate).slice(0, 10).split("-").map(Number);
           const billingMonth = `${year}-${String(month).padStart(2, "0")}`;
           const due = new Date(year, month, 0);
-          setFormData((prev) => ({ ...prev, residentId: String(booking.residentId), apartmentId: String(booking.apartmentId), billingMonth, dueDate: `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}-${String(due.getDate()).padStart(2, "0")}`, maintenanceFee: "0", utilityCharge: "0", parkingCharge: "0", facilityCharge: String(booking.amount) }));
+          setFormData((prev) => ({ ...prev, residentId: String(booking.residentId), apartmentId: String(booking.apartmentId), billingMonth, dueDate: `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}-${String(due.getDate()).padStart(2, "0")}`, facilityCharge: String(booking.amount) }));
         }} />
 
         <section className="generate-invoice-panel">
@@ -214,43 +208,6 @@ setFormData({
                 />
               </div>
 
-              <div className="form-group" style={selectedBooking ? { display: "none" } : undefined}>
-                <label>Maintenance Fee (Rs.)</label>
-                <input
-                  type="number"
-                  name="maintenanceFee"
-                  value={formData.maintenanceFee}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  min="0"
-                  required={!selectedBooking}
-                />
-              </div>
-
-              <div className="form-group" style={selectedBooking ? { display: "none" } : undefined}>
-                <label>Utility Charge (Rs.)</label>
-                <input
-                  type="number"
-                  name="utilityCharge"
-                  value={formData.utilityCharge}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  min="0"
-                />
-              </div>
-
-              <div className="form-group" style={selectedBooking ? { display: "none" } : undefined}>
-                <label>Parking Charge (Rs.)</label>
-                <input
-                  type="number"
-                  name="parkingCharge"
-                  value={formData.parkingCharge}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  min="0"
-                />
-              </div>
-
               <div className="form-group">
                 <label>Facility Charge (Rs.)</label>
                 <input
@@ -268,7 +225,7 @@ setFormData({
             </div>
 
             <div className="form-actions">
-              <button type="button" className="cancel-btn" onClick={() => { setSelectedBooking(null); setFormData({ residentId: "", apartmentId: "", billingMonth: "", dueDate: "", maintenanceFee: "", utilityCharge: "", parkingCharge: "", facilityCharge: "" }); }}>
+              <button type="button" className="cancel-btn" onClick={() => { setSelectedBooking(null); setFormData({ residentId: "", apartmentId: "", billingMonth: "", dueDate: "", facilityCharge: "" }); }}>
                 Cancel
               </button>
 

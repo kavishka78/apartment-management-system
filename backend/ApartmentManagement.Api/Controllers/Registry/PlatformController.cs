@@ -247,39 +247,6 @@ namespace ApartmentManagement.Api.Controllers
         }
 
 
-        [AllowAnonymous]
-        [HttpPost("auth/resident/dev-login")]
-        public async Task<IActionResult> DevResidentLogin([FromBody] LoginRequest req)
-        {
-            var identifier = (req?.Email ?? "").Trim().ToLower();
-            if (string.IsNullOrWhiteSpace(identifier))
-                return Unauthorized("Active resident could not be uniquely resolved.");
-
-            var normalizedPhone = identifier.Replace(" ", "").Replace("-", "");
-            var resident = await _db.Residents.FirstOrDefaultAsync(r => r.Status == "Active" &&
-                (r.Email.ToLower() == identifier ||
-                 (normalizedPhone != "" &&
-                  r.PhoneNumber.Replace(" ", "").Replace("-", "") == normalizedPhone)));
-
-            if (resident == null)
-                return Unauthorized($"No active resident found registered with {identifier}.");
-
-            var tokenString = _tokens.CreateResidentToken(resident);
-            var complex = await _db.Complexes.FindAsync(resident.TenantId);
-
-            return Ok(new
-            {
-                token = tokenString,
-                residentId = resident.Id,
-                name = resident.FullName,
-                email = resident.Email,
-                phone = resident.PhoneNumber,
-                unitNumber = resident.UnitNumber ?? "",
-                complexName = complex?.Name ?? "Apartment Complex",
-                tenantId = resident.TenantId
-            });
-        }
-
         // ── Resident: Verify Contact (Step 1 of mobile login - Generates Random OTP) ────
         [AllowAnonymous]
         [HttpPost("auth/resident/verify-contact")]
@@ -306,6 +273,18 @@ namespace ApartmentManagement.Api.Controllers
 
             var complex = await _db.Complexes.FindAsync(resident.TenantId);
 
+            // Phone sign-in uses Firebase SMS; checking the account must not create an email OTP.
+            if (!string.IsNullOrWhiteSpace(req.Phone))
+                return Ok(new
+                {
+                    found = true,
+                    residentId = resident.Id,
+                    name = resident.FullName,
+                    unitNumber = resident.UnitNumber ?? "Unassigned",
+                    complexName = complex?.Name ?? "Apartment Complex",
+                    entryMethod = "phone"
+                });
+
             // Generate cryptographically secure random 6-digit OTP
             string randomOtp = System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 999999).ToString();
 
@@ -323,14 +302,18 @@ namespace ApartmentManagement.Api.Controllers
             });
             await _db.SaveChangesAsync();
 
-            if (!string.IsNullOrWhiteSpace(resident.Email))
+            try
             {
-                // Send email notification with real randomly generated OTP
-                _ = _notificationService.SendEmailAsync(
+                await _notificationService.SendEmailAsync(
                     resident.Email,
                     "Your Secure Login Verification Code - Apartment Hub",
                     $"Hello {resident.FullName},\n\nYour single-use login verification code is: {randomOtp}\n\nThis code will expire in 10 minutes.\nIf you did not request this, please ignore this email.\n\nThank you,\n{complex?.Name ?? "Apartment Hub Management"}"
                 );
+            }
+            catch
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                    "Email verification is temporarily unavailable. Please try again later.");
             }
 
             return Ok(new
@@ -340,7 +323,7 @@ namespace ApartmentManagement.Api.Controllers
                 name = resident.FullName,
                 unitNumber = resident.UnitNumber ?? "Unassigned",
                 complexName = complex?.Name ?? "Apartment Complex",
-                entryMethod = !string.IsNullOrWhiteSpace(req.Phone) ? "phone" : "email",
+                entryMethod = "email",
             });
         }
 
@@ -355,19 +338,17 @@ namespace ApartmentManagement.Api.Controllers
             if (string.IsNullOrWhiteSpace(identifier) || string.IsNullOrWhiteSpace(submittedOtp))
                 return BadRequest("Identifier and OTP code are required.");
 
-            var normalizedPhone = identifier.Replace(" ", "").Replace("-", "");
+            if (!identifier.Contains('@'))
+                return BadRequest("Phone sign-in must use Firebase SMS verification.");
+
             var resident = await _db.Residents.FirstOrDefaultAsync(r => r.Status == "Active" &&
-                (r.Email.ToLower() == identifier ||
-                 (normalizedPhone != "" &&
-                  r.PhoneNumber.Replace(" ", "").Replace("-", "") == normalizedPhone)));
+                r.Email.ToLower() == identifier);
 
             if (resident == null)
                 return Unauthorized("Active resident record not found.");
 
-            // Standard fallback for development/testing environments (or if bypass code is entered)
-            bool isDevCode = submittedOtp == "123456" || submittedOtp == "000000";
-
-            if (!isDevCode)
+            // Demo OTP is never accepted outside the Development environment.
+            if (!(_environment.IsDevelopment() && submittedOtp == "123456"))
             {
                 var record = await _db.ResidentOtps
                     .Where(o => o.Email == resident.Email.ToLower())
@@ -380,7 +361,7 @@ namespace ApartmentManagement.Api.Controllers
                 if (record.ExpiresAt < DateTime.UtcNow)
                     return Unauthorized("Verification code has expired. Please request a new code.");
 
-                // Delete used OTP
+                // A code can only be used once.
                 _db.ResidentOtps.Remove(record);
                 await _db.SaveChangesAsync();
             }
@@ -559,36 +540,7 @@ namespace ApartmentManagement.Api.Controllers
             _db.Complexes.Add(complex);
             await _db.SaveChangesAsync();
 
-            // Auto-generate vacant units for this new complex based on TotalUnits
-            int total = complex.TotalUnits > 0 ? complex.TotalUnits : 12;
-            var newUnits = new List<Unit>();
-            int unitsPerFloor = 4;
-            for (int i = 1; i <= total; i++)
-            {
-                int floor = ((i - 1) / unitsPerFloor) + 1;
-                int unitOnFloor = ((i - 1) % unitsPerFloor) + 1;
-                char block = (char)('A' + ((floor - 1) / 4));
-                string unitNum = $"{block}-{floor}{unitOnFloor:D2}";
-                string parking = $"P-{block}{floor}{unitOnFloor:D2}";
-
-                newUnits.Add(new Unit
-                {
-                    TenantId = complex.Id,
-                    UnitNumber = unitNum,
-                    FloorNumber = floor,
-                    BlockName = $"Block {block}",
-                    NumberOfBedrooms = (unitOnFloor % 3) + 1,
-                    NumberOfBathrooms = (unitOnFloor % 2) + 1,
-                    SquareFeet = 900 + ((unitOnFloor % 3) * 250),
-                    MonthlyRent = 85000 + ((unitOnFloor % 3) * 35000),
-                    Status = "Available",
-                    ParkingSlot = parking,
-                });
-            }
-            _db.Units.AddRange(newUnits);
-
-            Log(complex, "Onboarded", $"{complex.SubscriptionPlan}, {req.TermMonths} month term, {newUnits.Count} units generated");
-            await _db.SaveChangesAsync();
+            Log(complex, "Onboarded", $"{complex.SubscriptionPlan}, {req.TermMonths} month term. Admin to create {complex.TotalUnits} units manually.");
             return Ok(complex);
         }
 

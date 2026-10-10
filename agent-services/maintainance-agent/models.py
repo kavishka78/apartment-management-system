@@ -70,7 +70,7 @@ class TriageRequest(BaseModel):
     manager_feedback: Optional[str] = None
 
 
-# â”€â”€â”€ Response models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Response models
 
 class AgentStep(BaseModel):
     """A visible, auditable unit of work; no hidden reasoning is retained."""
@@ -133,3 +133,40 @@ class TriageResponse(BaseModel):
 
 
 
+
+
+# Resident Chat Models
+
+class ChatMessage(BaseModel):
+    role: str       # "user" or "assistant"
+    content: str
+
+class ResidentChatRequest(BaseModel):
+    messages: List[ChatMessage]
+
+class DraftComplaint(BaseModel):
+    title: str
+    description: str
+    categoryId: int
+
+    @field_validator("categoryId")
+    @classmethod
+    def validate_category_id(cls, v: int) -> int:
+        if v < 1 or v > 5:
+            raise ValueError(f"Category ID {v} is invalid. Must be between 1 and 5.")
+        return v
+    
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str) -> str:
+        if len(v) < 5 or "test" in v.lower() and len(v) < 10:
+            raise ValueError("Title is too short or generic. Provide a descriptive title of the actual issue.")
+        return v
+
+
+class ResidentChatResponse(BaseModel):
+    success: bool
+    status: str             # "clarifying" | "ready" | "error"
+    reply: str              # The text to show the user
+    draftComplaint: Optional[DraftComplaint] = None
+    error: Optional[str] = None

@@ -38,6 +38,8 @@ public async Task<IActionResult> GetInvoices(
     if (pageSize < 1 || pageSize > 100)
         pageSize = 10;
 
+    await EnsureCurrentResidentRentInvoice();
+
     var query = _context.VisibleInvoices(User)
         .Include(i => i.InvoiceItems)
         .Include(i => i.Payments)
@@ -93,6 +95,14 @@ public async Task<IActionResult> GetInvoices(
         .Take(pageSize)
         .ToListAsync();
 
+    var penaltiesApplied = false;
+    var now = DateTime.UtcNow;
+    foreach (var invoice in invoices)
+        penaltiesApplied |= invoice.AddOverduePenalty(now);
+
+    if (penaltiesApplied)
+        await _context.SaveChangesAsync();
+
     return Ok(new
     {
         items = invoices,
@@ -102,6 +112,66 @@ public async Task<IActionResult> GetInvoices(
         totalPages = (int)Math.Ceiling(
             totalCount / (double)pageSize)
     });
+}
+
+private async Task EnsureCurrentResidentRentInvoice()
+{
+    if (!User.IsInRole("Resident") ||
+        !int.TryParse(User.FindFirst("residentId")?.Value, out var residentId))
+    {
+        return;
+    }
+
+    var resident = await _context.Residents
+        .Where(r => r.Id == residentId && r.Status == "Active")
+        .Select(r => new { r.Id, r.TenantId, r.UnitId })
+        .FirstOrDefaultAsync();
+
+    if (resident?.UnitId is not int unitId)
+        return;
+
+    var unit = await _context.Units.FirstOrDefaultAsync(u =>
+        u.Id == unitId && u.TenantId == resident.TenantId);
+
+    if (unit == null || unit.MonthlyRent <= 0)
+        return;
+
+    var now = DateTime.UtcNow;
+    var billingMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+    var nextMonth = billingMonth.AddMonths(1);
+
+    var rentInvoiceExists = await _context.Invoices
+        .Where(i => i.ResidentId == resident.Id &&
+                    i.BillingMonth >= billingMonth &&
+                    i.BillingMonth < nextMonth)
+        .AnyAsync(i => i.InvoiceItems.Any(item => item.ChargeType == "Rent"));
+
+    if (rentInvoiceExists)
+        return;
+
+    var dueDate = nextMonth.AddTicks(-1);
+    _context.Invoices.Add(new Invoice
+    {
+        ResidentId = resident.Id,
+        ApartmentId = unit.Id,
+        InvoiceNumber = $"INV-{now:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
+        BillingMonth = billingMonth,
+        DueDate = dueDate,
+        Status = "Pending",
+        CreatedAt = now,
+        TotalAmount = unit.MonthlyRent,
+        InvoiceItems =
+        [
+            new InvoiceItem
+            {
+                Description = $"Monthly Rent - {billingMonth:MMMM yyyy}",
+                ChargeType = "Rent",
+                Amount = unit.MonthlyRent
+            }
+        ]
+    });
+
+    await _context.SaveChangesAsync();
 }
 
         // GET: api/invoices/5
@@ -117,6 +187,9 @@ public async Task<IActionResult> GetInvoices(
             {
                 return NotFound();
             }
+
+            if (invoice.AddOverduePenalty(DateTime.UtcNow))
+                await _context.SaveChangesAsync();
 
             return invoice;
         }
