@@ -16,10 +16,10 @@ export default function FacilityBookingInvoiceTable({ onSelect, refreshKey = 0, 
 
   useEffect(() => {
     let cancelled = false;
-    setError("");
     getInvoiceFacilityBookings()
       .then((data) => { 
         if (!cancelled) {
+          setError("");
           setBookings(Array.isArray(data) ? data : []);
           setLoading(false);
         }

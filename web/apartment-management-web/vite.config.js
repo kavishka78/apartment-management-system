@@ -17,6 +17,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    // Keep mocked API tests independent of local and deployment environment files.
+    env: { VITE_API_BASE_URL: 'http://localhost:5073/api' },
     setupFiles: './src/test/setup.js',
     include: ['src/**/*.{test,spec}.{js,jsx}', '../../maintenance-tests/web/**/*.{test,spec}.{js,jsx}'],
   },
