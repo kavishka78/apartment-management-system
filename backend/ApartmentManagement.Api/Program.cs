@@ -82,7 +82,7 @@ builder.Services.AddControllers()
 // ── AI Triage service (calls Python FastAPI agent) ──────────────────────────
 builder.Services.AddHttpClient<IMaintenanceTriageService, MaintenanceTriageClient>(client =>
 {
-    var agentUrl = builder.Configuration["PythonAgentUrl"] ?? "http://localhost:8000";
+    var agentUrl = builder.Configuration["MaintenanceAgentUrl"] ?? builder.Configuration["PythonAgentUrl"] ?? "http://localhost:8000";
     client.BaseAddress = new Uri(agentUrl);
     client.Timeout = TimeSpan.FromSeconds(60); // Gemini can be slow; allow up to 60 s
 });
@@ -90,7 +90,7 @@ builder.Services.AddHttpClient<IMaintenanceTriageService, MaintenanceTriageClien
 // ── Resident Onboarding Assistant (Python, read-only draft service) ──
 builder.Services.AddHttpClient<OnboardingAgentClient>(client =>
 {
-    var onboardingUrl = builder.Configuration["OnboardingAgentUrl"] ?? "http://localhost:8002";
+    var onboardingUrl = builder.Configuration["OnboardingAgentUrl"] ?? "http://localhost:8003";
     client.BaseAddress = new Uri(onboardingUrl);
     client.Timeout = TimeSpan.FromSeconds(30);
 });
@@ -104,7 +104,7 @@ builder.Services.AddHttpClient<SafetyValidationClient>(client =>
 });
 builder.Services.AddHttpClient<FacilityAgentClient>(client =>
 {
-    var agentUrl = builder.Configuration["PythonAgentUrl"] ?? "http://localhost:8000";
+    var agentUrl = builder.Configuration["FacilityAgentUrl"] ?? "http://localhost:8002";
     client.BaseAddress = new Uri(agentUrl);
     client.Timeout = TimeSpan.FromSeconds(60);
 });

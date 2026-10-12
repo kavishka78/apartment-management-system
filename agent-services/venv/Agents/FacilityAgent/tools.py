@@ -1,11 +1,16 @@
 import requests
 import os
 from datetime import datetime
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
-
-BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:5073/api")
+AGENT_DIR = Path(__file__).resolve().parent
+load_dotenv(AGENT_DIR / ".env", override=True)
+load_dotenv(AGENT_DIR.parents[1] / ".env")
+load_dotenv(AGENT_DIR.parents[2] / ".env")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("FACILITY_GEMINI_MODEL", "gemini-3.5-flash-lite")
+BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:5073/api").rstrip("/")
 
 def get_facilities() -> list:
     """Fetch all active facilities directly from the backend PostgreSQL database."""

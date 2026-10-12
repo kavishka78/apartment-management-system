@@ -19,7 +19,7 @@ namespace ApartmentManagement.Api.Services
         public MaintenanceTriageClient(IConfiguration config, HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _pythonAgentUrl = config["PythonAgentUrl"] ?? "http://localhost:8000";
+            _pythonAgentUrl = config["MaintenanceAgentUrl"] ?? config["PythonAgentUrl"] ?? "http://localhost:8000";
             _agentSharedSecret = config["PythonAgent:SharedSecret"];
         }
 

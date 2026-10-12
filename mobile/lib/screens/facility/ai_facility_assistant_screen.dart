@@ -14,9 +14,7 @@ class AiFacilityAssistantScreen extends StatefulWidget {
 }
 
 class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
-  final TextEditingController _promptController = TextEditingController(
-    text: "Enter your Request",
-  );
+  final TextEditingController _promptController = TextEditingController();
 
   bool _isProcessing = false;
   bool _isApproving = false;
@@ -36,8 +34,12 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
     });
 
     final session = await AuthService.getSession();
-    final residentId = (session != null && session.residentId > 0) ? session.residentId : 1;
-    final residentName = session?.name.isNotEmpty == true ? session!.name : 'Kamal Perera (A-101)';
+    final residentId = (session != null && session.residentId > 0)
+        ? session.residentId
+        : 1;
+    final residentName = session?.name.isNotEmpty == true
+        ? session!.name
+        : 'Kamal Perera (A-101)';
 
     final res = await FacilityApiService.planAgenticWorkflow(
       objective: text,
@@ -65,7 +67,8 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
           final bool isInquiry =
               proposal?['isInquiry'] == true || status == 'InquiryAnswered';
 
-          final bool isFailed = status == 'Failed' ||
+          final bool isFailed =
+              status == 'Failed' ||
               valStatus.startsWith("Failed") ||
               valStatus.startsWith("Rejected") ||
               valStatus.contains("outside operating hours") ||
@@ -85,7 +88,8 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
           } else if (status == 'AutoApproved') {
             _successMessage = "Standard Request Auto-Approved! Facility spot and visitor parking allocated in database.";
           } else if (requiresApproval) {
-            _successMessage = "High-Impact Request Paused for Resident Approval.";
+            _successMessage =
+                "Proposal ready. Review and confirm your booking.";
           } else {
             _successMessage = null;
           }
@@ -121,7 +125,6 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
-    List<dynamic> planSteps = [];
     Map<String, dynamic>? proposal;
     String validationStatus = '';
     bool requiresApproval = false;
@@ -135,9 +138,6 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
       requiresApproval = _workflowData!['requiresApproval'] ?? false;
 
       try {
-        if (_workflowData!['planJson'] != null) {
-          planSteps = jsonDecode(_workflowData!['planJson']);
-        }
         if (_workflowData!['proposalJson'] != null) {
           proposal = jsonDecode(_workflowData!['proposalJson']);
         }
@@ -333,284 +333,148 @@ class _AiFacilityAssistantScreenState extends State<AiFacilityAssistantScreen> {
             if (_workflowData != null) ...[
               const SizedBox(height: 16),
 
-              // Agent Execution Plan
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Agent Execution Plan",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isFailed
-                                ? const Color(0xFFFEF2F2)
-                                : isApproved
-                                ? const Color(0xFFECFDF5)
-                                : const Color(0xFFFFFBEB),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            isFailed
-                                ? "Validation Failed"
-                                : isApproved
-                                ? "Confirmed"
-                                : "Approval Needed",
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: isFailed
-                                  ? const Color(0xFF991B1B)
-                                  : isApproved
-                                  ? const Color(0xFF065F46)
-                                  : const Color(0xFFB45309),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    ...planSteps.asMap().entries.map(
-                      (entry) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(
-                              radius: 9,
-                              backgroundColor: const Color(0xFFEEF2FF),
-                              child: Text(
-                                "${entry.key + 1}",
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF4F46E5),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                entry.value.toString(),
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  color: Color(0xFF334155),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
               // AI Proposal Summary or Inquiry Answer Box
-              if (proposal != null && !isFailed) ...[
-                if (isInquiry)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFBFDBFE)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Information Answer",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Color(0xFF1E40AF),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          proposal['answer'] ?? validationStatus,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF1E3A8A),
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          "Note: No facility booking was created for this inquiry question.",
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: Color(0xFF3B82F6),
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: requiresApproval && !isApproved
-                            ? const Color(0xFFFDE68A)
-                            : const Color(0xFFE2E8F0),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "AI Staged Proposal",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          "Facility: ${proposal['facilityName'] ?? '—'}",
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Date & Time: ${proposal['date']} (${proposal['startTime']} - ${proposal['endTime']})",
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Guests: ${proposal['guests']} Attendees",
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Parking Passes: ${proposal['visitorVehicles']} Slots (${(proposal['assignedParkingSlots'] as List?)?.join(', ') ?? 'Auto'})",
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                        if (proposal['estimatedTotalCost'] != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            "Estimated Cost: LKR ${(proposal['estimatedTotalCost'] as num).toStringAsFixed(2)}",
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: (proposal['estimatedTotalCost'] as num) > 3000
-                                  ? const Color(0xFFB45309)
-                                  : const Color(0xFF047857),
-                            ),
-                          ),
-                        ],
-
-                        const SizedBox(height: 14),
-
-                        if (requiresApproval &&
-                            !isApproved &&
-                            workflowId != null) ...[
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFFBEB),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: const Color(0xFFFDE68A),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "Resident High-Impact Confirmation Required",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12.5,
-                                    color: Color(0xFFB45309),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  "This request exceeds 10 guests, 2 visitor vehicles, or 3,000 LKR total cost. Please confirm to execute your booking.",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF92400E),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 40,
-                                  child: ElevatedButton(
-                                    onPressed: _isApproving
-                                        ? null
-                                        : () => _approveHighImpactRequest(
-                                            workflowId!,
-                                          ),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF10B981),
-                                      foregroundColor: Colors.white,
-                                      shape: const StadiumBorder(),
-                                      elevation: 0,
-                                    ),
-                                    child: _isApproving
-                                        ? const SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : const Text(
-                                            "Approve & Confirm AI Booking",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
+              if (proposal != null && !isFailed && !isInquiry) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: requiresApproval && !isApproved
+                          ? const Color(0xFFFDE68A)
+                          : const Color(0xFFE2E8F0),
                     ),
                   ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "AI Staged Proposal",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "Facility: ${proposal['facilityName'] ?? '—'}",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Date & Time: ${proposal['date']} (${proposal['startTime']} - ${proposal['endTime']})",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Guests: ${proposal['guests']} Attendees",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Parking Passes: ${proposal['visitorVehicles']} Slots (${(proposal['assignedParkingSlots'] as List?)?.join(', ') ?? 'Auto'})",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      if (proposal['estimatedTotalCost'] != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          "Estimated Cost: LKR ${(proposal['estimatedTotalCost'] as num).toStringAsFixed(2)}",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                (proposal['estimatedTotalCost'] as num) > 3000
+                                ? const Color(0xFFB45309)
+                                : const Color(0xFF047857),
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 14),
+
+                      if (requiresApproval &&
+                          !isApproved &&
+                          workflowId != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFFBEB),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Booking Confirmation Required",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.5,
+                                  color: Color(0xFFB45309),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                "Review the date, guest count, parking and cost before confirming your booking.",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF92400E),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 40,
+                                child: ElevatedButton(
+                                  onPressed: _isApproving
+                                      ? null
+                                      : () => _approveHighImpactRequest(
+                                          workflowId!,
+                                        ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF10B981),
+                                    foregroundColor: Colors.white,
+                                    shape: const StadiumBorder(),
+                                    elevation: 0,
+                                  ),
+                                  child: _isApproving
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text(
+                                          "Approve & Confirm AI Booking",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ],
           ],

@@ -1,0 +1,4 @@
+# Shared environment for run_all_agents.py
+-r maintainance-agent/requirements.txt
+requests>=2.32,<3
+langchain-google-genai==2.0.10
