@@ -256,7 +256,16 @@ class FacilityApiService {
         final decoded = jsonDecode(response.body);
         return {'success': true, 'data': decoded};
       }
-      return {'success': false, 'message': 'Failed to approve workflow'};
+      String message = 'Failed to approve workflow (${response.statusCode}).';
+      try {
+        final error = jsonDecode(response.body);
+        if (error is Map) {
+          final details = (error['details'] ?? error['Details'] ?? '').toString();
+          message = details.isNotEmpty ? details
+              : (error['message'] ?? error['Message'] ?? message).toString();
+        }
+      } catch (_) {}
+      return {'success': false, 'message': message};
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
     }
