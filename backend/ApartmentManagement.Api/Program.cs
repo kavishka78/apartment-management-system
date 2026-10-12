@@ -213,8 +213,6 @@ _ = Task.Run(() =>
                     ""ExpiresAt"" timestamp without time zone NOT NULL,
                     ""CreatedAt"" timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
-
-                UPDATE ""FacilityAgentWorkflows"" SET ""Status"" = 'PendingApproval' WHERE ""Status"" = 'AutoApproved';
             ");
         }
         catch (Exception ex)

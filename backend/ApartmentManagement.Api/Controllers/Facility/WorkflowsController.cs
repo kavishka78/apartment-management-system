@@ -72,10 +72,42 @@ namespace ApartmentManagement.Api.Controllers
                 || !proposal.TryGetProperty("date", out var date) || date.ValueKind != JsonValueKind.String
                 || !DateTime.TryParse(date.GetString(), out _)
                 || !proposal.TryGetProperty("startTime", out var start) || start.ValueKind != JsonValueKind.String
-                || !TimeSpan.TryParse(start.GetString(), out _)
+                || !TimeSpan.TryParse(start.GetString(), out var startTime)
                 || !proposal.TryGetProperty("endTime", out var end) || end.ValueKind != JsonValueKind.String
-                || !TimeSpan.TryParse(end.GetString(), out _))
+                || !TimeSpan.TryParse(end.GetString(), out var endTime))
                 return BadRequest(new { Message = "Invalid booking date, time, guest count or parking count." });
+
+            // Determine if approval is required:
+            // 1. From Python Agent payload
+            bool requiresApproval = false;
+            if (result.TryGetProperty("requires_approval", out var raProp) && raProp.ValueKind == JsonValueKind.True)
+            {
+                requiresApproval = true;
+            }
+            else if (proposal.TryGetProperty("isHighImpact", out var hiProp) && hiProp.ValueKind == JsonValueKind.True)
+            {
+                requiresApproval = true;
+            }
+
+            // 2. Deterministic backend business rule verification (High-Risk Threshold Guardrail)
+            // Policy: guests > 10 OR visitorVehicles > 2 OR estimatedTotalCost > 3000 LKR
+            double durationHours = (endTime - startTime).TotalHours;
+            if (durationHours <= 0) durationHours = 1.0;
+            decimal estimatedCost = Math.Round((decimal)durationHours * facility.HourlyCost * guests, 2);
+
+            if (guests > 10 || vehicles > 2 || estimatedCost > 3000m)
+            {
+                requiresApproval = true;
+            }
+
+            string validationStatus = result.TryGetProperty("validation_status", out var vsProp) && vsProp.GetString() != null
+                ? vsProp.GetString()!
+                : (requiresApproval 
+                    ? "Proposal ready - High Impact Event. Resident Approval Required." 
+                    : "Standard Request Auto-Approved and Booked in Database.");
+
+            string status = requiresApproval ? "PendingApproval" : "AutoApproved";
+
             var workflow = new FacilityAgentWorkflow
             {
                 WorkflowId = Guid.NewGuid().ToString(),
@@ -87,12 +119,32 @@ namespace ApartmentManagement.Api.Controllers
                 ExtractedDataJson = extracted.GetRawText(),
                 ToolResultsJson = tools.GetRawText(),
                 ProposalJson = proposal.GetRawText(),
-                ValidationStatus = "Proposal ready. Confirm to submit the booking.",
-                RequiresApproval = true,
-                Status = "PendingApproval",
+                ValidationStatus = validationStatus,
+                RequiresApproval = requiresApproval,
+                Status = status,
                 CreatedAt = DateTime.UtcNow
             };
+
             _context.FacilityAgentWorkflows.Add(workflow);
+
+            // If Standard Booking (AutoApproved) -> Execute DB Booking directly!
+            if (!requiresApproval)
+            {
+                try
+                {
+                    await ExecuteWorkflowBookingInternal(workflow);
+                    workflow.ActionedAt = DateTime.UtcNow;
+                    workflow.ActionedBy = "AI Agent (Auto-Confirmed)";
+                }
+                catch (InvalidOperationException ex)
+                {
+                    workflow.Status = "Failed";
+                    workflow.ValidationStatus = ex.Message;
+                    await _context.SaveChangesAsync();
+                    return BadRequest(new { Message = ex.Message, Workflow = workflow });
+                }
+            }
+
             await _context.SaveChangesAsync();
             return StatusCode(201, new { Workflow = workflow });
         }
