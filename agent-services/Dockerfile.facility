@@ -1,0 +1,6 @@
+FROM python:3.11-slim
+WORKDIR /app
+RUN pip install --no-cache-dir fastapi==0.115.5 uvicorn==0.32.1 pydantic==2.10.3 python-dotenv==1.0.1 langgraph==0.2.61 langchain-google-genai==2.0.10 "requests>=2.32,<3"
+COPY agent-services/venv/Agents/FacilityAgent/*.py ./
+ENV PORT=8002
+CMD ["sh", "-c", "python -m uvicorn main:app --host 0.0.0.0 --port ${PORT}"]

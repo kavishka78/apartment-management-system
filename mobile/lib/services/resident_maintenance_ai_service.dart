@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'auth/auth_service.dart';
-import 'api_config.dart';
+import 'local_agent_config.dart';
 import '../models/maintenance/resident_ai_response.dart';
 
 class ResidentMaintenanceAiService {
@@ -11,7 +11,7 @@ class ResidentMaintenanceAiService {
     if (token.isEmpty) throw Exception('No token found');
 
     final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/maintenance/chat'),
+      Uri.parse('${LocalAgentConfig.maintenance}/resident-intake'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -19,7 +19,7 @@ class ResidentMaintenanceAiService {
       body: jsonEncode({
         'messages': messages,
       }),
-    );
+    ).timeout(const Duration(seconds: 60));
 
     if (response.statusCode == 200) {
       return ResidentAiResponse.fromJson(jsonDecode(response.body));

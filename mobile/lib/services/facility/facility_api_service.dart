@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../auth/auth_service.dart';
 
 import '../api_config.dart';
+import '../local_agent_config.dart';
 
 class FacilityApiService {
   static String get baseUrl => ApiConfig.baseUrl;
@@ -193,19 +194,47 @@ class FacilityApiService {
     try {
       final response = await http
           .post(
-            Uri.parse('$baseUrl/workflows/plan-facility-parking'),
+            Uri.parse('${LocalAgentConfig.facility}/api/internal/agent/plan-facility-parking'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'objective': objective,
-              'residentId': residentId,
-              'residentName': residentName,
+              'resident_id': residentId.toString(),
+              'resident_name': residentName,
             }),
           )
-          .timeout(const Duration(seconds: 35));
+          .timeout(const Duration(seconds: 60));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final decoded = jsonDecode(response.body);
-        return {'success': true, 'data': decoded};
+        final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+        final proposal = decoded['proposal'] as Map<String, dynamic>?;
+        final validation = decoded['validation_status'] as String? ?? '';
+        final isFailed = validation.startsWith('Failed') || validation.startsWith('Rejected');
+        // Greetings, inquiries and rejected proposals need no database write.
+        if (proposal?['isInquiry'] == true || isFailed || proposal == null) {
+          return {'success': true, 'data': {'workflow': {
+            'status': isFailed ? 'Failed' : 'InquiryAnswered',
+            'requiresApproval': false,
+            'validationStatus': validation,
+            'planJson': jsonEncode(decoded['plan'] ?? []),
+            'proposalJson': jsonEncode(proposal ?? {}),
+          }}};
+        }
+        final saved = await http.post(
+          Uri.parse('$baseUrl/workflows/save-local-plan'),
+          headers: await AuthService.authHeaders(),
+          body: jsonEncode({
+            'objective': objective,
+            'residentId': residentId,
+            'residentName': residentName,
+            'agentResult': decoded,
+          }),
+        ).timeout(const Duration(seconds: 35));
+        if (saved.statusCode >= 200 && saved.statusCode < 300) {
+          return {'success': true, 'data': jsonDecode(saved.body)};
+        }
+        return {'success': false, 'message': saved.statusCode == 404
+            ? 'AI proposal is ready. Deploy the updated backend to save bookings.'
+            : 'AI proposal could not be saved (${saved.statusCode}).'};
       }
       return {'success': false, 'message': 'Failed to execute AI workflow (${response.statusCode})'};
     } catch (e) {
@@ -219,7 +248,7 @@ class FacilityApiService {
       final response = await http
           .put(
             Uri.parse('$baseUrl/workflows/$workflowId/approve'),
-            headers: {'Content-Type': 'application/json'},
+            headers: await AuthService.authHeaders(),
           )
           .timeout(const Duration(seconds: 15));
 

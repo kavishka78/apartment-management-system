@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.DTOs.Safety;
@@ -34,6 +35,69 @@ namespace ApartmentManagement.Api.Controllers
             public string Objective { get; set; } = string.Empty;
             public int ResidentId { get; set; } = 1;
             public string ResidentName { get; set; } = "Resident";
+        }
+
+        public class LocalPlanRequestDto : PlanRequestDto
+        {
+            public JsonElement AgentResult { get; set; }
+        }
+
+        // The mobile client calls its local agent and uploads the resulting draft.
+        // No AI service is contacted by Railway on this path.
+        [Authorize]
+        [HttpPost("save-local-plan")]
+        public async Task<IActionResult> SaveLocalPlan([FromBody] LocalPlanRequestDto dto)
+        {
+            if (!int.TryParse(User.FindFirst("residentId")?.Value, out var residentId)
+                || residentId != dto.ResidentId)
+                return Forbid();
+            if (string.IsNullOrWhiteSpace(dto.Objective))
+                return BadRequest(new { Message = "Objective is required." });
+            var result = dto.AgentResult;
+            if (result.ValueKind != JsonValueKind.Object
+                || !result.TryGetProperty("proposal", out var proposal)
+                || proposal.ValueKind != JsonValueKind.Object
+                || !proposal.TryGetProperty("facilityId", out var facilityId)
+                || !facilityId.TryGetInt32(out var id)
+                || !result.TryGetProperty("plan", out var plan) || plan.ValueKind != JsonValueKind.Array
+                || !result.TryGetProperty("extracted_data", out var extracted)
+                || !result.TryGetProperty("tool_results", out var tools))
+                return BadRequest(new { Message = "Invalid Facility proposal." });
+            var resident = await _context.Residents.FindAsync(residentId);
+            var facility = await _context.Facilities.FindAsync(id);
+            if (resident == null || facility == null
+                || User.FindFirst("tenantId")?.Value != resident.TenantId.ToString())
+                return Forbid();
+            if (!proposal.TryGetProperty("guests", out var guestCount) || !guestCount.TryGetInt32(out var guests)
+                || guests < 1 || guests > facility.Capacity
+                || !proposal.TryGetProperty("visitorVehicles", out var vehicleCount) || !vehicleCount.TryGetInt32(out var vehicles)
+                || vehicles < 0 || vehicles > 100
+                || !proposal.TryGetProperty("date", out var date) || date.ValueKind != JsonValueKind.String
+                || !DateTime.TryParse(date.GetString(), out _)
+                || !proposal.TryGetProperty("startTime", out var start) || start.ValueKind != JsonValueKind.String
+                || !TimeSpan.TryParse(start.GetString(), out _)
+                || !proposal.TryGetProperty("endTime", out var end) || end.ValueKind != JsonValueKind.String
+                || !TimeSpan.TryParse(end.GetString(), out _))
+                return BadRequest(new { Message = "Invalid booking date, time, guest count or parking count." });
+            var workflow = new FacilityAgentWorkflow
+            {
+                WorkflowId = Guid.NewGuid().ToString(),
+                ResidentId = residentId,
+                ResidentName = dto.ResidentName,
+                Objective = dto.Objective,
+                AgentType = "LocalFacilityAndParkingAgent",
+                PlanJson = plan.GetRawText(),
+                ExtractedDataJson = extracted.GetRawText(),
+                ToolResultsJson = tools.GetRawText(),
+                ProposalJson = proposal.GetRawText(),
+                ValidationStatus = "Proposal ready. Confirm to submit the booking.",
+                RequiresApproval = true,
+                Status = "PendingApproval",
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.FacilityAgentWorkflows.Add(workflow);
+            await _context.SaveChangesAsync();
+            return StatusCode(201, new { Workflow = workflow });
         }
 
         // POST: /api/workflows/plan-facility-parking
@@ -161,6 +225,11 @@ namespace ApartmentManagement.Api.Controllers
             {
                 var workflow = await _context.FacilityAgentWorkflows.FindAsync(id);
                 if (workflow == null) return NotFound("Workflow not found.");
+
+                if (workflow.AgentType == "LocalFacilityAndParkingAgent"
+                    && (!int.TryParse(User.FindFirst("residentId")?.Value, out var residentId)
+                        || residentId != workflow.ResidentId))
+                    return Forbid();
 
                 if (workflow.Status == "Approved" || workflow.Status == "AutoApproved")
                     return BadRequest("Workflow is already approved.");

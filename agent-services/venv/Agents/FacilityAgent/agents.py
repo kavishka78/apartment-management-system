@@ -1,19 +1,30 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from langchain_google_genai import ChatGoogleGenerativeAI
 from state import FacilityWorkflowState
 from tools import check_facility_and_parking_availability
-from dotenv import load_dotenv
-
-load_dotenv()
+from tools import GOOGLE_API_KEY, GEMINI_MODEL
 
 # Initialize the LLM (Temperature = 0 for deterministic outputs)
-llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", temperature=0)
+llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, google_api_key=GOOGLE_API_KEY, temperature=0, timeout=20, max_retries=0)
 
 class PlanOutput(BaseModel):
     plan: list[str] = Field(description="A step by step list of internal actions needed to fulfill the integrated facility reservation and visitor parking request.")
 
 class ExtractionOutput(BaseModel):
+    @model_validator(mode="before")
+    @classmethod
+    def fill_unspecified_values(cls, values):
+        # Gemini tool calls can explicitly return null for omitted request details.
+        if isinstance(values, dict):
+            values = dict(values)
+            for name, field in cls.model_fields.items():
+                if values.get(name) is None and not field.is_required():
+                    values[name] = field.default
+            if values.get("guests") == 0:
+                values["guests"] = 1
+        return values
+
     is_cancellation: bool = Field(default=False, description="True if the prompt is asking to CANCEL, MODIFY, REMOVE, or DELETE an existing booking/reservation (e.g., 'Cancel my booking', 'Delete reservation', 'Cancel tennis court').")
     is_general_query: bool = Field(default=False, description="True if the prompt is a general greeting, greeting question, or out-of-scope question (e.g., 'Hi', 'Hello', 'How are you?', 'Who built this?', 'What is the weather?').")
     is_inquiry: bool = Field(default=False, description="True if the user is asking a facility/parking capacity query (e.g. 'How much capacity available...', 'Is gym open?'), False if requesting a NEW booking/reservation.")
@@ -21,8 +32,8 @@ class ExtractionOutput(BaseModel):
     date: str = Field(default="", description="The date requested, formatted as YYYY-MM-DD.")
     start_time: str = Field(default="16:00:00", description="Start time requested in HH:MM:SS format.")
     end_time: str = Field(default="20:00:00", description="End time requested in HH:MM:SS format.")
-    guests: int = Field(default=1, description="Number of guests attending.")
-    visitor_vehicles: int = Field(default=0, description="Number of visitor vehicles requiring parking allocation.")
+    guests: int = Field(default=1, ge=1, description="Number of guests attending. Use 1 when unspecified.")
+    visitor_vehicles: int = Field(default=0, ge=0, description="Number of visitor vehicles requiring parking allocation. Use 0 when unspecified.")
 
 # 1. Planner Agent
 def planner_node(state: FacilityWorkflowState):
@@ -229,7 +240,7 @@ def validation_node(state: FacilityWorkflowState):
         state["validation_status"] = f"Valid Proposal Created - High Impact Event ({reason_str}). Resident Approval Required."
         state["requires_approval"] = True
     else:
-        state["validation_status"] = "Valid Proposal Created - Standard Event (Auto-Approved & Booked)."
+        state["validation_status"] = "Valid Proposal Created - Standard Event. Ready for Booking."
         state["requires_approval"] = False
 
     state["final_proposal"] = {
