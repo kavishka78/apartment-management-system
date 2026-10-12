@@ -9,6 +9,7 @@ import FacilityBookingInvoiceTable from "../../components/payment/FacilityBookin
 function GenerateInvoice() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookingRefresh, setBookingRefresh] = useState(0);
+  const [invoicedBookingIds, setInvoicedBookingIds] = useState([]);
   const [formData, setFormData] = useState({
     residentId: "",
     apartmentId: "",
@@ -45,6 +46,7 @@ function GenerateInvoice() {
       const result = await response.json();
       if (!response.ok) { setErrorMessage(result.message || "Failed to generate invoice."); return; }
       setSuccessMessage("Facility booking invoice generated successfully.");
+      setInvoicedBookingIds((ids) => [...new Set([...ids, selectedBooking.bookingId])]);
       setSelectedBooking(null);
       setBookingRefresh((n) => n + 1);
       setFormData({ residentId: "", apartmentId: "", billingMonth: "", dueDate: "", facilityCharge: "" });
@@ -125,7 +127,7 @@ setFormData({
           </div>
         </header>
 
-        <FacilityBookingInvoiceTable refreshKey={bookingRefresh} onSelect={(booking) => {
+        <FacilityBookingInvoiceTable refreshKey={bookingRefresh} invoicedBookingIds={invoicedBookingIds} onSelect={(booking) => {
           setSelectedBooking(booking);
           setSuccessMessage("");
           setErrorMessage("");
