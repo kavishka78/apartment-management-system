@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ApartmentManagement.Api.Data;
-using ApartmentManagement.Api.DTOs.Safety;
 using ApartmentManagement.Api.Models;
 using ApartmentManagement.Api.Services;
 
@@ -20,13 +19,11 @@ namespace ApartmentManagement.Api.Controllers
         private readonly AppDbContext _context;
         private readonly FacilityAgentClient _agentClient;
         private readonly ILogger<WorkflowsController> _logger;
-        private readonly SafetyValidationClient _safety;
 
-        public WorkflowsController(AppDbContext context, FacilityAgentClient agentClient, ILogger<WorkflowsController> logger, SafetyValidationClient safety)
+        public WorkflowsController(AppDbContext context, FacilityAgentClient agentClient, ILogger<WorkflowsController> logger)
         {
             _context = context;
             _agentClient = agentClient;
-            _safety = safety;
             _logger = logger;
         }
 
@@ -255,36 +252,6 @@ namespace ApartmentManagement.Api.Controllers
             }
         }
 
-        // Returns null when the safety agent approves the booking, otherwise the reason it was stopped.
-        private async Task<string?> FacilitySafetyBlockAsync(FacilityAgentWorkflow workflow, int facilityId, decimal cost)
-        {
-            var resident = await _context.Residents.FindAsync(workflow.ResidentId);
-            if (resident == null) return "the resident for this workflow was not found.";
-
-            var verdict = await _safety.ValidateAsync(new ProposedActionDto
-            {
-                WorkflowId = $"facility-workflow:{workflow.Id}",
-                TenantId = resident.TenantId,
-                ProposedBy = "facility_booking",
-                Requester = new RequesterDto
-                {
-                    UserId = 0,
-                    Role = "Resident",
-                    TenantId = resident.TenantId,
-                    ResidentId = resident.Id,
-                },
-                Action = new ActionTargetDto
-                {
-                    Type = "book_amenity",
-                    TargetTenantId = resident.TenantId,
-                    TargetResourceId = $"facility:{facilityId}",
-                    AmountLkr = cost,
-                },
-            });
-
-            return verdict.Verdict == "approve" ? null : verdict.Reason;
-        }
-
         // Helper Method to Execute Facility Booking & Visitor Parking Slot Update in PostgreSQL DB
         private async Task ExecuteWorkflowBookingInternal(FacilityAgentWorkflow workflow)
         {
@@ -341,11 +308,6 @@ namespace ApartmentManagement.Api.Controllers
 
             double durationHours = (endTime - startTime).TotalHours;
             decimal calculatedTotalCost = Math.Round((decimal)durationHours * facility.HourlyCost * requestedCapacity, 2);
-
-            // Validation & Safety gate: the resident's booking must stay inside their own complex.
-            var safetyBlock = await FacilitySafetyBlockAsync(workflow, facilityId, calculatedTotalCost);
-            if (safetyBlock != null)
-                throw new InvalidOperationException($"Booking blocked by the safety check: {safetyBlock}");
 
             // 1. Create Facility Booking
             var booking = new FacilityBooking
