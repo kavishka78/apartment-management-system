@@ -125,7 +125,7 @@ function MaintenanceSidebar() {
         </nav>
 
         <div className="maintenance-sidebar-bottom">
-          <button onClick={() => window.location.href='/'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '12px', background: '#000', color: '#fff', border: 'none', borderRadius: '50px', fontWeight: '600', cursor: 'pointer', fontSize: '14px', transition: 'opacity 0.2s' }} onMouseOver={(e) => e.target.style.opacity = '0.8'} onMouseOut={(e) => e.target.style.opacity = '1'}>
+          <button onClick={() => navigateTo("/admin")} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '12px', background: '#000', color: '#fff', border: 'none', borderRadius: '50px', fontWeight: '600', cursor: 'pointer', fontSize: '14px', transition: 'opacity 0.2s' }} onMouseOver={(e) => e.target.style.opacity = '0.8'} onMouseOut={(e) => e.target.style.opacity = '1'}>
             <MdArrowBack size={18} /> Back to Home
           </button>
         </div>
