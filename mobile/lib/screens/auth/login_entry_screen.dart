@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../models/auth/contact_check_result.dart';
 import '../../services/auth/resident_auth_api.dart';
 import 'email_auth_options_screen.dart';
-import 'otp_verify_screen.dart';
 
 /// Step 1 of the login flow.
 ///
-/// The resident enters the phone number OR email that the building admin
-/// registered them with. If the contact is found in the system, the user
-/// is forwarded to the appropriate verification screen.
+/// The resident enters the email that the building admin registered them
+/// with, then continues to the email authentication options.
 class LoginEntryScreen extends StatefulWidget {
   const LoginEntryScreen({super.key});
 
@@ -18,64 +15,31 @@ class LoginEntryScreen extends StatefulWidget {
   State<LoginEntryScreen> createState() => _LoginEntryScreenState();
 }
 
-class _LoginEntryScreenState extends State<LoginEntryScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-  final _phoneController = TextEditingController();
+class _LoginEntryScreenState extends State<LoginEntryScreen> {
   final _emailController = TextEditingController();
-  final _phoneFocus = FocusNode();
   final _emailFocus = FocusNode();
 
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      // Clear error when switching tabs
-      if (mounted) setState(() => _errorMessage = null);
-    });
-  }
-
-  @override
   void dispose() {
-    _tabController.dispose();
-    _phoneController.dispose();
     _emailController.dispose();
-    _phoneFocus.dispose();
     _emailFocus.dispose();
     super.dispose();
   }
 
-  bool get _isPhoneTab => _tabController.index == 0;
-
-  String get _currentInput =>
-      _isPhoneTab ? _phoneController.text.trim() : _emailController.text.trim();
-
   Future<void> _onContinue() async {
-    final input = _currentInput;
+    final input = _emailController.text.trim();
     if (input.isEmpty) {
-      setState(
-        () => _errorMessage = _isPhoneTab
-            ? 'Please enter your phone number.'
-            : 'Please enter your email address.',
-      );
+      setState(() => _errorMessage = 'Please enter your email address.');
       return;
     }
 
     // Basic format validation
-    if (_isPhoneTab) {
-      if (!RegExp(r'^[0-9+\s\-]{7,15}$').hasMatch(input)) {
-        setState(() => _errorMessage = 'Please enter a valid phone number.');
-        return;
-      }
-    } else {
-      if (!RegExp(r'^[\w\.\+\-]+@[\w\-]+\.\w+$').hasMatch(input)) {
-        setState(() => _errorMessage = 'Please enter a valid email address.');
-        return;
-      }
+    if (!RegExp(r'^[\w\.\+\-]+@[\w\-]+\.\w+$').hasMatch(input)) {
+      setState(() => _errorMessage = 'Please enter a valid email address.');
+      return;
     }
 
     setState(() {
@@ -88,36 +52,20 @@ class _LoginEntryScreenState extends State<LoginEntryScreen>
     if (!mounted) return;
     setState(() => _isLoading = false);
 
+    if (result.errorMessage != null) {
+      setState(() => _errorMessage = result.errorMessage);
+      return;
+    }
+
     if (!result.found) {
       setState(
-        () => _errorMessage = _isPhoneTab
-            ? 'This phone number is not registered with any apartment complex.\nPlease contact your building admin.'
-            : 'This email is not registered with any apartment complex.\nPlease contact your building admin.',
+        () => _errorMessage =
+            'This email is not registered with any apartment complex.\nPlease contact your building admin.',
       );
       return;
     }
 
-    // Navigate to the right auth screen
-    if (_isPhoneTab) {
-      _goToPhoneOtp(input, result);
-    } else {
-      _goToEmailOptions(input, result);
-    }
-  }
-
-  void _goToPhoneOtp(String phone, ContactCheckResult result) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OtpVerifyScreen(
-          contact: phone,
-          contactType: 'phone',
-          residentName: result.name,
-          unitNumber: result.unitNumber,
-          complexName: result.complexName,
-        ),
-      ),
-    );
+    _goToEmailOptions(input, result);
   }
 
   void _goToEmailOptions(String email, ContactCheckResult result) {
@@ -194,7 +142,7 @@ class _LoginEntryScreenState extends State<LoginEntryScreen>
                               ),
                               const SizedBox(height: 8),
                               const Text(
-                                'Use the phone number or email that your\nbuilding admin registered you with.',
+                                'Use the email address that your\nbuilding admin registered you with.',
                                 style: TextStyle(
                                   color: Color(0xFF9CA3AF),
                                   fontSize: 13,
@@ -313,77 +261,7 @@ class _LoginEntryScreenState extends State<LoginEntryScreen>
                             ),
                             child: Column(
                               children: [
-                                // Tab bar
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    24,
-                                    24,
-                                    24,
-                                    0,
-                                  ),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF1F5F9),
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                                    child: TabBar(
-                                      controller: _tabController,
-                                      indicator: BoxDecoration(
-                                        color: const Color(0xFF17212B),
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
-                                      dividerColor: Colors.transparent,
-                                      labelColor: Colors.white,
-                                      unselectedLabelColor: const Color(
-                                        0xFF5A6A77,
-                                      ),
-                                      labelStyle: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                      tabs: const [
-                                        Tab(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.phone_rounded,
-                                                size: 16,
-                                              ),
-                                              SizedBox(width: 6),
-                                              Text('Phone Number'),
-                                            ],
-                                          ),
-                                        ),
-                                        Tab(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.email_outlined,
-                                                size: 16,
-                                              ),
-                                              SizedBox(width: 6),
-                                              Text('Email Address'),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                                // Input fields view
-                                AnimatedBuilder(
-                                  animation: _tabController,
-                                  builder: (context, _) {
-                                    return _isPhoneTab
-                                        ? _buildPhoneInput()
-                                        : _buildEmailInput();
-                                  },
-                                ),
+                                _buildEmailInput(),
 
                                 // Error banner
                                 if (_errorMessage != null)
@@ -503,74 +381,6 @@ class _LoginEntryScreenState extends State<LoginEntryScreen>
             },
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildPhoneInput() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextFormField(
-            controller: _phoneController,
-            focusNode: _phoneFocus,
-            keyboardType: TextInputType.phone,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s\-]')),
-            ],
-            style: const TextStyle(fontSize: 16, color: Color(0xFF17212B)),
-            decoration:
-                _inputDecoration(
-                  hint: '77 123 4567',
-                  icon: Icons.phone_outlined,
-                ).copyWith(
-                  prefixIcon: IntrinsicWidth(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.phone_outlined,
-                            color: Color(0xFF5A6A77),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 6),
-                          const Text('🇱🇰', style: TextStyle(fontSize: 18)),
-                          const SizedBox(width: 6),
-                          const Text(
-                            '+94',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF17212B),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 1,
-                            height: 24,
-                            color: const Color(0xFFDDE2E7),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-            onFieldSubmitted: (_) => _onContinue(),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Enter the mobile number your building admin\nregistered for your apartment unit.',
-            style: TextStyle(
-              color: Color(0xFF8A9BAB),
-              fontSize: 12,
-              height: 1.5,
-            ),
-          ),
-        ],
       ),
     );
   }

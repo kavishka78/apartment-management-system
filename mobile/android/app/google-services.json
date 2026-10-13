@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "775386915415-3knvhahgvho2g54beoui9l8aetq8m711.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "apartment.management_hub",
+            "certificate_hash": "8b4dec53280437728d7ae0438ce09b84dc47e886"
+          }
+        },
+        {
           "client_id": "775386915415-46haie73ec93rvsan5db36nhkgh077qb.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
