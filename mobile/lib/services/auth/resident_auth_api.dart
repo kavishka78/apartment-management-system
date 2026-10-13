@@ -72,10 +72,17 @@ class ResidentAuthApi {
         return ContactCheckResult.fromJson(data);
       }
 
-      // 404 = not registered, anything else = server error
-      return ContactCheckResult.notFound();
+      return ContactCheckResult(
+        found: false,
+        errorMessage: response.statusCode == 503
+            ? 'Email verification is temporarily unavailable. Please try again later.'
+            : 'Unable to verify your email right now (${response.statusCode}). Please try again.',
+      );
     } catch (_) {
-      return ContactCheckResult.notFound();
+      return const ContactCheckResult(
+        found: false,
+        errorMessage: 'Cannot connect to the server. Check your connection and try again.',
+      );
     }
   }
 

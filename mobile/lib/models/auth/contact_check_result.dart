@@ -4,6 +4,9 @@ class ContactCheckResult {
   /// Whether the contact (phone or email) was found in the Residents table.
   final bool found;
 
+  /// A verification failure, distinct from an unregistered contact.
+  final String? errorMessage;
+
   /// Resident's display name (shown as a greeting on the OTP screen).
   final String name;
 
@@ -21,6 +24,7 @@ class ContactCheckResult {
 
   const ContactCheckResult({
     required this.found,
+    this.errorMessage,
     this.name = '',
     this.unitNumber = '',
     this.complexName = '',
