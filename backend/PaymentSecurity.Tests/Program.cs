@@ -161,6 +161,24 @@ try
     var created = (await Call(HttpMethod.Post, "/api/invoices", adminJwt, 201, invoiceBody))!.Value;
     var createdId = created.GetProperty("id").GetInt32();
     await Call(HttpMethod.Put, $"/api/invoices/{createdId}", adminJwt, 200, invoiceBody);
+    var sameMonthInvoice = (await Call(HttpMethod.Post, "/api/invoices", adminJwt, 201, invoiceBody))!.Value;
+    var sameMonthId = sameMonthInvoice.GetProperty("id").GetInt32();
+    var editedBody = new { residentId = 101, apartmentId = 1, billingMonth = "2030-01-01T00:00:00Z", dueDate = "2030-01-20T00:00:00Z",
+        invoiceItems = new[] { new { description = "Updated fixture", chargeType = "Maintenance", amount = 75 } } };
+    await Call(HttpMethod.Put, $"/api/invoices/{createdId}", adminJwt, 200, editedBody);
+    Check(db.Invoices.First(i => i.Id == createdId).TotalAmount == 75 &&
+        db.Invoices.First(i => i.Id == createdId).DueDate.Day == 20,
+        "Charges and due date can be edited when another invoice shares the billing month");
+    await Call(HttpMethod.Put, $"/api/invoices/{sameMonthId}", adminJwt, 200, editedBody);
+    var otherMonthBody = new { residentId = 101, apartmentId = 1, billingMonth = "2030-02-01T00:00:00Z", dueDate = "2030-02-15T00:00:00Z",
+        invoiceItems = new[] { new { description = "Other month", chargeType = "Maintenance", amount = 55 } } };
+    var otherMonthInvoice = (await Call(HttpMethod.Post, "/api/invoices", adminJwt, 201, otherMonthBody))!.Value;
+    var otherMonthId = otherMonthInvoice.GetProperty("id").GetInt32();
+    await Call(HttpMethod.Put, $"/api/invoices/{otherMonthId}", adminJwt, 400, invoiceBody);
+    Check(db.Invoices.First(i => i.Id == otherMonthId).BillingMonth.Month == 2,
+        "Moving an invoice into an existing billing month remains blocked");
+    await Call(HttpMethod.Delete, $"/api/invoices/{sameMonthId}", adminJwt, 204);
+    await Call(HttpMethod.Delete, $"/api/invoices/{otherMonthId}", adminJwt, 204);
     await Call(HttpMethod.Delete, $"/api/invoices/{createdId}", adminJwt, 204);
     await Call(HttpMethod.Post, "/api/invoices/generate-monthly", adminJwt, 200, new {
         residentId = 101, apartmentId = 1, billingMonth = "2031-01-01T00:00:00Z", dueDate = "2031-01-15T00:00:00Z", maintenanceFee = 100 });
