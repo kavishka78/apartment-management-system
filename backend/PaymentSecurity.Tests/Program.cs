@@ -46,6 +46,8 @@ await db.SaveChangesAsync();
 
 builder.Services.AddSingleton<AppDbContext>(db);
 builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<INotificationService, TestNotifications>();
 builder.Services.AddControllers().AddApplicationPart(typeof(InvoicesController).Assembly)
     .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o => {
