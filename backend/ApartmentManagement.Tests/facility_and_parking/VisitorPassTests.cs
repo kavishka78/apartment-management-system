@@ -32,6 +32,13 @@ namespace ApartmentManagement.Tests.FacilityAndParking
         {
             // Arrange
             using var db = GetInMemoryDbContext();
+            db.Residents.Add(new Resident
+            {
+                Id = 101,
+                TenantId = 1,
+                FullName = "Fixture resident",
+                Email = "resident@example.invalid"
+            });
             var visitorSlot = new ParkingSlot
             {
                 SlotId = 1,
