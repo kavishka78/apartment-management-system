@@ -13,6 +13,11 @@ export default function FacilityBookingInvoiceTable({ onSelect, refreshKey = 0, 
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState("bookingId-desc");
   const [attempt, setAttempt] = useState(0);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, facility, status, sort]);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,6 +58,11 @@ export default function FacilityBookingInvoiceTable({ onSelect, refreshKey = 0, 
       || Number(b.bookingId) - Number(a.bookingId);
   });
 
+  const pageSize = 6;
+  const totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageBookings = visible.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return <section className="generate-invoice-panel resident-reference" aria-labelledby="facility-bookings-title">
     <div className="generate-form-header">
       <h2 id="facility-bookings-title">Facility Bookings</h2>
@@ -84,9 +94,9 @@ export default function FacilityBookingInvoiceTable({ onSelect, refreshKey = 0, 
     {loading ? <p className="resident-reference-status" role="status">Loading facility bookings...</p>
       : error ? <div className="resident-reference-status" role="alert"><p>{error}</p><button type="button" className="cancel-btn" onClick={() => setAttempt((n) => n + 1)}>Retry</button></div>
         : visible.length === 0 ? <p className="resident-reference-status" role="status">{bookings.length ? "No bookings match these filters." : "No facility bookings found."}</p>
-          : <div className="resident-reference-scroll" tabIndex={0} role="region" aria-label="Facility bookings table">
+          : <><div className="resident-reference-scroll" tabIndex={0} role="region" aria-label="Facility bookings table">
             <table><thead><tr>{["Booking ID", "Facility", "Resident ID", "Resident Name", "Apartment / Unit", "Booking Date", "Booking Time", "Amount", "Status", "Action"].map((h) => <th scope="col" key={h}>{h}</th>)}</tr></thead>
-              <tbody>{visible.map((b) => {
+              <tbody>{pageBookings.map((b) => {
                 const eligibleStatus = ["Pending", "Approved", "Completed"].includes(b.status);
                 const canInvoice = eligibleStatus && !b.isInvoiced && Number(b.amount) > 0 && b.apartmentId != null;
                 return <tr key={b.bookingId}>
@@ -100,6 +110,13 @@ export default function FacilityBookingInvoiceTable({ onSelect, refreshKey = 0, 
                 </tr>;
               })}</tbody>
             </table>
-          </div>}
+          </div>
+          <nav className="booking-pagination" aria-label="Facility bookings pagination">
+            <button type="button" className="cancel-btn" disabled={currentPage === 1}
+              onClick={() => setPage(currentPage - 1)}>Previous</button>
+            <span aria-live="polite">Page {currentPage} of {totalPages}</span>
+            <button type="button" className="cancel-btn" disabled={currentPage === totalPages}
+              onClick={() => setPage(currentPage + 1)}>Next</button>
+          </nav></>}
   </section>;
 }

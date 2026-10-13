@@ -24,6 +24,25 @@ beforeEach(() => {
 });
 
 describe("Facility invoice bookings", () => {
+  it("shows six bookings per page and resets pagination when filtering", async () => {
+    api.getInvoiceFacilityBookings.mockResolvedValue(Array.from({ length: 8 }, (_, i) => ({
+      ...bookings[0], bookingId: i + 1, residentName: `Person ${i + 1}`,
+    })));
+    render(<FacilityBookingInvoiceTable onSelect={vi.fn()} />);
+    await screen.findByText("Person 8");
+    expect(rowIds()).toEqual(["8", "7", "6", "5", "4", "3"]);
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(rowIds()).toEqual(["2", "1"]);
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+    expect(rowIds()).toHaveLength(6);
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    fireEvent.change(screen.getByLabelText("Search bookings"), { target: { value: "Person 8" } });
+    expect(rowIds()).toEqual(["8"]);
+    expect(screen.getByText("Page 1 of 1")).toBeInTheDocument();
+  });
+
   it("shows newly created bookings first instead of future booking dates", async () => {
     render(<FacilityBookingInvoiceTable onSelect={vi.fn()} />);
     await screen.findByText("Resident A");

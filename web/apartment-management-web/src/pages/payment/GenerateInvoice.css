@@ -216,3 +216,15 @@
   border: 1px solid #e7bcbc;
   color: #9b3838;
 }
+.booking-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+.booking-pagination .cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
