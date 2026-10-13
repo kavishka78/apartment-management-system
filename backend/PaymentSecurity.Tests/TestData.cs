@@ -2,12 +2,19 @@ using System.Collections;
 using System.Linq.Expressions;
 using ApartmentManagement.Api.Data;
 using ApartmentManagement.Api.Models;
+using ApartmentManagement.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 // Queryable fixtures, not a database. No migrations or production startup are run.
+sealed class TestNotifications : INotificationService
+{
+    public Task SendEmailAsync(string toEmail, string subject, string body) => Task.CompletedTask;
+    public Task SendPushNotificationAsync(string? fcmToken, string title, string body) => Task.CompletedTask;
+}
+
 sealed class TestData : AppDbContext
 {
     public TestData() : base(new DbContextOptionsBuilder<AppDbContext>().Options)
