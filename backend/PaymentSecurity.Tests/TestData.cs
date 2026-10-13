@@ -25,6 +25,7 @@ sealed class TestData : AppDbContext
         Payments = new TestSet<Payment>();
         Receipts = new TestSet<Receipt>();
         InvoiceItems = new TestSet<InvoiceItem>();
+        FacilityBookings = new TestSet<FacilityBooking>();
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -56,7 +57,7 @@ sealed class TestSet<T> : DbSet<T>, IQueryable<T>, IAsyncEnumerable<T> where T :
     public override IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken token = default) => new AsyncEnumerator<T>(rows.GetEnumerator());
     public override EntityEntry<T> Add(T entity)
     {
-        var id = typeof(T).GetProperty("Id")!;
+        var id = typeof(T).GetProperty("Id") ?? typeof(T).GetProperty("BookingId")!;
         if ((int)id.GetValue(entity)! == 0) id.SetValue(entity, rows.Count == 0 ? 1 : rows.Max(r => (int)id.GetValue(r)!) + 1);
         rows.Add(entity);
         return null!;
@@ -65,7 +66,7 @@ sealed class TestSet<T> : DbSet<T>, IQueryable<T>, IAsyncEnumerable<T> where T :
     public override void AddRange(IEnumerable<T> entities) { foreach (var row in entities) Add(row); }
     public override void RemoveRange(IEnumerable<T> entities) { foreach (var row in entities.ToList()) rows.Remove(row); }
     public override ValueTask<T?> FindAsync(params object?[]? keyValues) => ValueTask.FromResult(
-        rows.FirstOrDefault(row => Equals(typeof(T).GetProperty("Id")!.GetValue(row), keyValues![0])));
+        rows.FirstOrDefault(row => Equals((typeof(T).GetProperty("Id") ?? typeof(T).GetProperty("BookingId"))!.GetValue(row), keyValues![0])));
 }
 
 sealed class AsyncQuery<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>

@@ -95,6 +95,25 @@ string ExpiredToken()
 
 try
 {
+    var upcomingBooking = new FacilityBooking { BookingId = 501, FacilityId = 1, ResidentId = 101,
+        BookingDate = DateTime.UtcNow.Date.AddDays(2), StartTime = TimeSpan.FromHours(10), EndTime = TimeSpan.FromHours(11) };
+    db.FacilityBookings.Add(upcomingBooking);
+    var bookingInvoice = db.Invoices.First(i => i.Id == 1);
+    bookingInvoice.FacilityBookingId = upcomingBooking.BookingId;
+    await Call(HttpMethod.Delete, "/api/bookings/501", jwt, 200);
+    Check(!db.FacilityBookings.Any(b => b.BookingId == 501) && bookingInvoice.FacilityBookingId == null,
+        "Cancelling an invoiced booking releases the restricted foreign key and removes the booking");
+    Check(db.Invoices.Contains(bookingInvoice) && db.Payments.Any(p => p.InvoiceId == bookingInvoice.Id),
+        "Booking cancellation preserves the invoice and its payment records");
+    db.FacilityBookings.Add(new FacilityBooking { BookingId = 502, FacilityId = 1, ResidentId = 101,
+        BookingDate = DateTime.UtcNow.Date.AddDays(2) });
+    await Call(HttpMethod.Delete, "/api/bookings/502", jwt, 200);
+    db.FacilityBookings.Add(new FacilityBooking { BookingId = 503, FacilityId = 1, ResidentId = 101,
+        BookingDate = DateTime.UtcNow.Date.AddDays(-2) });
+    await Call(HttpMethod.Delete, "/api/bookings/503", jwt, 400);
+    Check(db.FacilityBookings.Any(b => b.BookingId == 503), "Past bookings remain protected from cancellation");
+    await Call(HttpMethod.Delete, "/api/bookings/999", jwt, 404);
+
     foreach (var token in new string?[] { null, "invalid", ExpiredToken() })
         foreach (var path in new[] { "/api/invoices", "/api/payments", "/api/payments/1/receipt", "/api/reports/collections" })
             await Call(HttpMethod.Get, path, token, 401);
