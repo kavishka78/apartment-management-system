@@ -16,10 +16,6 @@ export default function FacilityBookingInvoiceTable({ onSelect, refreshKey = 0, 
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    setPage(1);
-  }, [search, facility, status, sort]);
-
-  useEffect(() => {
     let cancelled = false;
     getInvoiceFacilityBookings()
       .then((data) => { 
@@ -70,16 +66,16 @@ export default function FacilityBookingInvoiceTable({ onSelect, refreshKey = 0, 
     </div>
     <div className="resident-reference-controls">
       <div className="form-group"><label htmlFor="booking-search">Search bookings</label>
-        <input id="booking-search" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Booking ID, resident ID or name" />
+        <input id="booking-search" type="search" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Booking ID, resident ID or name" />
       </div>
       <div className="form-group"><label htmlFor="booking-facility">Facility</label>
-        <select id="booking-facility" value={facility} onChange={(e) => setFacility(e.target.value)}><option value="">All facilities</option>{facilities.map((name) => <option key={name}>{name}</option>)}</select>
+        <select id="booking-facility" value={facility} onChange={(e) => { setFacility(e.target.value); setPage(1); }}><option value="">All facilities</option>{facilities.map((name) => <option key={name}>{name}</option>)}</select>
       </div>
       <div className="form-group"><label htmlFor="booking-status">Status</label>
-        <select id="booking-status" value={status} onChange={(e) => setStatus(e.target.value)}><option value="">All statuses</option>{[...new Set(displayedBookings.map(bookingStatus))].sort().map((s) => <option key={s}>{s}</option>)}</select>
+        <select id="booking-status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">All statuses</option>{[...new Set(displayedBookings.map(bookingStatus))].sort().map((s) => <option key={s}>{s}</option>)}</select>
       </div>
       <div className="form-group"><label htmlFor="booking-sort">Sort by</label>
-        <select id="booking-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
+        <select id="booking-sort" value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }}>
           <option value="bookingId-desc">Latest bookings (highest ID first)</option>
           <option value="bookingId-asc">Booking ID: lowest first</option>
           <option value="bookingDate-desc">Booking date: latest first</option>
