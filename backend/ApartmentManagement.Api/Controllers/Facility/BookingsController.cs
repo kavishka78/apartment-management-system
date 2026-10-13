@@ -221,6 +221,14 @@ namespace ApartmentManagement.Api.Controllers
                     return BadRequest("Past bookings cannot be cancelled.");
                 }
 
+                // Preserve financial records while releasing the optional booking
+                // reference, whose foreign key otherwise prevents cancellation.
+                var linkedInvoices = await _context.Invoices
+                    .Where(i => i.FacilityBookingId == id)
+                    .ToListAsync();
+                foreach (var invoice in linkedInvoices)
+                    invoice.FacilityBookingId = null;
+
                 _context.FacilityBookings.Remove(booking);
                 await _context.SaveChangesAsync();
 
