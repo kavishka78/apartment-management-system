@@ -310,9 +310,15 @@ public async Task<IActionResult> UpdateInvoice(
         });
     }
 
-    // Prevent duplicate invoice for same resident,
-    // apartment and billing month
-    var duplicateInvoice = await _context.VisibleInvoices(User)
+    // Check for duplicates only when moving the invoice to a different
+    // resident, apartment or billing month. Existing invoices may share these.
+    var billingIdentityChanged =
+        invoice.ResidentId != updatedInvoice.ResidentId ||
+        invoice.ApartmentId != updatedInvoice.ApartmentId ||
+        invoice.BillingMonth.Year != updatedInvoice.BillingMonth.Year ||
+        invoice.BillingMonth.Month != updatedInvoice.BillingMonth.Month;
+
+    var duplicateInvoice = billingIdentityChanged && await _context.VisibleInvoices(User)
         .AnyAsync(i =>
             i.Id != id &&
             i.ResidentId == updatedInvoice.ResidentId &&
